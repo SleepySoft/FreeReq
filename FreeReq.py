@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import json
+import os
 import sys
 import uuid
 import traceback
@@ -140,72 +143,147 @@ class IReqObserver:
     def __init__(self):
         pass
 
-    def on_node_updated(self, req_name, node_uuid: str, req_data: dict):
+    def on_meta_data_changed(self, req_name: str):
+        pass
+
+    def on_node_data_changed(self, req_name: str, req_node: ReqNode):
+        pass
+
+    def on_node_child_changed(self, req_name: str, req_node: ReqNode):
         pass
 
 
 class IReqAgent:
     def __init__(self):
-        self.__observer = None
+        self.__observer: IReqObserver = None
 
     def init(self, *args, **kwargs) -> bool:
         pass
 
-    def load_req_names(self) -> [str]:
+    # ------------------ Req Depot prob and req selection ------------------
+
+    def get_req_names(self) -> [str]:
         pass
 
-    def load_req_meta(self, req_name: str) -> dict:
+    def select_op_req(self, req_name: str):
         pass
 
-    def update_req_meta(self, req_name: str, req_meta: dict) -> bool:
+    # --------------------- After select_op_req() ---------------------
+
+    def get_req_meta(self) -> dict:
         pass
 
-    def load_req_root(self, req_name: str) -> dict:
+    def set_req_meta(self, req_meta: dict) -> bool:
         pass
 
-    def update_req_root(self, req_name: str, req_root: dict) -> bool:
+    def get_req_root(self) -> ReqNode:
         pass
 
-    def load_req_node(self, req_name: str, req_uuid: str) -> dict:
+    def get_req_node(self, req_uuid: str) -> ReqNode:
         pass
 
-    def update_req_node(self, req_name: str, req_uuid: str, req_data: dict) -> bool:
+    # --------------------- Notification from remote ---------------------
+
+    def inform_node_data_updated(self, req_node: ReqNode):
         pass
+
+    def inform_node_child_updated(self, req_node: ReqNode):
+        pass
+
+    # ------------------------------ Observer ------------------------------
 
     def set_observer(self, ob: IReqObserver):
         self.__observer = ob
 
-    def notify_node_updated(self):
-        if self.__observer is not None:
-            self.__observer.on_node_updated()
+    def notify_meta_data_changed(self, req_name: str):
+        self.__observer.on_meta_data_changed(req_name)
+
+    def notify_node_data_changed(self, req_name: str, req_node: ReqNode):
+        self.__observer.on_node_data_changed(req_name, req_node)
+
+    def notify_node_child_changed(self, req_name: str, req_node: ReqNode):
+        self.__observer.on_node_child_changed(req_name, req_node)
 
 
-class ReqXmlFileAgent(IReqAgent):
+class ReqSingleJsonFileAgent(IReqAgent):
     def __init__(self):
-        super(ReqXmlFileAgent, self).__init__()
+        super(ReqSingleJsonFileAgent, self).__init__()
+        self.__req_file_name = ''
+        self.__req_meta_dict = {}
+        self.__req_data_dict = {}
+        self.__req_node_root: ReqNode = None
+        self.__req_node_index = {}
 
-    def init(self, *args, **kwargs) -> bool:
+    def init(self, file_name: str) -> bool:
+        self.__req_file_name = file_name
+        return self.__load_req_json()
+
+    # ------------------ Req Depot prob and req selection ------------------
+
+    def get_req_names(self) -> [str]:
+        return [os.path.basename(self.__req_file_name).split('.')[0]]
+
+    def select_op_req(self, req_name: str):
         pass
 
-    def load_req_names(self) -> [str]:
-        pass
+    # --------------------- After select_op_req() ---------------------
 
-    def load_req_meta(self, req_name: str) -> dict:
-        pass
+    def get_req_meta(self) -> dict:
+        return self.__req_meta_dict
 
-    def update_req_meta(self, req_name: str, req_meta: dict) -> bool:
-        pass
+    def set_req_meta(self, req_meta: dict) -> bool:
+        self.__req_meta_dict = req_meta
+        return self.save_req_json()
 
-    def load_req_root(self, req_name: str) -> dict:
-        pass
+    def get_req_root(self) -> ReqNode:
+        return self.__req_node_root
 
-    def update_req_root(self, req_name: str, req_root: dict) -> bool:
-        pass
+    def get_req_node(self, req_uuid: str) -> ReqNode:
+        return self.__req_node_index.get(req_uuid, None)
 
-    def load_req_node(self, req_name: str, req_uuid: str) -> dict:
-        pass
+    # --------------------- Notification from remote ---------------------
 
-    def update_req_node(self, req_name: str, req_uuid: str, req_data: dict) -> bool:
+    def inform_node_data_updated(self, req_node: ReqNode):
+        self.__save_req_json()
+
+    def inform_node_child_updated(self, req_node: ReqNode):
+        self.__save_req_json()
+
+    # -------------------------------------------------------------------------------
+
+    def __load_req_json(self) -> bool:
+        try:
+            with open(self.__req_file_name, 'wt') as f:
+                json_dict = json.load(f)
+                self.__req_meta_dict = json_dict.get('req_meta', {})
+                self.__req_data_dict = json_dict.get('req_data', {})
+                self.__build_node_index()
+        except Exception as e:
+            print(str(e))
+            return False
+        finally:
+            pass
+        return True
+
+    def __save_req_json(self) -> bool:
+        try:
+            self.__build_node_index()
+            self.__req_data_dict = self.__req_node_root.to_dict()
+            json_dict = {
+                'req_meta': self.__req_meta_dict,
+                'req_data': self.__req_data_dict
+            }
+
+            with open(self.__req_file_name, 'wt') as f:
+                json.dump(json_dict, f)
+        except Exception as e:
+            print(str(e))
+            return False
+        finally:
+            pass
+        return True
+
+    def __build_node_index(self):
         pass
 
 
@@ -377,30 +455,6 @@ QTreeView::branch:open:has-children:has-siblings  {
 }
 """
 
-# """
-# QTreeView {
-#     alternate-background-color: #f6fafb;
-#     background: #e8f4fc;
-# }
-# QTreeView::item:open {
-#     background-color: #c5ebfb;
-#     color: blue;
-# }
-# QTreeView::item:selected {
-#     background-color: #1d3dec;
-#     color: white;
-# }
-# QTreeView::branch {
-#     background-color: white;
-# }
-# QTreeView::branch:open {
-#     image: url(branch-open.png);
-# }
-# QTreeView::branch:closed:has-children {
-#     image: url(branch-closed.png);
-# }
-# """
-
 
 class RequirementUI(QWidget):
     def __init__(self, req_data_agent: IReqAgent):
@@ -474,6 +528,8 @@ class RequirementUI(QWidget):
             self.__menu_on_node.add_child(new_node)
             self.__req_model.layoutChanged.emit()
 
+            self.__req_data_agent.update_req_node(self.__menu_on_node)
+
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__menu_on_node is not None:
             pass
@@ -496,7 +552,11 @@ class RequirementUI(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    w = RequirementUI(ReqXmlFileAgent())
+
+    req_agent = ReqSingleJsonFileAgent()
+    req_agent.init('test.req')
+    w = RequirementUI(req_agent)
+
     w.show()
     sys.exit(app.exec_())
 
