@@ -1,0 +1,60 @@
+{
+    "req_meta": {},
+    "req_data": {
+        "id": "",
+        "uuid": "ce188a5bd68d4c87b53aaf880c373e11",
+        "title": "Example",
+        "child": [
+            {
+                "id": "",
+                "uuid": "11c1266e145249858bc47eb007808fe1",
+                "title": "Business Needs (WHY)",
+                "content": "",
+                "child": [
+                    {
+                        "id": "",
+                        "uuid": "73f95496372641ab8a94f7e817b0c777",
+                        "title": "Purpose",
+                        "content": "I want a tool to manage my personal software requirement. But the tools I found are not fit for me. Most of them are heavy and commercial. It should looks like:\n\n1. Light weight and free\n\n2. Storage the data in local disk, not network.\n\n3. The file it saved should be text format which is still readable without the tool.\n\n4. It should be a tree style document which just like Caliber.\n\n5. It should support Markdown for good writing and reading.",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "2308d25d87054d0fbc16908986e19a83",
+                        "title": "Document Structure",
+                        "content": "The document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "4f2d4ca37d144ba5be0a84ac23e99d21",
+                        "title": "Storage",
+                        "content": "The data must be saved on local, as text file. It can be XML or JSON.",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "f6042164bb2642638be4e457d27ab6f4",
+                        "title": "UI",
+                        "content": "The UI should consider multi-platform.",
+                        "child": []
+                    }
+                ]
+            },
+            {
+                "id": "",
+                "uuid": "d482e027840e4fcc860d8cc26e44e83c",
+                "title": "Stakeholder Requirements (WHAT)",
+                "content": "",
+                "child": []
+            },
+            {
+                "id": "",
+                "uuid": "26be32db0cbe46709520b80b3bd38659",
+                "title": "System Requirements (HOW)",
+                "content": "",
+                "child": []
+            }
+        ]
+    }
+}

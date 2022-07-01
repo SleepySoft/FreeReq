@@ -18,7 +18,7 @@ try:
         QDockWidget, QAction, qApp, QMessageBox, QDialog, QVBoxLayout, QLabel, QGroupBox, QTableWidget, \
         QTableWidgetItem, QTabWidget, QLayout, QTextEdit, QListWidget, QListWidgetItem, QMenu, QHeaderView, \
         QStyle, QStyleOptionButton, QTableView, QLineEdit, QCheckBox, QFileDialog, QComboBox, QTreeView, \
-        QAbstractItemView, QInputDialog
+        QAbstractItemView, QInputDialog, QSizePolicy
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -758,11 +758,15 @@ class RequirementUI(QWidget):
         self.__line_title = QLineEdit('')
 
         self.__text_md_editor = QTextEdit()
-        self.__text_md_preview = QTextEdit()
+        self.__text_md_viewer = QTextEdit()
         self.__group_meta_data = QGroupBox()
 
         self.__check_editor = QCheckBox('Editor')
         self.__check_viewer = QCheckBox('Viewer')
+
+        self.__button_increase_font = QPushButton('+')
+        self.__button_decrease_font = QPushButton('-')
+
         self.__button_req_refresh = QPushButton('Refresh')
         self.__button_re_assign_id = QPushButton('Re-assign ID')
         self.__button_save_content = QPushButton('Save Content')
@@ -815,7 +819,8 @@ class RequirementUI(QWidget):
         # Right mid
 
         line = QHBoxLayout()
-        line.setAlignment(Qt.AlignRight)
+        line.addWidget(self.__button_increase_font)
+        line.addWidget(self.__button_decrease_font)
         line.addWidget(QLabel(''), 99)
         line.addWidget(self.__check_editor)
         line.addWidget(self.__check_viewer)
@@ -829,7 +834,7 @@ class RequirementUI(QWidget):
         right_area.addLayout(edit_area, 9)
 
         edit_area.addWidget(self.__text_md_editor)
-        edit_area.addWidget(self.__text_md_preview)
+        edit_area.addWidget(self.__text_md_viewer)
 
     def __config_ui(self):
         self.setMinimumSize(800, 600)
@@ -839,7 +844,18 @@ class RequirementUI(QWidget):
         self.__check_viewer.setChecked(True)
 
         self.__line_id.setReadOnly(True)
-        self.__text_md_preview.setReadOnly(True)
+        self.__text_md_viewer.setReadOnly(True)
+
+        self.__button_increase_font.setMaximumSize(30, 30)
+        self.__button_decrease_font.setMaximumSize(30, 30)
+
+        # self.__button_increase_font.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        # self.__button_decrease_font.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        editor_font = self.__text_md_editor.font()
+        editor_font.setPointSizeF(10)
+        self.__text_md_editor.setFont(editor_font)
+        self.__text_md_viewer.setFont(editor_font)
 
         self.__tree_requirements.setModel(self.__req_model)
         # self.__tree_requirements.setRootIndex(self.__tree_requirements.rootIndex())
@@ -852,6 +868,9 @@ class RequirementUI(QWidget):
 
         self.__text_md_editor.textChanged.connect(self.on_text_content_edit)
 
+        self.__button_increase_font.clicked.connect(self.on_button_increase_font)
+        self.__button_decrease_font.clicked.connect(self.on_button_decrease_font)
+
         self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
         self.__button_re_assign_id.clicked.connect(self.on_button_re_assign_id)
         self.__button_save_content.clicked.connect(self.on_button_save_content)
@@ -863,10 +882,24 @@ class RequirementUI(QWidget):
         self.__text_md_editor.setVisible(self.__check_editor.isChecked())
 
     def on_check_viewer(self):
-        self.__text_md_preview.setVisible(self.__check_viewer.isChecked())
+        self.__text_md_viewer.setVisible(self.__check_viewer.isChecked())
 
     def on_button_req_refresh(self):
         pass
+
+    def on_button_increase_font(self):
+        editor_font = self.__text_md_editor.font()
+        font_size = editor_font.pointSizeF()
+        editor_font.setPointSizeF(font_size * 1.05)
+        self.__text_md_editor.setFont(editor_font)
+        self.__text_md_viewer.setFont(editor_font)
+
+    def on_button_decrease_font(self):
+        editor_font = self.__text_md_editor.font()
+        font_size = editor_font.pointSizeF()
+        editor_font.setPointSizeF(font_size / 1.05)
+        self.__text_md_editor.setFont(editor_font)
+        self.__text_md_viewer.setFont(editor_font)
 
     def on_button_re_assign_id(self):
         pass
@@ -1005,8 +1038,8 @@ class RequirementUI(QWidget):
     def on_text_content_edit(self):
         md_text = self.__text_md_editor.toPlainText()
         html_text = self.render_markdown(md_text)
-        # self.__text_md_preview.setMarkdown(text)
-        self.__text_md_preview.setHtml(html_text)
+        # self.__text_md_viewer.setMarkdown(text)
+        self.__text_md_viewer.setHtml(html_text)
 
     def __req_node_data_to_ui(self, req_node: ReqNode):
         self.__line_id.setText(req_node.get(CONST_FIELD_ID, ''))
@@ -1064,8 +1097,8 @@ def main():
 
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
-    if not req_agent.open_req('Example'):
-        req_agent.new_req('Example', True)
+    if not req_agent.open_req('FreeReq'):
+        req_agent.new_req('FreeReq', True)
     w = RequirementUI(req_agent)
 
     w.show()
