@@ -12,17 +12,20 @@ try:
     from PyQt5 import QtCore
     from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QCursor
     from PyQt5.QtCore import pyqtSignal, Qt, QAbstractTableModel, QModelIndex, QRect, QVariant, QSize, QTimer, \
-        QAbstractItemModel
+        QAbstractItemModel, QPoint
     from PyQt5.QtWidgets import QMainWindow, QApplication, QHBoxLayout, QGridLayout, QWidget, QPushButton, \
         QDockWidget, QAction, qApp, QMessageBox, QDialog, QVBoxLayout, QLabel, QGroupBox, QTableWidget, \
         QTableWidgetItem, QTabWidget, QLayout, QTextEdit, QListWidget, QListWidgetItem, QMenu, QHeaderView, \
         QStyle, QStyleOptionButton, QTableView, QLineEdit, QCheckBox, QFileDialog, QComboBox, QTreeView, \
-        QAbstractItemView
+        QAbstractItemView, QInputDialog
 except Exception as e:
     print('UI disabled.')
     print(str(e))
+    print(traceback.format_exc())
 finally:
     pass
+
+self_path = os.path.dirname(os.path.abspath(__file__))
 
 
 CONST_FIELD_ID = 'id'
@@ -37,14 +40,14 @@ class ReqNode:
     def __call__(self):
         return self
 
-    def __init__(self, parent: ReqNode):
+    def __init__(self, title: str = ''):
         self.__data = {
             CONST_FIELD_ID: '',
             CONST_FIELD_UUID: str(uuid.uuid4().hex),
-            CONST_FIELD_TITLE: 'N/A',
+            CONST_FIELD_TITLE: title,
             CONST_FIELD_CHILD: [],
         }
-        self.__parent = parent
+        self.__parent = None
         self.__sibling = self.__parent.children() if self.__parent is not None else []
         self.__children = []
 
@@ -105,18 +108,31 @@ class ReqNode:
 
     def set_parent(self, parent: ReqNode):
         self.__parent = parent
-        self.__sibling = self.__parent.children if self.__parent is not None else []
+        self.__sibling = self.__parent.children() if self.__parent is not None else []
 
-    def add_child(self, node: ReqNode) -> int:
+    def append_child(self, node: ReqNode) -> int:
+        node.set_parent(self)
         self.__children.append(node)
         return len(self.__children) - 1
 
+    def remove_child(self, node: ReqNode) -> bool:
+        if node in self.__children:
+            self.__children.remove(node)
+            return True
+        else:
+            return False
+
+    def remove_children(self):
+        self.__children.clear()
+
     def insert_sibling_left(self, node: ReqNode) -> int:
+        node.set_parent(self)
         index = self.order()
         self.__sibling.insert(self.order(), node)
         return index
 
     def insert_sibling_right(self, node: ReqNode) -> int:
+        node.set_parent(self)
         index = self.order() + 1
         self.__sibling.insert(self.order() + 1, node)
         return index
@@ -133,9 +149,9 @@ class ReqNode:
         self.__children = []
         if CONST_FIELD_CHILD in dic.keys():
             for sub_dict in dic[CONST_FIELD_CHILD]:
-                node = ReqNode(self)
+                node = ReqNode()
                 node.from_dict(sub_dict)
-                self.__children.append(node)
+                self.append_child(node)
             del self.__data[CONST_FIELD_CHILD]
 
 
@@ -160,15 +176,24 @@ class IReqAgent:
     def init(self, *args, **kwargs) -> bool:
         pass
 
-    # ------------------ Req Depot prob and req selection ------------------
+    # ----------------------- Req management -----------------------
 
-    def get_req_names(self) -> [str]:
+    def list_req(self) -> [str]:
         pass
 
-    def select_op_req(self, req_name: str):
+    def new_req(self, req_name: str) -> bool:
+        pass
+
+    def open_req(self, req_name: str) -> bool:
+        pass
+
+    def delete_req(self, req_name: str) -> bool:
         pass
 
     # --------------------- After select_op_req() ---------------------
+
+    def get_req_name(self) -> str:
+        pass
 
     def get_req_meta(self) -> dict:
         pass
@@ -206,27 +231,50 @@ class IReqAgent:
 
 
 class ReqSingleJsonFileAgent(IReqAgent):
-    def __init__(self):
+    def __init__(self, req_path: str = self_path):
         super(ReqSingleJsonFileAgent, self).__init__()
+        self.__req_path = req_path
+        self.__req_name = ''
         self.__req_file_name = ''
         self.__req_meta_dict = {}
         self.__req_data_dict = {}
-        self.__req_node_root: ReqNode = None
         self.__req_node_index = {}
+        self.__req_node_root: ReqNode = None
 
-    def init(self, file_name: str) -> bool:
-        self.__req_file_name = file_name
+    def init(self) -> bool:
+        return True
+
+    # ----------------------- Req management -----------------------
+
+    def list_req(self) -> [str]:
+        req_names = []
+        for f in os.scandir(self.__req_path):
+            if f.is_file() and f.name.lower().endswith('.req'):
+                req_names.append(f.name[:-4])
+        return req_names
+
+    def new_req(self, req_name: str, overwrite: bool = False) -> bool:
+        if not overwrite and req_name in self.list_req():
+            return False
+        self.__req_name = req_name
+        self.__req_file_name = req_name + '.req'
+        self.__req_node_root = ReqNode(req_name)
+        return True
+
+    def open_req(self, req_name: str) -> bool:
+        if req_name not in self.list_req():
+            return False
+        self.__req_name = req_name
+        self.__req_file_name = req_name + '.req'
         return self.__load_req_json()
 
-    # ------------------ Req Depot prob and req selection ------------------
-
-    def get_req_names(self) -> [str]:
-        return [os.path.basename(self.__req_file_name).split('.')[0]]
-
-    def select_op_req(self, req_name: str):
-        pass
+    def delete_req(self, req_name: str) -> bool:
+        return False
 
     # --------------------- After select_op_req() ---------------------
+
+    def get_req_name(self) -> str:
+        return self.__req_name
 
     def get_req_meta(self) -> dict:
         return self.__req_meta_dict
@@ -241,6 +289,25 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def get_req_node(self, req_uuid: str) -> ReqNode:
         return self.__req_node_index.get(req_uuid, None)
 
+    def req_map(self, map_operation) -> dict:
+        """
+        Iterate all nodes and call map_operation with each node
+        :param map_operation: Callable object.
+                            : Declaration: f(node: ReqNode, context: dict)
+                            :   node: Current node in iteration.
+                            :   context: A dict that pass to map_operation and finally return by req_map()
+        :return: The context that passed to map_operation
+        """
+        context = {}
+        self.__node_iteration(self.__req_node_root, map_operation, context)
+        return context
+
+    def __node_iteration(self, node: ReqNode, map_operation, context: dict):
+        if node is not None:
+            map_operation(node, context)
+            for child_node in node.children():
+                self.__node_iteration(child_node, map_operation, context)
+
     # --------------------- Notification from remote ---------------------
 
     def inform_node_data_updated(self, req_node: ReqNode):
@@ -253,13 +320,15 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __load_req_json(self) -> bool:
         try:
-            with open(self.__req_file_name, 'wt') as f:
+            with open(self.__req_file_name, 'rt') as f:
                 json_dict = json.load(f)
                 self.__req_meta_dict = json_dict.get('req_meta', {})
                 self.__req_data_dict = json_dict.get('req_data', {})
+                self.__req_dict_to_nodes()
                 self.__build_node_index()
         except Exception as e:
             print(str(e))
+            print(traceback.format_exc())
             return False
         finally:
             pass
@@ -275,33 +344,47 @@ class ReqSingleJsonFileAgent(IReqAgent):
             }
 
             with open(self.__req_file_name, 'wt') as f:
-                json.dump(json_dict, f)
+                json.dump(json_dict, f, indent=4)
         except Exception as e:
             print(str(e))
+            print(traceback.format_exc())
             return False
         finally:
             pass
         return True
 
+    def __req_dict_to_nodes(self):
+        req_node_root = ReqNode()
+        req_node_root.from_dict(self.__req_data_dict)
+        self.__req_node_root = req_node_root
+
     def __build_node_index(self):
-        pass
+        req_node_index = self.req_map(lambda node, ctx: ctx.update({node.get_uuid(): node}))
+        self.__req_node_index = req_node_index
 
 
 class ReqModel(QAbstractItemModel):
-    def __init__(self, root_node: ReqNode):
+    def __init__(self, req_data_agent: IReqAgent):
         super(ReqModel, self).__init__()
 
-        self.__root_node = root_node
+        self.__req_data_agent = req_data_agent
 
     # ------------------------------------- Method -------------------------------------
 
-    def set_root_node(self, root_node: ReqNode):
-        self.__root_node = root_node
+    def before_edit(self):
+        self.layoutAboutToBeChanged.emit()
 
-    def get_root_node(self) -> ReqNode:
-        return self.__root_node
+    def after_edit(self):
+        self.layoutChanged.emit()
 
-    def get_node(self, index: QModelIndex) -> ReqNode:
+    # def set_root_node(self, root_node: ReqNode):
+    #     self.__root_node = root_node
+    #
+    # def get_root_node(self) -> ReqNode:
+    #     return self.__root_node
+
+    @staticmethod
+    def get_node_from_index(index: QModelIndex) -> ReqNode:
         return index.internalPointer() if index is not None and index.isValid() else None
 
     # ------------------------------------ Override ------------------------------------
@@ -328,8 +411,11 @@ class ReqModel(QAbstractItemModel):
     #     return None
 
     def index(self, row, column, parent: QModelIndex = None, *args, **kwargs):
+        if self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
+            return QModelIndex()
+
         if parent is None or not parent.isValid():
-            parent_item = self.__root_node
+            parent_item = self.__req_data_agent.get_req_root()
         else:
             parent_item: ReqNode = parent.internalPointer()
 
@@ -342,6 +428,9 @@ class ReqModel(QAbstractItemModel):
         return QModelIndex()
 
     def parent(self, index: QModelIndex = None):
+        if self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
+            return QModelIndex()
+
         if index is None or not index.isValid():
             return QModelIndex()
 
@@ -351,15 +440,18 @@ class ReqModel(QAbstractItemModel):
         if parent_item is None:
             return QModelIndex()
 
-        if parent_item == self.__root_node:
+        if parent_item == self.__req_data_agent.get_req_root():
             return QtCore.QAbstractItemModel.createIndex(self, 0, 0, parent_item)
         row = parent_item.order()
 
         return QtCore.QAbstractItemModel.createIndex(self, row, 0, parent_item)
 
     def rowCount(self, parent: QModelIndex = None, *args, **kwargs):
+        if self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
+            return 0
+
         if parent is None or not parent.isValid():
-            parent_item = self.__root_node
+            parent_item = self.__req_data_agent.get_req_root()
         else:
             parent_item: ReqNode = parent.internalPointer()
         row_count = parent_item.child_count()
@@ -371,6 +463,18 @@ class ReqModel(QAbstractItemModel):
         #     return len(parent.internalPointer().data())
         # return len(self.__root_node.data())
         return 1
+
+    def headerData(self, section, orientation, role=0):
+        if self.__req_data_agent is None:
+            return None
+
+        role = QtCore.Qt.ItemDataRole(role)
+        if role != QtCore.Qt.DisplayRole:
+            return None
+
+        if orientation == QtCore.Qt.Horizontal:
+            return self.__req_data_agent.get_req_name()
+        return None
 
 
 # From: https://doc.qt.io/qt-6/stylesheet-examples.html
@@ -460,9 +564,9 @@ class RequirementUI(QWidget):
     def __init__(self, req_data_agent: IReqAgent):
         super(RequirementUI, self).__init__()
 
-        self.__root_node = ReqNode(None)
         self.__req_data_agent = req_data_agent
-        self.__req_model = ReqModel(self.__root_node)
+        self.__req_model = ReqModel(self.__req_data_agent)
+
         self.__menu_on_node: ReqNode = None
         self.__menu_on_index: ReqNode = None
 
@@ -472,7 +576,7 @@ class RequirementUI(QWidget):
         self.__group_meta_data = QGroupBox()
 
         self.__init_ui()
-        self.refresh_data()
+        self.__update_req_display()
 
     def __init_ui(self):
         self.__layout_ui()
@@ -501,51 +605,91 @@ class RequirementUI(QWidget):
 
         self.__text_md_preview.setEnabled(False)
         # self.__tree_requirements.setModel(self.__req_model)
-        self.__tree_requirements.setStyleSheet(TREE_VIEW_STYLE_SHEET)
+        # self.__tree_requirements.setRootIndex(self.__tree_requirements.rootIndex())
         self.__tree_requirements.setAlternatingRowColors(True)
+        self.__tree_requirements.setStyleSheet(TREE_VIEW_STYLE_SHEET)
         self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
 
     def on_requirement_tree_menu(self, pos: QPoint):
+        menu = QMenu()
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
         if sel_index is not None and sel_index.isValid():
             self.__menu_on_index = sel_index
-            self.__menu_on_node = self.__req_model.get_node(sel_index)
+            self.__menu_on_node = self.__req_model.get_node_from_index(sel_index)
 
-            menu = QMenu()
-            menu.addAction('Append Child', self.on_requirement_tree_menu_add_child)
+            menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
             menu.addSeparator()
             menu.addAction('Insert sibling up', self.on_requirement_tree_menu_add_sibling_up)
             menu.addAction('Insert sibling down', self.on_requirement_tree_menu_add_sibling_down)
-            menu.exec(QCursor.pos())
         else:
             self.__menu_on_node = None
+            self.__menu_on_index = None
 
-    def on_requirement_tree_menu_add_child(self):
+            menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
+            menu.addSeparator()
+            menu.addAction('Create a New Requirement', self.on_requirement_tree_menu_create_new_req)
+        menu.exec(QCursor.pos())
+
+    def on_requirement_tree_menu_add_top_item(self):
+        req_root = self.__req_data_agent.get_req_root()
+        if req_root is not None:
+            new_node = ReqNode('New Top Item')
+            self.__req_model.before_edit()
+            req_root.append_child(new_node)
+            self.__req_model.after_edit()
+            self.__req_data_agent.inform_node_data_updated(req_root)
+
+    def on_requirement_tree_menu_append_child(self):
         if self.__menu_on_node is not None:
-            self.__req_model.layoutAboutToBeChanged.emit()
-            new_node = ReqNode(self.__menu_on_node)
-            self.__menu_on_node.add_child(new_node)
-            self.__req_model.layoutChanged.emit()
-
-            self.__req_data_agent.update_req_node(self.__menu_on_node)
+            new_node = ReqNode('New Item')
+            self.__req_model.before_edit()
+            self.__menu_on_node.append_child(new_node)
+            self.__req_model.after_edit()
+            self.__req_data_agent.inform_node_data_updated(self.__menu_on_node)
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__menu_on_node is not None:
-            pass
+            new_node = ReqNode('New Item')
+            self.__req_model.before_edit()
+            self.__menu_on_node.insert_sibling_left(new_node)
+            self.__req_model.after_edit()
+            self.__req_data_agent.inform_node_data_updated(self.__menu_on_node)
 
     def on_requirement_tree_menu_add_sibling_down(self):
         if self.__menu_on_node is not None:
-            pass
+            new_node = ReqNode('New Item')
+            self.__req_model.before_edit()
+            self.__menu_on_node.insert_sibling_right(new_node)
+            self.__req_model.after_edit()
+            self.__req_data_agent.inform_node_data_updated(self.__menu_on_node)
 
-    def refresh_data(self):
-        for c in 'ABCDEFG':
-            sub_node = ReqNode(self.__root_node)
-            sub_node.set_title(c)
-            self.__root_node.add_child(sub_node)
-        self.__root_node.set_title('Root')
-        self.__req_model = ReqModel(self.__root_node)
+    def on_requirement_tree_menu_create_new_req(self):
+        req_name, is_ok = QInputDialog.getText(
+            self, "Create New Requirement", "Requirement Name: ", QLineEdit.Normal, "")
+        req_name.strip()
+        if is_ok and req_name != '':
+            if req_name in self.__req_data_agent.list_req():
+                ret = QMessageBox.question(
+                    self, 'Overwrite', 'Requirement already exists.\n\nOverwrite?',
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if ret != QMessageBox.Yes:
+                    return
+            if self.__req_data_agent.new_req(req_name):
+                req_root = self.__req_data_agent.get_req_root()
+                self.__req_model.before_edit()
+                self.__root_node.append_child(req_root)
+                self.__req_model.after_edit()
+
+    def __update_req_display(self):
         self.__tree_requirements.setModel(self.__req_model)
+
+        # req_name = self.__req_data_agent.get_req_name()
+        # req_root = self.__req_data_agent.get_req_root()
+        # if req_root is not None:
+        #     self.__root_node = req_root
+        #     self.__req_model.set_root_node(self.__root_node)
+        #     self.__req_model.setHeaderData(0, QtCore.Qt.Horizontal, req_name)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -554,7 +698,9 @@ def main():
     app = QApplication(sys.argv)
 
     req_agent = ReqSingleJsonFileAgent()
-    req_agent.init('test.req')
+    req_agent.init()
+    if not req_agent.open_req('Example'):
+        req_agent.new_req('Example', True)
     w = RequirementUI(req_agent)
 
     w.show()
