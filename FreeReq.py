@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import json
 import os
 import sys
 import uuid
+import json
+import markdown2
 import traceback
 
 try:
@@ -32,6 +33,7 @@ CONST_FIELD_ID = 'id'
 CONST_FIELD_UUID = 'uuid'
 CONST_FIELD_TITLE = 'title'
 CONST_FIELD_CHILD = 'child'
+CONST_FIELD_CONTENT = 'content'
 
 CONST_FIELDS = [CONST_FIELD_ID, CONST_FIELD_UUID, CONST_FIELD_TITLE, CONST_FIELD_CHILD]
 
@@ -46,6 +48,7 @@ class ReqNode:
             CONST_FIELD_UUID: str(uuid.uuid4().hex),
             CONST_FIELD_TITLE: title,
             CONST_FIELD_CHILD: [],
+            CONST_FIELD_CONTENT: ''
         }
         self.__parent = None
         self.__sibling = self.__parent.children() if self.__parent is not None else []
@@ -53,8 +56,8 @@ class ReqNode:
 
     # -------------------------------------- Data ---------------------------------------
 
-    def get(self, key: str) -> any:
-        return self.__data.get(key, None)
+    def get(self, key: str, default_val: any = None) -> any:
+        return self.__data.get(key, default_val)
 
     def set(self, key: str, val: any):
         if key != CONST_FIELD_CHILD:
@@ -72,7 +75,7 @@ class ReqNode:
         self.__data[CONST_FIELD_TITLE] = text
 
     def get_title(self) -> str:
-        return self.__data.get(CONST_FIELD_TITLE, 'N/A')
+        return self.__data.get(CONST_FIELD_TITLE)
 
     # ------------------------------------ Property ------------------------------------
 
@@ -560,6 +563,184 @@ QTreeView::branch:open:has-children:has-siblings  {
 """
 
 
+# https://gist.github.com/xiaolai/aa190255b7dde302d10208ae247fc9f2
+
+MARK_DOWN_CSS_TABLE = """
+.markdown-here-wrapper {
+  font-size: 16px;
+  line-height: 1.8em;
+  letter-spacing: 0.1em;
+}
+
+
+pre, code {
+  font-size: 14px;
+  font-family: Roboto, 'Courier New', Consolas, Inconsolata, Courier, monospace;
+  margin: auto 5px;
+}
+
+code {
+  white-space: pre-wrap;
+  border-radius: 2px;
+  display: inline;
+}
+
+pre {
+  font-size: 15px;
+  line-height: 1.4em;
+  display: block; !important;
+}
+
+pre code {
+  white-space: pre;
+  overflow: auto;
+  border-radius: 3px;
+  padding: 1px 1px;
+  display: block !important;
+}
+
+strong, b{
+  color: #BF360C;
+}
+
+em, i {
+  color: #009688;
+}
+
+hr {
+  border: 1px solid #BF360C;
+  margin: 1.5em auto;
+}
+
+p {
+  margin: 1.5em 5px !important;
+}
+
+table, pre, dl, blockquote, q, ul, ol {
+  margin: 10px 5px;
+}
+
+ul, ol {
+  padding-left: 15px;
+}
+
+li {
+  margin: 10px;
+}
+
+li p {
+  margin: 10px 0 !important;
+}
+
+ul ul, ul ol, ol ul, ol ol {
+  margin: 0;
+  padding-left: 10px;
+}
+
+ul {
+  list-style-type: circle;
+}
+
+dl {
+  padding: 0;
+}
+
+dl dt {
+  font-size: 1em;
+  font-weight: bold;
+  font-style: italic;
+}
+
+dl dd {
+  margin: 0 0 10px;
+  padding: 0 10px;
+}
+
+blockquote, q {
+  border-left: 2px solid #009688;
+  padding: 0 10px;
+  color: #777;
+  quotes: none;
+  margin-left: 1em;
+}
+
+blockquote::before, blockquote::after, q::before, q::after {
+  content: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 20px 0 10px;
+  padding: 0;
+  font-style: bold !important;
+  color: #009688 !important;
+  text-align: center !important;
+  margin: 1.5em 5px !important;
+  padding: 0.5em 1em !important;
+}
+
+h1 {
+  font-size: 24px !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+h2 {
+  font-size: 20px !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+h4 {
+  font-size: 16px;
+}
+
+
+table {
+  padding: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 1em;
+  font: inherit;
+  border: 0;
+  margin: 0 auto;
+}
+
+tbody {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+table tr {
+  border: 0;
+  border-top: 1px solid #CCC;
+  background-color: white;
+  margin: 0;
+  padding: 0;
+}
+
+table tr:nth-child(2n) {
+  background-color: #F8F8F8;
+}
+
+table tr th, table tr td {
+  font-size: 16px;
+  border: 1px solid #CCC;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+table tr th {
+  font-weight: bold;
+  color: #eee;
+  border: 1px solid #009688;
+  background-color: #009688;
+}
+"""
+
+
 class RequirementUI(QWidget):
     def __init__(self, req_data_agent: IReqAgent):
         super(RequirementUI, self).__init__()
@@ -567,16 +748,27 @@ class RequirementUI(QWidget):
         self.__req_data_agent = req_data_agent
         self.__req_model = ReqModel(self.__req_data_agent)
 
-        self.__menu_on_node: ReqNode = None
-        self.__menu_on_index: ReqNode = None
+        self.__selected_node: ReqNode = None
+        self.__selected_index: ReqNode = None
 
+        self.__combo_req_select = QComboBox()
         self.__tree_requirements = QTreeView()
+
+        self.__line_id = QLineEdit('')
+        self.__line_title = QLineEdit('')
+
         self.__text_md_editor = QTextEdit()
         self.__text_md_preview = QTextEdit()
         self.__group_meta_data = QGroupBox()
 
+        self.__check_editor = QCheckBox('Editor')
+        self.__check_viewer = QCheckBox('Viewer')
+        self.__button_req_refresh = QPushButton('Refresh')
+        self.__button_re_assign_id = QPushButton('Re-assign ID')
+        self.__button_save_content = QPushButton('Save Content')
+
         self.__init_ui()
-        self.__update_req_display()
+        self.__update_req_tree()
 
     def __init_ui(self):
         self.__layout_ui()
@@ -586,12 +778,52 @@ class RequirementUI(QWidget):
         root_layout = QHBoxLayout()
         self.setLayout(root_layout)
 
-        root_layout.addWidget(self.__tree_requirements)
-
+        left_area = QVBoxLayout()
         right_area = QVBoxLayout()
-        root_layout.addLayout(right_area)
+        root_layout.addLayout(left_area)
+        root_layout.addLayout(right_area, 99)
 
+        # ------------------------- Left area ------------------------
+
+        line = QHBoxLayout()
+        line.addWidget(self.__combo_req_select)
+        line.addWidget(self.__button_req_refresh)
+        left_area.addLayout(line)
+        left_area.addWidget(self.__tree_requirements)
+
+        # ------------------------ Right area ------------------------
+
+        # Right up - meta area
+
+        meta_layout = QVBoxLayout()
+
+        static_meta_layout = QHBoxLayout()
+        static_meta_layout.addWidget(QLabel('Name: '))
+        static_meta_layout.addWidget(self.__line_title, 90)
+        static_meta_layout.addWidget(QLabel('  '))
+        static_meta_layout.addWidget(QLabel('ID: '))
+        static_meta_layout.addWidget(self.__line_id)
+        meta_layout.addLayout(static_meta_layout)
+
+        dynamic_meta_layout = QGridLayout()
+        # TODO: Dynamic create controls by meta data
+        meta_layout.addLayout(dynamic_meta_layout)
+
+        self.__group_meta_data.setLayout(meta_layout)
         right_area.addWidget(self.__group_meta_data, 1)
+
+        # Right mid
+
+        line = QHBoxLayout()
+        line.setAlignment(Qt.AlignRight)
+        line.addWidget(QLabel(''), 99)
+        line.addWidget(self.__check_editor)
+        line.addWidget(self.__check_viewer)
+        line.addWidget(self.__button_re_assign_id)
+        line.addWidget(self.__button_save_content)
+        right_area.addLayout(line)
+
+        # Right down
 
         edit_area = QHBoxLayout()
         right_area.addLayout(edit_area, 9)
@@ -603,28 +835,67 @@ class RequirementUI(QWidget):
         self.setMinimumSize(800, 600)
         self.setWindowTitle('Free Requirement - by Sleepy')
 
-        self.__text_md_preview.setEnabled(False)
-        # self.__tree_requirements.setModel(self.__req_model)
+        self.__check_editor.setChecked(True)
+        self.__check_viewer.setChecked(True)
+
+        self.__line_id.setReadOnly(True)
+        self.__text_md_preview.setReadOnly(True)
+
+        self.__tree_requirements.setModel(self.__req_model)
         # self.__tree_requirements.setRootIndex(self.__tree_requirements.rootIndex())
         self.__tree_requirements.setAlternatingRowColors(True)
         self.__tree_requirements.setStyleSheet(TREE_VIEW_STYLE_SHEET)
         self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
+
+        self.__check_editor.clicked.connect(self.on_check_editor)
+        self.__check_viewer.clicked.connect(self.on_check_viewer)
+
+        self.__text_md_editor.textChanged.connect(self.on_text_content_edit)
+
+        self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
+        self.__button_re_assign_id.clicked.connect(self.on_button_re_assign_id)
+        self.__button_save_content.clicked.connect(self.on_button_save_content)
+
+        self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
+
+    def on_check_editor(self):
+        self.__text_md_editor.setVisible(self.__check_editor.isChecked())
+
+    def on_check_viewer(self):
+        self.__text_md_preview.setVisible(self.__check_viewer.isChecked())
+
+    def on_button_req_refresh(self):
+        pass
+
+    def on_button_re_assign_id(self):
+        pass
+
+    def on_button_save_content(self):
+        if self.__selected_node is not None:
+            self.__ui_to_req_node_data(self.__selected_node)
+
+    def on_requirement_tree_click(self, index: QModelIndex):
+        if index.isValid():
+            req_node: ReqNode = index.internalPointer()
+            self.__selected_node = req_node
+            self.__selected_index = index
+            self.__req_node_data_to_ui(req_node)
 
     def on_requirement_tree_menu(self, pos: QPoint):
         menu = QMenu()
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
         if sel_index is not None and sel_index.isValid():
-            self.__menu_on_index = sel_index
-            self.__menu_on_node = self.__req_model.get_node_from_index(sel_index)
+            self.__selected_index = sel_index
+            self.__selected_node = self.__req_model.get_node_from_index(sel_index)
 
             menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
             menu.addSeparator()
             menu.addAction('Insert sibling up', self.on_requirement_tree_menu_add_sibling_up)
             menu.addAction('Insert sibling down', self.on_requirement_tree_menu_add_sibling_down)
         else:
-            self.__menu_on_node = None
-            self.__menu_on_index = None
+            self.__selected_node = None
+            self.__selected_index = None
 
             menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
             menu.addSeparator()
@@ -641,28 +912,28 @@ class RequirementUI(QWidget):
             self.__req_data_agent.inform_node_data_updated(req_root)
 
     def on_requirement_tree_menu_append_child(self):
-        if self.__menu_on_node is not None:
+        if self.__selected_node is not None:
             new_node = ReqNode('New Item')
             self.__req_model.before_edit()
-            self.__menu_on_node.append_child(new_node)
+            self.__selected_node.append_child(new_node)
             self.__req_model.after_edit()
-            self.__req_data_agent.inform_node_data_updated(self.__menu_on_node)
+            self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_up(self):
-        if self.__menu_on_node is not None:
+        if self.__selected_node is not None:
             new_node = ReqNode('New Item')
             self.__req_model.before_edit()
-            self.__menu_on_node.insert_sibling_left(new_node)
+            self.__selected_node.insert_sibling_left(new_node)
             self.__req_model.after_edit()
-            self.__req_data_agent.inform_node_data_updated(self.__menu_on_node)
+            self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_down(self):
-        if self.__menu_on_node is not None:
+        if self.__selected_node is not None:
             new_node = ReqNode('New Item')
             self.__req_model.before_edit()
-            self.__menu_on_node.insert_sibling_right(new_node)
+            self.__selected_node.insert_sibling_right(new_node)
             self.__req_model.after_edit()
-            self.__req_data_agent.inform_node_data_updated(self.__menu_on_node)
+            self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
@@ -681,15 +952,54 @@ class RequirementUI(QWidget):
                 self.__root_node.append_child(req_root)
                 self.__req_model.after_edit()
 
-    def __update_req_display(self):
+    def on_text_content_edit(self):
+        md_text = self.__text_md_editor.toPlainText()
+        html_text = self.render_markdown(md_text)
+        # self.__text_md_preview.setMarkdown(text)
+        self.__text_md_preview.setHtml(html_text)
+
+    def __req_node_data_to_ui(self, req_node: ReqNode):
+        self.__line_id.setText(req_node.get(CONST_FIELD_ID, ''))
+        self.__line_title.setText(req_node.get(CONST_FIELD_TITLE, 'N/A'))
+        self.__text_md_editor.setText(req_node.get(CONST_FIELD_CONTENT, ''))
+        
+    def __ui_to_req_node_data(self, req_node: ReqNode):
+        self.__req_model.before_edit()
+        req_node.set(CONST_FIELD_ID, self.__line_id.text())
+        req_node.set(CONST_FIELD_TITLE, self.__line_title.text())
+        req_node.set(CONST_FIELD_CONTENT, self.__text_md_editor.toPlainText())
+        self.__req_model.after_edit()
+        self.__req_data_agent.inform_node_data_updated(req_node)
+
+    def __update_req_tree(self):
         self.__tree_requirements.setModel(self.__req_model)
 
-        # req_name = self.__req_data_agent.get_req_name()
-        # req_root = self.__req_data_agent.get_req_root()
-        # if req_root is not None:
-        #     self.__root_node = req_root
-        #     self.__req_model.set_root_node(self.__root_node)
-        #     self.__req_model.setHeaderData(0, QtCore.Qt.Horizontal, req_name)
+    @staticmethod
+    def render_markdown(md_text: str) -> str:
+        """
+        https://zhuanlan.zhihu.com/p/34549578
+        :param md_text:
+        :return:
+        """
+        extras = ['code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
+                  'cuddled-lists', 'header ids', 'nofollow']
+
+        html_template = """
+                <html>
+                <head>
+                <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+                <style>
+                    {css}
+                </style>
+                </head>
+                <body>
+                    {content}
+                </body>
+                </html>
+                """
+
+        ret = markdown2.markdown(md_text, extras=extras)
+        return html_template.format(css=MARK_DOWN_CSS_TABLE, content=ret)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
