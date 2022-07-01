@@ -749,7 +749,7 @@ class RequirementUI(QWidget):
         self.__req_model = ReqModel(self.__req_data_agent)
 
         self.__selected_node: ReqNode = None
-        self.__selected_index: ReqNode = None
+        self.__selected_index: QModelIndex = None
 
         self.__combo_req_select = QComboBox()
         self.__tree_requirements = QTreeView()
@@ -872,7 +872,7 @@ class RequirementUI(QWidget):
         pass
 
     def on_button_save_content(self):
-        if self.__selected_node is not None:
+        if self.__tree_item_selected():
             self.__ui_to_req_node_data(self.__selected_node)
 
     def on_requirement_tree_click(self, index: QModelIndex):
@@ -893,6 +893,12 @@ class RequirementUI(QWidget):
             menu.addSeparator()
             menu.addAction('Insert sibling up', self.on_requirement_tree_menu_add_sibling_up)
             menu.addAction('Insert sibling down', self.on_requirement_tree_menu_add_sibling_down)
+            menu.addSeparator()
+            menu.addAction('Shift item up', self.on_requirement_tree_menu_shift_item_up)
+            menu.addAction('Shift item Down', self.on_requirement_tree_menu_shift_item_down)
+            menu.addSeparator()
+            menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)
+
         else:
             self.__selected_node = None
             self.__selected_index = None
@@ -912,7 +918,7 @@ class RequirementUI(QWidget):
             self.__req_data_agent.inform_node_data_updated(req_root)
 
     def on_requirement_tree_menu_append_child(self):
-        if self.__selected_node is not None:
+        if self.__tree_item_selected():
             new_node = ReqNode('New Item')
             self.__req_model.before_edit()
             self.__selected_node.append_child(new_node)
@@ -920,7 +926,7 @@ class RequirementUI(QWidget):
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_up(self):
-        if self.__selected_node is not None:
+        if self.__tree_item_selected():
             new_node = ReqNode('New Item')
             self.__req_model.before_edit()
             self.__selected_node.insert_sibling_left(new_node)
@@ -928,12 +934,56 @@ class RequirementUI(QWidget):
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_down(self):
-        if self.__selected_node is not None:
+        if self.__tree_item_selected():
             new_node = ReqNode('New Item')
             self.__req_model.before_edit()
             self.__selected_node.insert_sibling_right(new_node)
             self.__req_model.after_edit()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
+
+    def on_requirement_tree_menu_shift_item_up(self):
+        if self.__tree_item_selected():
+            node_order = self.__selected_node.order()
+            sibling_list = self.__selected_node.sibling()
+            # parent_index = self.__req_model.parent(self.__selected_index)
+            if node_order > 0:
+                # self.__req_model.beginMoveRows(parent_index, node_order - 1, node_order,
+                #                                parent_index, node_order)
+                self.__req_model.before_edit()
+                sibling_list[node_order - 1], sibling_list[node_order] = \
+                    sibling_list[node_order], sibling_list[node_order - 1]
+                self.__req_model.after_edit()
+                # self.__req_model.endMoveRows()
+            self.__req_data_agent.inform_node_child_updated(self.__selected_node.parent())
+
+    def on_requirement_tree_menu_shift_item_down(self):
+        if self.__tree_item_selected():
+            node_order = self.__selected_node.order()
+            sibling_list = self.__selected_node.sibling()
+            # parent_index = self.__req_model.parent(self.__selected_index)
+            if node_order + 1 < len(sibling_list):
+                # self.__req_model.beginMoveRows(parent_index, node_order, node_order + 1,
+                #                                parent_index, node_order)
+                self.__req_model.before_edit()
+                sibling_list[node_order + 1], sibling_list[node_order] = \
+                    sibling_list[node_order], sibling_list[node_order + 1]
+                self.__req_model.after_edit()
+                # self.__req_model.endMoveRows()
+            self.__req_data_agent.inform_node_child_updated(self.__selected_node.parent())
+
+    def on_requirement_tree_menu_delete_item(self):
+        if self.__tree_item_selected():
+            node_order = self.__selected_node.order()
+            node_parent = self.__selected_node.parent()
+            if node_parent is not None:
+                self.__req_model.beginRemoveRows(
+                    self.__req_model.parent(self.__selected_index), node_order, node_order + 1)
+                node_parent.remove_child(self.__selected_node)
+                self.__req_model.endRemoveRows()
+                self.__req_data_agent.inform_node_child_updated(node_parent)
+
+                self.__selected_node = None
+                self.__selected_index = None
 
     def on_requirement_tree_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
@@ -973,6 +1023,11 @@ class RequirementUI(QWidget):
 
     def __update_req_tree(self):
         self.__tree_requirements.setModel(self.__req_model)
+
+    def __tree_item_selected(self) -> bool:
+        return self.__selected_index is not None and \
+               self.__selected_index.isValid() and \
+               self.__selected_node is not None
 
     @staticmethod
     def render_markdown(md_text: str) -> str:
