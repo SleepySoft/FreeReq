@@ -22,22 +22,81 @@
                         "id": "",
                         "uuid": "2308d25d87054d0fbc16908986e19a83",
                         "title": "Document Structure",
-                        "content": "The document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
-                        "child": []
+                        "content": "The document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* Link - Link to JIRA or other issue management system\n\n* Implementation - Not Implemented / Full Implemented / Partial Implemented\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "09b4670a26774a8796d0b000754b039c",
+                                "title": "ID",
+                                "content": "This field is MUST.\n\nUser can config the ID group such as WHY*, WHAT*, HOW*, or just one\n\nWhen user wants to assign an ID to an requirement item. There should be a menu to select the group. The softare shoud auto generate the unique ID number.\n\nOfcause, if user only specify one group. The group selection menu should not popup and an unique ID should be generated immediately.",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "07be5cbfd34e439f9b81a0681de906e4",
+                                "title": "Author / Owner",
+                                "content": "Option but recommended filed.",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "6be7f39a27ad40bd8b24f9caa8b25ba8",
+                                "title": "Version",
+                                "content": "Option but recommended filed.",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "a1d8af0fb08344b49a897accd2566283",
+                                "title": "Status",
+                                "content": "Option but recommended filed.",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "a9b230242f9e463fb56ca816f8222fe7",
+                                "title": "Link",
+                                "content": "Option but recommended filed.",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "dfc80d4bc1fe494088f9ae8c9d25ca55",
+                                "title": "Implementation",
+                                "content": "Option but recommended filed.",
+                                "child": []
+                            }
+                        ]
                     },
                     {
                         "id": "",
                         "uuid": "4f2d4ca37d144ba5be0a84ac23e99d21",
                         "title": "Storage",
                         "content": "The data must be saved on local, as text file. It can be XML or JSON.",
-                        "child": []
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "36d3bb18d8c944aca2a9a629b16a3d90",
+                                "title": "Auto save",
+                                "content": "",
+                                "child": []
+                            }
+                        ]
                     },
                     {
                         "id": "",
                         "uuid": "f6042164bb2642638be4e457d27ab6f4",
                         "title": "UI",
-                        "content": "The UI should consider multi-platform.",
-                        "child": []
+                        "content": "The UI should consider multi-platform support.",
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "bf2d3250a8ba4b18b533e74ee8c2b26b",
+                                "title": "Editor",
+                                "child": [],
+                                "content": ""
+                            }
+                        ]
                     }
                 ]
             },

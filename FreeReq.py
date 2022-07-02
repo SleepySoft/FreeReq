@@ -80,7 +80,11 @@ class ReqNode:
     # ------------------------------------ Property ------------------------------------
 
     def order(self) -> int:
-        return self.__sibling.index(self)
+        if self in self.__sibling:
+            return self.__sibling.index(self)
+        else:
+            print('Warning: Error sibling. It should be a BUG')
+            return -1
 
     def child_count(self) -> int:
         return len(self.__children)
@@ -1116,6 +1120,3 @@ if __name__ == "__main__":
         exit()
     finally:
         pass
-
-
-
