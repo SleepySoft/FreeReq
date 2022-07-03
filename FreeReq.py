@@ -483,6 +483,14 @@ class ReqModel(QAbstractItemModel):
             return self.__req_data_agent.get_req_name()
         return None
 
+    def insertRow(self, p_int, parent: QModelIndex = None, *args, **kwargs): # real signature unknown; NOTE: unreliably restored from __doc__
+        """ insertRow(self, int, parent = QModelIndex()) -> bool """
+        pass
+
+    def insertRows(self, p_int, p_int_1, parent=None, *args, **kwargs): # real signature unknown; NOTE: unreliably restored from __doc__
+        """ insertRows(self, int, int, parent: QModelIndex = QModelIndex()) -> bool """
+        pass
+
 
 # From: https://doc.qt.io/qt-6/stylesheet-examples.html
 
@@ -957,25 +965,31 @@ class RequirementUI(QWidget):
     def on_requirement_tree_menu_append_child(self):
         if self.__tree_item_selected():
             new_node = ReqNode('New Item')
-            self.__req_model.before_edit()
+            parent_node = self.__req_model.parent(self.__selected_index)
+            append_pos = self.__selected_node.child_count()
+            self.__req_model.beginInsertRows(parent_node, append_pos, append_pos)
             self.__selected_node.append_child(new_node)
-            self.__req_model.after_edit()
+            self.__req_model.endInsertRows()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():
             new_node = ReqNode('New Item')
-            self.__req_model.before_edit()
+            parent_node = self.__req_model.parent(self.__selected_index)
+            insert_pos = self.__selected_node.order()
+            self.__req_model.beginInsertRows(parent_node, insert_pos - 1, insert_pos)
             self.__selected_node.insert_sibling_left(new_node)
-            self.__req_model.after_edit()
+            self.__req_model.endInsertRows()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_down(self):
         if self.__tree_item_selected():
             new_node = ReqNode('New Item')
-            self.__req_model.before_edit()
+            parent_node = self.__req_model.parent(self.__selected_index)
+            insert_pos = self.__selected_node.order() + 1
+            self.__req_model.beginInsertRows(parent_node, insert_pos, insert_pos)
             self.__selected_node.insert_sibling_right(new_node)
-            self.__req_model.after_edit()
+            self.__req_model.endInsertRows()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_shift_item_up(self):
