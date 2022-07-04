@@ -29,16 +29,16 @@ finally:
 self_path = os.path.dirname(os.path.abspath(__file__))
 
 
-CONST_METE_ID_GROUP = 'meta_group'
+STATIC_FIELD_ID = 'id'
+STATIC_FIELD_UUID = 'uuid'
+STATIC_FIELD_TITLE = 'title'
+STATIC_FIELD_CHILD = 'child'
+STATIC_FIELD_CONTENT = 'content'
+
+STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD]
 
 
-CONST_FIELD_ID = 'id'
-CONST_FIELD_UUID = 'uuid'
-CONST_FIELD_TITLE = 'title'
-CONST_FIELD_CHILD = 'child'
-CONST_FIELD_CONTENT = 'content'
-
-CONST_FIELDS = [CONST_FIELD_ID, CONST_FIELD_UUID, CONST_FIELD_TITLE, CONST_FIELD_CHILD]
+STATIC_META_ID_GROUP = 'meta_group'
 
 
 class ReqNode:
@@ -47,11 +47,11 @@ class ReqNode:
 
     def __init__(self, title: str = 'New Item'):
         self.__data = {
-            CONST_FIELD_ID: '',
-            CONST_FIELD_UUID: str(uuid.uuid4().hex),
-            CONST_FIELD_TITLE: title,
-            CONST_FIELD_CHILD: [],
-            CONST_FIELD_CONTENT: ''
+            STATIC_FIELD_ID: '',
+            STATIC_FIELD_UUID: str(uuid.uuid4().hex),
+            STATIC_FIELD_TITLE: title,
+            STATIC_FIELD_CHILD: [],
+            STATIC_FIELD_CONTENT: ''
         }
         self.__parent = None
         self.__sibling = self.__parent.children() if self.__parent is not None else []
@@ -63,22 +63,22 @@ class ReqNode:
         return self.__data.get(key, default_val)
 
     def set(self, key: str, val: any):
-        if key != CONST_FIELD_CHILD:
+        if key != STATIC_FIELD_CHILD:
             self.__data[key] = val
         else:
-            raise ValueError('The key cannot be "%s"' % CONST_FIELD_CHILD)
+            raise ValueError('The key cannot be "%s"' % STATIC_FIELD_CHILD)
 
     def data(self) -> dict:
         return self.__data
 
     def get_uuid(self) -> str:
-        return self.__data.get(CONST_FIELD_UUID, '')
+        return self.__data.get(STATIC_FIELD_UUID, '')
 
     def set_title(self, text: str):
-        self.__data[CONST_FIELD_TITLE] = text
+        self.__data[STATIC_FIELD_TITLE] = text
 
     def get_title(self) -> str:
-        return self.__data.get(CONST_FIELD_TITLE)
+        return self.__data.get(STATIC_FIELD_TITLE)
 
     # ------------------------------------ Property ------------------------------------
 
@@ -158,18 +158,18 @@ class ReqNode:
 
     def to_dict(self) -> dict:
         dic = self.__data.copy()
-        dic[CONST_FIELD_CHILD] = [c.to_dict() for c in self.__children]
+        dic[STATIC_FIELD_CHILD] = [c.to_dict() for c in self.__children]
         return dic
 
     def from_dict(self, dic: dict):
         self.__data = dic
         self.__children = []
-        if CONST_FIELD_CHILD in dic.keys():
-            for sub_dict in dic[CONST_FIELD_CHILD]:
+        if STATIC_FIELD_CHILD in dic.keys():
+            for sub_dict in dic[STATIC_FIELD_CHILD]:
                 node = ReqNode()
                 node.from_dict(sub_dict)
                 self.append_child(node)
-            del self.__data[CONST_FIELD_CHILD]
+            del self.__data[STATIC_FIELD_CHILD]
 
 
 class IReqObserver:
@@ -298,7 +298,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def set_req_meta(self, req_meta: dict) -> bool:
         self.__req_meta_dict = req_meta
-        return self.save_req_json()
+        return self.__save_req_json()
 
     def get_req_root(self) -> ReqNode:
         return self.__req_node_root
@@ -427,7 +427,7 @@ class ReqModel(QAbstractItemModel):
 
     # def headerData(self, p_int, orientation: Qt_Orientation, role=None):
     #     if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-    #         return self.__root_node.data().get(CONST_FIELD_TITLE, 'N/A')
+    #         return self.__root_node.data().get(STATIC_FIELD_TITLE, 'N/A')
     #     return None
 
     def index(self, row, column, parent: QModelIndex = None, *args, **kwargs):
@@ -810,66 +810,6 @@ class ReqEditorBoard(QWidget):
 
         self.__init_ui()
 
-    def __layout_ui(self):
-        root_layout = QHBoxLayout()
-        self.setLayout(root_layout)
-
-        left_area = QVBoxLayout()
-        right_area = QVBoxLayout()
-        root_layout.addLayout(left_area)
-        root_layout.addLayout(right_area, 99)
-
-        # ------------------------- Left area ------------------------
-
-        line = QHBoxLayout()
-        line.addWidget(self.__combo_req_select)
-        line.addWidget(self.__button_req_refresh)
-        left_area.addLayout(line)
-        left_area.addWidget(self.__tree_requirements)
-
-        # ------------------------ Right area ------------------------
-
-        # Right up - meta area
-
-        meta_layout = QVBoxLayout()
-
-        static_meta_layout = QHBoxLayout()
-        static_meta_layout.addWidget(QLabel('Name: '))
-        static_meta_layout.addWidget(self.__line_title, 90)
-        static_meta_layout.addWidget(QLabel('  '))
-        static_meta_layout.addWidget(QLabel('ID: '))
-        static_meta_layout.addWidget(self.__line_id)
-        meta_layout.addLayout(static_meta_layout)
-
-        dynamic_meta_layout = QGridLayout()
-        # TODO: Dynamic create controls by meta data
-        meta_layout.addLayout(dynamic_meta_layout)
-
-        self.__group_meta_data.setLayout(meta_layout)
-        right_area.addWidget(self.__group_meta_data, 1)
-
-        # Right mid
-
-        line = QHBoxLayout()
-        line.addWidget(self.__button_increase_font)
-        line.addWidget(self.__button_decrease_font)
-        line.addWidget(QLabel(''), 99)
-        line.addWidget(self.__check_editor)
-        line.addWidget(self.__check_viewer)
-        line.addWidget(self.__button_re_assign_id)
-        line.addWidget(self.__button_save_content)
-        right_area.addLayout(line)
-
-        # Right down
-
-        edit_area = QHBoxLayout()
-        right_area.addLayout(edit_area, 9)
-
-        edit_area.addWidget(self.__text_md_editor)
-        edit_area.addWidget(self.__text_md_viewer)
-
-        self.__init_ui()
-
     def __init_ui(self):
         self.__layout_ui()
         self.__config_ui()
@@ -978,9 +918,9 @@ class ReqEditorBoard(QWidget):
 
     def __req_node_data_to_ui(self, req_node: ReqNode):
         if req_node is not None:
-            self.__line_id.setText(req_node.get(CONST_FIELD_ID, ''))
-            self.__line_title.setText(req_node.get(CONST_FIELD_TITLE, 'N/A'))
-            self.__text_md_editor.setText(req_node.get(CONST_FIELD_CONTENT, ''))
+            self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
+            self.__line_title.setText(req_node.get(STATIC_FIELD_TITLE, 'N/A'))
+            self.__text_md_editor.setText(req_node.get(STATIC_FIELD_CONTENT, ''))
         else:
             self.__line_id.setText('')
             self.__line_title.setText('')
@@ -988,9 +928,9 @@ class ReqEditorBoard(QWidget):
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
         self.__req_model.begin_edit()
-        req_node.set(CONST_FIELD_ID, self.__line_id.text())
-        req_node.set(CONST_FIELD_TITLE, self.__line_title.text())
-        req_node.set(CONST_FIELD_CONTENT, self.__text_md_editor.toPlainText())
+        req_node.set(STATIC_FIELD_ID, self.__line_id.text())
+        req_node.set(STATIC_FIELD_TITLE, self.__line_title.text())
+        req_node.set(STATIC_FIELD_CONTENT, self.__text_md_editor.toPlainText())
         self.__req_model.end_edit()
         self.__req_data_agent.inform_node_data_updated(req_node)
 
@@ -1030,6 +970,157 @@ class ReqEditorBoard(QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+ID_COMMENTS = """
+The format is like: WHY%05d, WHAT%05d, HOW%05d,
+The "%05d" means the number will be 5 characters, padding with 0. 
+"""
+
+
+ID_DEFAULT = 'WHY%05d, WHAT%05d, HOW%05d'
+
+
+META_COMMENTS = """"Meta Name 1": [],
+"Meta Name 2": ["Selection 1", "Selection 2"],
+
+Meta Name: The name of config.
+Selections: If selection is not empty, the config will be limited with selection, otherwise free input text.
+The meta items are divided by comma (,).
+"""
+
+
+META_DEFAULT = """"Owner": [],
+"Version": [],
+"Status": ["Draft", "Submitted", "Reviewing", "Reserved", "Approved", "Deferred", "Rejected"],
+"Priority": ["Must / Vital", "Should / Necessary", "Could / Nice to Have", "To Be Defined"],
+"Implementation": ["Not Implemented", "Planing", "Designing", "Implementing", "Verifying", "Full Implemented", "Partial Implemented"]
+"""
+
+
+class ReqMetaBoard(QWidget):
+    def __init__(self, req_data_agent: IReqAgent):
+        super(ReqMetaBoard, self).__init__()
+
+        self.__req_data_agent = req_data_agent
+
+        self.__group_id = QGroupBox('ID Config')
+        self.__group_meta = QGroupBox('Meta Data Config')
+
+        self.__button_save = QPushButton('Save')
+        self.__button_fill_default_id = QPushButton('Fill Example Value')
+        self.__button_fill_default_meta = QPushButton('Fill Example Value')
+
+        self.__text_id_groups = QTextEdit(ID_DEFAULT)
+        self.__text_meta_defines = QTextEdit(META_DEFAULT)
+
+        self.__init_ui()
+        self.reload_meta_data()
+
+    def __init_ui(self):
+        self.__layout_ui()
+        self.__config_ui()
+
+    def __layout_ui(self):
+        root_layout = QVBoxLayout()
+        self.setLayout(root_layout)
+
+        root_layout.addWidget(self.__group_id, 2)
+        root_layout.addWidget(self.__group_meta, 8)
+
+        group_layout = QVBoxLayout()
+        line = QHBoxLayout()
+        line.addWidget(QLabel(ID_COMMENTS), 99)
+        line.addWidget(self.__button_fill_default_id)
+        group_layout.addLayout(line)
+        group_layout.addWidget(self.__text_id_groups, 99)
+        self.__group_id.setLayout(group_layout)
+
+        group_layout = QVBoxLayout()
+        line = QHBoxLayout()
+        line.addWidget(QLabel(META_COMMENTS), 99)
+        line.addWidget(self.__button_fill_default_meta)
+        group_layout.addLayout(line)
+        group_layout.addWidget(self.__text_meta_defines, 99)
+        self.__group_meta.setLayout(group_layout)
+
+        line = QHBoxLayout()
+        line.addStretch(100)
+        line.addWidget(self.__button_save)
+
+        root_layout.addLayout(line)
+
+    def __config_ui(self):
+        self.__button_save.clicked.connect(self.on_button_save)
+        self.__button_fill_default_id.clicked.connect(self.on_button_fill_default_id)
+        self.__button_fill_default_meta.clicked.connect(self.on_button_fill_default_meta)
+
+    def on_button_save(self):
+        if self.__req_data_agent is None:
+            return
+
+        try:
+            meta_data = self.__ui_to_meta()
+        except Exception as e:
+            print(str(e))
+            meta_data = None
+            QMessageBox.information(self, 'Parse Meta Data Fail',
+                                    'Parse Meta Data Fail. Please check the format')
+        finally:
+            pass
+
+        if meta_data is not None:
+            self.__req_data_agent.set_req_meta(meta_data)
+
+    def on_button_fill_default_id(self):
+        self.__text_id_groups.setText(ID_DEFAULT)
+
+    def on_button_fill_default_meta(self):
+        self.__text_meta_defines.setText(META_DEFAULT)
+
+    def reload_meta_data(self):
+        self.__meta_to_ui()
+
+    # ----------------------------------------------------------------------
+
+    def __meta_to_ui(self):
+        if self.__req_data_agent is not None:
+            meta_data = self.__req_data_agent.get_req_meta()
+            meta_data = meta_data.copy()
+
+            if STATIC_META_ID_GROUP in meta_data.keys():
+                id_group = meta_data[STATIC_META_ID_GROUP]
+                del meta_data[STATIC_META_ID_GROUP]
+            else:
+                id_group = []
+
+            id_group_text = ', '.join(id_group)
+
+            # meta_data_text = json.dumps(meta_data, indent=4)
+            # meta_data_text = meta_data_text.strip('{}')
+
+            meta_data_lines = []
+            for meta_name, meta_selection in meta_data.items():
+                selection_text = ', '.join(['"%s"' % s for s in meta_selection])
+                meta_data_lines.append('"%s": [%s]' % (meta_name, selection_text))
+            meta_data_text = ', \n'.join(meta_data_lines)
+
+            self.__text_id_groups.setText(id_group_text)
+            self.__text_meta_defines.setText(meta_data_text)
+
+    def __ui_to_meta(self) -> dict:
+        id_group_text = self.__text_id_groups.toPlainText()
+        meta_data_text = self.__text_meta_defines.toPlainText()
+
+        id_group = id_group_text.split(',')
+        id_group = [_id.strip() for _id in id_group]
+
+        meta_data = json.loads('{' + meta_data_text + '}')
+        meta_data[STATIC_META_ID_GROUP] = id_group
+
+        return meta_data
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class RequirementUI(QWidget):
     def __init__(self, req_data_agent: IReqAgent):
         super(RequirementUI, self).__init__()
@@ -1045,6 +1136,8 @@ class RequirementUI(QWidget):
 
         self.__button_req_refresh = QPushButton('Refresh')
 
+        self.__edit_tab = QTabWidget()
+        self.__meta_board = ReqMetaBoard(self.__req_data_agent)
         self.__edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
 
         self.__init_ui()
@@ -1060,6 +1153,7 @@ class RequirementUI(QWidget):
 
         left_area = QVBoxLayout()
         root_layout.addLayout(left_area)
+        root_layout.addWidget(self.__edit_tab, 99)
         root_layout.addWidget(self.__edit_board, 99)
 
         # ------------------------- Left area ------------------------
@@ -1069,6 +1163,11 @@ class RequirementUI(QWidget):
         line.addWidget(self.__button_req_refresh)
         left_area.addLayout(line)
         left_area.addWidget(self.__tree_requirements)
+
+        # ------------------------ Right area ------------------------
+
+        self.__edit_tab.addTab(self.__edit_board, 'Requirement Edit')
+        self.__edit_tab.addTab(self.__meta_board, 'Meta Config')
 
     def __config_ui(self):
         self.setMinimumSize(800, 600)

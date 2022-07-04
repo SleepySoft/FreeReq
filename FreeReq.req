@@ -1,5 +1,37 @@
 {
-    "req_meta": {},
+    "req_meta": {
+        "Owner": [],
+        "Version": [],
+        "Status": [
+            "Draft",
+            "Submitted",
+            "Reviewing",
+            "Reserved",
+            "Approved",
+            "Deferred",
+            "Rejected"
+        ],
+        "Priority": [
+            "Must / Vital",
+            "Should / Necessary",
+            "Could / Nice to Have",
+            "To Be Defined"
+        ],
+        "Implementation": [
+            "Not Implemented",
+            "Planing",
+            "Designing",
+            "Implementing",
+            "Verifying",
+            "Full Implemented",
+            "Partial Implemented"
+        ],
+        "meta_group": [
+            "WHY%05d",
+            "WHAT%05d",
+            "HOW%05d"
+        ]
+    },
     "req_data": {
         "id": "",
         "uuid": "ce188a5bd68d4c87b53aaf880c373e11",
@@ -85,8 +117,8 @@
                                 "id": "",
                                 "uuid": "f5fb6c9641ba48019baa71cae715156d",
                                 "title": "Multiple Storage Method Support",
-                                "child": [],
-                                "content": "The requirement can be stroaged in local file or remote server."
+                                "content": "The requirement can be stroaged in local file or remote server.",
+                                "child": []
                             }
                         ]
                     },
@@ -113,8 +145,8 @@
                                         "id": "",
                                         "uuid": "55961ed503954976bc8b70250a34c49d",
                                         "title": "Zoom the display",
-                                        "child": [],
-                                        "content": "The display of requirement can be zoomed. It dosen't mean the font changed but only be larger in the editor and viewer."
+                                        "content": "The display of requirement can be zoomed. It dosen't mean the font changed but only be larger in the editor and viewer.",
+                                        "child": []
                                     }
                                 ]
                             }
