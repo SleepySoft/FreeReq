@@ -29,6 +29,9 @@ finally:
 self_path = os.path.dirname(os.path.abspath(__file__))
 
 
+CONST_METE_ID_GROUP = 'meta_group'
+
+
 CONST_FIELD_ID = 'id'
 CONST_FIELD_UUID = 'uuid'
 CONST_FIELD_TITLE = 'title'
@@ -780,18 +783,13 @@ table tr th {
 """
 
 
-class RequirementUI(QWidget):
-    def __init__(self, req_data_agent: IReqAgent):
-        super(RequirementUI, self).__init__()
+class ReqEditorBoard(QWidget):
+    def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel):
+        super(ReqEditorBoard, self).__init__()
 
         self.__req_data_agent = req_data_agent
-        self.__req_model = ReqModel(self.__req_data_agent)
-
-        self.__selected_node: ReqNode = None
-        self.__selected_index: QModelIndex = None
-
-        self.__combo_req_select = QComboBox()
-        self.__tree_requirements = QTreeView()
+        self.__req_model = req_model
+        self.__editing_node = None
 
         self.__line_id = QLineEdit('')
         self.__line_title = QLineEdit('')
@@ -811,11 +809,6 @@ class RequirementUI(QWidget):
         self.__button_save_content = QPushButton('Save Content')
 
         self.__init_ui()
-        self.__update_req_tree()
-
-    def __init_ui(self):
-        self.__layout_ui()
-        self.__config_ui()
 
     def __layout_ui(self):
         root_layout = QHBoxLayout()
@@ -875,10 +868,56 @@ class RequirementUI(QWidget):
         edit_area.addWidget(self.__text_md_editor)
         edit_area.addWidget(self.__text_md_viewer)
 
-    def __config_ui(self):
-        self.setMinimumSize(800, 600)
-        self.setWindowTitle('Free Requirement - by Sleepy')
+        self.__init_ui()
 
+    def __init_ui(self):
+        self.__layout_ui()
+        self.__config_ui()
+
+    def __layout_ui(self):
+        root_layout = QVBoxLayout()
+        self.setLayout(root_layout)
+
+        # up - meta area
+
+        meta_layout = QVBoxLayout()
+
+        static_meta_layout = QHBoxLayout()
+        static_meta_layout.addWidget(QLabel('Name: '))
+        static_meta_layout.addWidget(self.__line_title, 90)
+        static_meta_layout.addWidget(QLabel('  '))
+        static_meta_layout.addWidget(QLabel('ID: '))
+        static_meta_layout.addWidget(self.__line_id)
+        meta_layout.addLayout(static_meta_layout)
+
+        dynamic_meta_layout = QGridLayout()
+        # TODO: Dynamic create controls by meta data
+        meta_layout.addLayout(dynamic_meta_layout)
+
+        self.__group_meta_data.setLayout(meta_layout)
+        root_layout.addWidget(self.__group_meta_data, 1)
+
+        # mid
+
+        line = QHBoxLayout()
+        line.addWidget(self.__button_increase_font)
+        line.addWidget(self.__button_decrease_font)
+        line.addWidget(QLabel(''), 99)
+        line.addWidget(self.__check_editor)
+        line.addWidget(self.__check_viewer)
+        line.addWidget(self.__button_re_assign_id)
+        line.addWidget(self.__button_save_content)
+        root_layout.addLayout(line)
+
+        # down
+
+        edit_area = QHBoxLayout()
+        root_layout.addLayout(edit_area, 9)
+
+        edit_area.addWidget(self.__text_md_editor)
+        edit_area.addWidget(self.__text_md_viewer)
+
+    def __config_ui(self):
         self.__check_editor.setChecked(True)
         self.__check_viewer.setChecked(True)
 
@@ -888,19 +927,10 @@ class RequirementUI(QWidget):
         self.__button_increase_font.setMaximumSize(30, 30)
         self.__button_decrease_font.setMaximumSize(30, 30)
 
-        # self.__button_increase_font.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        # self.__button_decrease_font.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-
         editor_font = self.__text_md_editor.font()
         editor_font.setPointSizeF(10)
         self.__text_md_editor.setFont(editor_font)
         self.__text_md_viewer.setFont(editor_font)
-
-        self.__tree_requirements.setModel(self.__req_model)
-        # self.__tree_requirements.setRootIndex(self.__tree_requirements.rootIndex())
-        self.__tree_requirements.setAlternatingRowColors(True)
-        self.__tree_requirements.setStyleSheet(TREE_VIEW_STYLE_SHEET)
-        self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
 
         self.__check_editor.clicked.connect(self.on_check_editor)
         self.__check_viewer.clicked.connect(self.on_check_viewer)
@@ -910,21 +940,14 @@ class RequirementUI(QWidget):
         self.__button_increase_font.clicked.connect(self.on_button_increase_font)
         self.__button_decrease_font.clicked.connect(self.on_button_decrease_font)
 
-        self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
         self.__button_re_assign_id.clicked.connect(self.on_button_re_assign_id)
         self.__button_save_content.clicked.connect(self.on_button_save_content)
-
-        self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
-        self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
 
     def on_check_editor(self):
         self.__text_md_editor.setVisible(self.__check_editor.isChecked())
 
     def on_check_viewer(self):
         self.__text_md_viewer.setVisible(self.__check_viewer.isChecked())
-
-    def on_button_req_refresh(self):
-        pass
 
     def on_button_increase_font(self):
         editor_font = self.__text_md_editor.font()
@@ -944,22 +967,142 @@ class RequirementUI(QWidget):
         pass
 
     def on_button_save_content(self):
-        if self.__tree_item_selected():
-            self.__ui_to_req_node_data(self.__selected_node)
+        if self.__editing_node is not None:
+            self.__ui_to_req_node_data(self.__editing_node)
+
+    def on_text_content_edit(self):
+        md_text = self.__text_md_editor.toPlainText()
+        html_text = self.render_markdown(md_text)
+        # self.__text_md_viewer.setMarkdown(text)
+        self.__text_md_viewer.setHtml(html_text)
+
+    def __req_node_data_to_ui(self, req_node: ReqNode):
+        if req_node is not None:
+            self.__line_id.setText(req_node.get(CONST_FIELD_ID, ''))
+            self.__line_title.setText(req_node.get(CONST_FIELD_TITLE, 'N/A'))
+            self.__text_md_editor.setText(req_node.get(CONST_FIELD_CONTENT, ''))
+        else:
+            self.__line_id.setText('')
+            self.__line_title.setText('')
+            self.__text_md_editor.setText('')
+
+    def __ui_to_req_node_data(self, req_node: ReqNode):
+        self.__req_model.begin_edit()
+        req_node.set(CONST_FIELD_ID, self.__line_id.text())
+        req_node.set(CONST_FIELD_TITLE, self.__line_title.text())
+        req_node.set(CONST_FIELD_CONTENT, self.__text_md_editor.toPlainText())
+        self.__req_model.end_edit()
+        self.__req_data_agent.inform_node_data_updated(req_node)
+
+    @staticmethod
+    def render_markdown(md_text: str) -> str:
+        """
+        https://zhuanlan.zhihu.com/p/34549578
+        :param md_text:
+        :return:
+        """
+        extras = ['code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
+                  'cuddled-lists', 'header ids', 'nofollow']
+
+        html_template = """
+                <html>
+                <head>
+                <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+                <style>
+                    {css}
+                </style>
+                </head>
+                <body>
+                    {content}
+                </body>
+                </html>
+                """
+
+        ret = markdown2.markdown(md_text, extras=extras)
+        return html_template.format(css=MARK_DOWN_CSS_TABLE, content=ret)
+
+    # ----------------------------------------------------------------------------------
+
+    def edit_req(self, req_node: ReqNode):
+        self.__editing_node = req_node
+        self.__req_node_data_to_ui(req_node)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class RequirementUI(QWidget):
+    def __init__(self, req_data_agent: IReqAgent):
+        super(RequirementUI, self).__init__()
+
+        self.__req_data_agent = req_data_agent
+        self.__req_model = ReqModel(self.__req_data_agent)
+
+        self.__selected_node: ReqNode = None
+        self.__selected_index: QModelIndex = None
+
+        self.__combo_req_select = QComboBox()
+        self.__tree_requirements = QTreeView()
+
+        self.__button_req_refresh = QPushButton('Refresh')
+
+        self.__edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
+
+        self.__init_ui()
+        self.__update_req_tree()
+
+    def __init_ui(self):
+        self.__layout_ui()
+        self.__config_ui()
+
+    def __layout_ui(self):
+        root_layout = QHBoxLayout()
+        self.setLayout(root_layout)
+
+        left_area = QVBoxLayout()
+        root_layout.addLayout(left_area)
+        root_layout.addWidget(self.__edit_board, 99)
+
+        # ------------------------- Left area ------------------------
+
+        line = QHBoxLayout()
+        line.addWidget(self.__combo_req_select)
+        line.addWidget(self.__button_req_refresh)
+        left_area.addLayout(line)
+        left_area.addWidget(self.__tree_requirements)
+
+    def __config_ui(self):
+        self.setMinimumSize(800, 600)
+        self.setWindowTitle('Free Requirement - by Sleepy')
+
+        self.__tree_requirements.setModel(self.__req_model)
+        # self.__tree_requirements.setRootIndex(self.__tree_requirements.rootIndex())
+        self.__tree_requirements.setAlternatingRowColors(True)
+        self.__tree_requirements.setStyleSheet(TREE_VIEW_STYLE_SHEET)
+        self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
+
+        self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
+
+        self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
+        self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
+
+    def on_button_req_refresh(self):
+        pass
 
     def on_requirement_tree_click(self, index: QModelIndex):
-        if index.isValid():
-            req_node: ReqNode = index.internalPointer()
-            self.__selected_node = req_node
-            self.__selected_index = index
-            self.__req_node_data_to_ui(req_node)
+        self.__update_selected_index(index)
+        # if index.isValid():
+        #     req_node: ReqNode = index.internalPointer()
+        #     self.__selected_node = req_node
+        #     self.__selected_index = index
+        #     self.__edit_board.edit_req(req_node)
 
     def on_requirement_tree_menu(self, pos: QPoint):
         menu = QMenu()
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
         if sel_index is not None and sel_index.isValid():
-            self.__selected_index = sel_index
-            self.__selected_node = self.__req_model.get_node_from_index(sel_index)
+            self.__update_selected_index(sel_index)
+            # self.__selected_index = sel_index
+            # self.__selected_node = self.__req_model.get_node_from_index(sel_index)
 
             menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
             menu.addSeparator()
@@ -972,8 +1115,7 @@ class RequirementUI(QWidget):
             menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)
 
         else:
-            self.__selected_node = None
-            self.__selected_index = None
+            self.__update_selected_index(None)
 
             menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
             menu.addSeparator()
@@ -1071,8 +1213,7 @@ class RequirementUI(QWidget):
                 self.__req_model.endRemoveRows()
                 self.__req_data_agent.inform_node_child_updated(node_parent)
 
-                self.__selected_node = None
-                self.__selected_index = None
+                self.__update_selected_index(None)
 
     def on_requirement_tree_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
@@ -1091,25 +1232,6 @@ class RequirementUI(QWidget):
                 self.__root_node.append_child(req_root)
                 self.__req_model.end_edit()
 
-    def on_text_content_edit(self):
-        md_text = self.__text_md_editor.toPlainText()
-        html_text = self.render_markdown(md_text)
-        # self.__text_md_viewer.setMarkdown(text)
-        self.__text_md_viewer.setHtml(html_text)
-
-    def __req_node_data_to_ui(self, req_node: ReqNode):
-        self.__line_id.setText(req_node.get(CONST_FIELD_ID, ''))
-        self.__line_title.setText(req_node.get(CONST_FIELD_TITLE, 'N/A'))
-        self.__text_md_editor.setText(req_node.get(CONST_FIELD_CONTENT, ''))
-        
-    def __ui_to_req_node_data(self, req_node: ReqNode):
-        self.__req_model.begin_edit()
-        req_node.set(CONST_FIELD_ID, self.__line_id.text())
-        req_node.set(CONST_FIELD_TITLE, self.__line_title.text())
-        req_node.set(CONST_FIELD_CONTENT, self.__text_md_editor.toPlainText())
-        self.__req_model.end_edit()
-        self.__req_data_agent.inform_node_data_updated(req_node)
-
     def __update_req_tree(self):
         self.__tree_requirements.setModel(self.__req_model)
 
@@ -1118,32 +1240,16 @@ class RequirementUI(QWidget):
                self.__selected_index.isValid() and \
                self.__selected_node is not None
 
-    @staticmethod
-    def render_markdown(md_text: str) -> str:
-        """
-        https://zhuanlan.zhihu.com/p/34549578
-        :param md_text:
-        :return:
-        """
-        extras = ['code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
-                  'cuddled-lists', 'header ids', 'nofollow']
-
-        html_template = """
-                <html>
-                <head>
-                <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-                <style>
-                    {css}
-                </style>
-                </head>
-                <body>
-                    {content}
-                </body>
-                </html>
-                """
-
-        ret = markdown2.markdown(md_text, extras=extras)
-        return html_template.format(css=MARK_DOWN_CSS_TABLE, content=ret)
+    def __update_selected_index(self, index: QModelIndex or None):
+        if index is not None and index.isValid():
+            req_node: ReqNode = index.internalPointer()
+            self.__selected_node = req_node
+            self.__selected_index = index
+            self.__edit_board.edit_req(req_node)
+        else:
+            self.__selected_node = None
+            self.__selected_index = None
+            self.__edit_board.edit_req(None)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
