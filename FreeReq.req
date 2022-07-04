@@ -78,15 +78,15 @@
                                 "id": "",
                                 "uuid": "36d3bb18d8c944aca2a9a629b16a3d90",
                                 "title": "Auto save",
-                                "content": "",
+                                "content": "The editor should support auto save after node adding and content editing.",
                                 "child": []
                             },
                             {
                                 "id": "",
                                 "uuid": "f5fb6c9641ba48019baa71cae715156d",
-                                "title": "New Item",
+                                "title": "Multiple Storage Method Support",
                                 "child": [],
-                                "content": ""
+                                "content": "The requirement can be stroaged in local file or remote server."
                             }
                         ]
                     },
