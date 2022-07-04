@@ -255,8 +255,12 @@ class ReqSingleJsonFileAgent(IReqAgent):
         self.__req_file_name = ''
         self.__req_meta_dict = {}
         self.__req_data_dict = {}
-        self.__req_node_index = {}
         self.__req_node_root: ReqNode = None
+
+        # Node information
+        self.__req_id_max = {}
+        self.__req_node_index = {}
+        self.__collected_information = {}
 
     def init(self) -> bool:
         return True
@@ -342,7 +346,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
                 self.__req_meta_dict = json_dict.get('req_meta', {})
                 self.__req_data_dict = json_dict.get('req_data', {})
                 self.__req_dict_to_nodes()
-                self.__build_node_index()
+                self.__build_node_information()
         except Exception as e:
             print(str(e))
             print(traceback.format_exc())
@@ -353,7 +357,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __save_req_json(self) -> bool:
         try:
-            self.__build_node_index()
+            self.__build_node_information()
             self.__req_data_dict = self.__req_node_root.to_dict()
             json_dict = {
                 'req_meta': self.__req_meta_dict,
@@ -375,9 +379,22 @@ class ReqSingleJsonFileAgent(IReqAgent):
         req_node_root.from_dict(self.__req_data_dict)
         self.__req_node_root = req_node_root
 
-    def __build_node_index(self):
-        req_node_index = self.req_map(lambda node, ctx: ctx.update({node.get_uuid(): node}))
-        self.__req_node_index = req_node_index
+    def __build_node_information(self):
+        # req_node_index = self.req_map(lambda node, ctx: ctx.update({node.get_uuid(): node}))
+        self.__collected_information = self.req_map(self.__node_information_builder)
+        self.__req_node_index = self.__collected_information['uuid_instance_table']
+
+    def __find_max_id(self):
+        pass
+
+    @staticmethod
+    def __node_information_builder(node: ReqNode, ctx: dict):
+        if len(ctx) == 0:
+            # Init context
+            ctx['uuid_instance_table'] = {}
+            ctx['id_list'] = []
+        ctx['uuid_instance_table'][node.get_uuid()] = node
+        ctx['id_list'].append(node.get(STATIC_FIELD_ID, ''))
 
 
 class ReqModel(QAbstractItemModel):
@@ -813,6 +830,7 @@ class ReqEditorBoard(QWidget):
     def __init_ui(self):
         self.__layout_ui()
         self.__config_ui()
+        self.__layout_meta_area()
 
     def __layout_ui(self):
         root_layout = QVBoxLayout()
@@ -882,6 +900,9 @@ class ReqEditorBoard(QWidget):
 
         self.__button_re_assign_id.clicked.connect(self.on_button_re_assign_id)
         self.__button_save_content.clicked.connect(self.on_button_save_content)
+
+    def __layout_meta_area(self):
+        pass
 
     def on_check_editor(self):
         self.__text_md_editor.setVisible(self.__check_editor.isChecked())
