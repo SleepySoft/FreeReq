@@ -76,31 +76,17 @@
                         "child": [
                             {
                                 "id": "",
-                                "uuid": "73aad693b64b4203af97c4a2ad13bd2a",
-                                "title": "New Item",
-                                "content": "",
-                                "child": []
-                            },
-                            {
-                                "id": "",
-                                "uuid": "3d1fac027f694888bd5d34ec25d7e254",
-                                "title": "New Item",
-                                "content": "",
-                                "child": []
-                            },
-                            {
-                                "id": "",
-                                "uuid": "750405ad0e694503ac39af6bc1d32beb",
-                                "title": "New Item",
-                                "child": [],
-                                "content": ""
-                            },
-                            {
-                                "id": "",
                                 "uuid": "36d3bb18d8c944aca2a9a629b16a3d90",
                                 "title": "Auto save",
                                 "content": "",
                                 "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "f5fb6c9641ba48019baa71cae715156d",
+                                "title": "New Item",
+                                "child": [],
+                                "content": ""
                             }
                         ]
                     },
@@ -115,14 +101,22 @@
                                 "uuid": "bf2d3250a8ba4b18b533e74ee8c2b26b",
                                 "title": "Editor",
                                 "content": "",
-                                "child": []
-                            },
-                            {
-                                "id": "",
-                                "uuid": "f4188e3395b34d16ba9643882ebe1957",
-                                "title": "New Item",
-                                "content": "",
-                                "child": []
+                                "child": [
+                                    {
+                                        "id": "",
+                                        "uuid": "5f3e7213d779485b8494202459d4cb93",
+                                        "title": "Support Markdown",
+                                        "content": "The editor must support Markdown.\n\nThe Markdown editor should support realtime preview.",
+                                        "child": []
+                                    },
+                                    {
+                                        "id": "",
+                                        "uuid": "55961ed503954976bc8b70250a34c49d",
+                                        "title": "Zoom the display",
+                                        "child": [],
+                                        "content": "The display of requirement can be zoomed. It dosen't mean the font changed but only be larger in the editor and viewer."
+                                    }
+                                ]
                             }
                         ]
                     }

@@ -42,7 +42,7 @@ class ReqNode:
     def __call__(self):
         return self
 
-    def __init__(self, title: str = ''):
+    def __init__(self, title: str = 'New Item'):
         self.__data = {
             CONST_FIELD_ID: '',
             CONST_FIELD_UUID: str(uuid.uuid4().hex),
@@ -121,6 +121,13 @@ class ReqNode:
         node.set_parent(self)
         self.__children.append(node)
         return len(self.__children) - 1
+
+    def insert_children(self, node: ReqNode or [ReqNode], pos: int):
+        if isinstance(node, ReqNode):
+            node = [node]
+        for n in node:
+            n.set_parent(self)
+        self.__children[pos:pos] = node
 
     def remove_child(self, node: ReqNode) -> bool:
         if node in self.__children:
@@ -378,10 +385,10 @@ class ReqModel(QAbstractItemModel):
 
     # ------------------------------------- Method -------------------------------------
 
-    def before_edit(self):
+    def begin_edit(self):
         self.layoutAboutToBeChanged.emit()
 
-    def after_edit(self):
+    def end_edit(self):
         self.layoutChanged.emit()
 
     # def set_root_node(self, root_node: ReqNode):
@@ -389,6 +396,9 @@ class ReqModel(QAbstractItemModel):
     #
     # def get_root_node(self) -> ReqNode:
     #     return self.__root_node
+
+    def index_of_node(self, node: ReqNode) -> QModelIndex:
+        return self.createIndex(node.order(), 0, node) if node is not None else QModelIndex()
 
     @staticmethod
     def get_node_from_index(index: QModelIndex) -> ReqNode:
@@ -483,13 +493,30 @@ class ReqModel(QAbstractItemModel):
             return self.__req_data_agent.get_req_name()
         return None
 
-    def insertRow(self, p_int, parent: QModelIndex = None, *args, **kwargs): # real signature unknown; NOTE: unreliably restored from __doc__
-        """ insertRow(self, int, parent = QModelIndex()) -> bool """
-        pass
+    def insertRow(self, row: int, parent: QModelIndex = None, *args, **kwargs) -> bool:
+        return self.insertRows(row, 1, parent)
 
-    def insertRows(self, p_int, p_int_1, parent=None, *args, **kwargs): # real signature unknown; NOTE: unreliably restored from __doc__
-        """ insertRows(self, int, int, parent: QModelIndex = QModelIndex()) -> bool """
-        pass
+    def insertRows(self, row: int, count: int, parent=None, *args, **kwargs) -> bool:
+        if self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
+            return False
+
+        if parent is None or not parent.isValid():
+            parent = QModelIndex()
+            parent_node: ReqNode = self.__req_data_agent.get_req_root()
+        else:
+            parent_node: ReqNode = parent.internalPointer()
+
+        if row < 0:
+            row = parent_node.child_count()
+
+        self.begin_edit()
+        self.beginInsertRows(parent, row, row + count - 1)
+        if parent_node is not None:
+            parent_node.insert_children([ReqNode() for _ in range(count)], row)
+        self.endInsertRows()
+        self.end_edit()
+
+        return True
 
 
 # From: https://doc.qt.io/qt-6/stylesheet-examples.html
@@ -954,42 +981,53 @@ class RequirementUI(QWidget):
         menu.exec(QCursor.pos())
 
     def on_requirement_tree_menu_add_top_item(self):
-        req_root = self.__req_data_agent.get_req_root()
-        if req_root is not None:
-            new_node = ReqNode('New Top Item')
-            self.__req_model.before_edit()
-            req_root.append_child(new_node)
-            self.__req_model.after_edit()
-            self.__req_data_agent.inform_node_data_updated(req_root)
+        self.__req_model.insertRow(-1)
+
+        # req_root = self.__req_data_agent.get_req_root()
+        # if req_root is not None:
+        #     new_node = ReqNode('New Top Item')
+        #     self.__req_model.begin_edit()
+        #     req_root.append_child(new_node)
+        #     self.__req_model.end_edit()
+        #     self.__req_data_agent.inform_node_data_updated(req_root)
 
     def on_requirement_tree_menu_append_child(self):
         if self.__tree_item_selected():
-            new_node = ReqNode('New Item')
-            parent_node = self.__req_model.parent(self.__selected_index)
-            append_pos = self.__selected_node.child_count()
-            self.__req_model.beginInsertRows(parent_node, append_pos, append_pos)
-            self.__selected_node.append_child(new_node)
-            self.__req_model.endInsertRows()
+            self.__req_model.insertRow(-1, self.__selected_index)
+            # new_node = ReqNode('New Item')
+            # parent_node = self.__req_model.parent(self.__selected_index)
+            # append_pos = self.__selected_node.child_count()
+            # self.__req_model.beginInsertRows(parent_node, append_pos, append_pos)
+            # self.__selected_node.append_child(new_node)
+            # self.__req_model.endInsertRows()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():
-            new_node = ReqNode('New Item')
-            parent_node = self.__req_model.parent(self.__selected_index)
+            # new_node = ReqNode('New Item')
+            # parent_node = self.__req_model.parent(self.__selected_index)
+
             insert_pos = self.__selected_node.order()
-            self.__req_model.beginInsertRows(parent_node, insert_pos - 1, insert_pos)
-            self.__selected_node.insert_sibling_left(new_node)
-            self.__req_model.endInsertRows()
+            parent_index = self.__req_model.parent(self.__selected_index)
+            self.__req_model.insertRow(insert_pos, parent_index)
+
+            # self.__req_model.beginInsertRows(parent_node, insert_pos - 1, insert_pos)
+            # self.__selected_node.insert_sibling_left(new_node)
+            # self.__req_model.endInsertRows()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_add_sibling_down(self):
         if self.__tree_item_selected():
-            new_node = ReqNode('New Item')
-            parent_node = self.__req_model.parent(self.__selected_index)
+            # new_node = ReqNode('New Item')
+            # parent_node = self.__req_model.parent(self.__selected_index)
+
             insert_pos = self.__selected_node.order() + 1
-            self.__req_model.beginInsertRows(parent_node, insert_pos, insert_pos)
-            self.__selected_node.insert_sibling_right(new_node)
-            self.__req_model.endInsertRows()
+            parent_index = self.__req_model.parent(self.__selected_index)
+            self.__req_model.insertRow(insert_pos, parent_index)
+
+            # self.__req_model.beginInsertRows(parent_node, insert_pos, insert_pos)
+            # self.__selected_node.insert_sibling_right(new_node)
+            # self.__req_model.endInsertRows()
             self.__req_data_agent.inform_node_data_updated(self.__selected_node)
 
     def on_requirement_tree_menu_shift_item_up(self):
@@ -1000,10 +1038,10 @@ class RequirementUI(QWidget):
             if node_order > 0:
                 # self.__req_model.beginMoveRows(parent_index, node_order - 1, node_order,
                 #                                parent_index, node_order)
-                self.__req_model.before_edit()
+                self.__req_model.begin_edit()
                 sibling_list[node_order - 1], sibling_list[node_order] = \
                     sibling_list[node_order], sibling_list[node_order - 1]
-                self.__req_model.after_edit()
+                self.__req_model.end_edit()
                 # self.__req_model.endMoveRows()
             self.__req_data_agent.inform_node_child_updated(self.__selected_node.parent())
 
@@ -1015,10 +1053,10 @@ class RequirementUI(QWidget):
             if node_order + 1 < len(sibling_list):
                 # self.__req_model.beginMoveRows(parent_index, node_order, node_order + 1,
                 #                                parent_index, node_order)
-                self.__req_model.before_edit()
+                self.__req_model.begin_edit()
                 sibling_list[node_order + 1], sibling_list[node_order] = \
                     sibling_list[node_order], sibling_list[node_order + 1]
-                self.__req_model.after_edit()
+                self.__req_model.end_edit()
                 # self.__req_model.endMoveRows()
             self.__req_data_agent.inform_node_child_updated(self.__selected_node.parent())
 
@@ -1049,9 +1087,9 @@ class RequirementUI(QWidget):
                     return
             if self.__req_data_agent.new_req(req_name):
                 req_root = self.__req_data_agent.get_req_root()
-                self.__req_model.before_edit()
+                self.__req_model.begin_edit()
                 self.__root_node.append_child(req_root)
-                self.__req_model.after_edit()
+                self.__req_model.end_edit()
 
     def on_text_content_edit(self):
         md_text = self.__text_md_editor.toPlainText()
@@ -1065,11 +1103,11 @@ class RequirementUI(QWidget):
         self.__text_md_editor.setText(req_node.get(CONST_FIELD_CONTENT, ''))
         
     def __ui_to_req_node_data(self, req_node: ReqNode):
-        self.__req_model.before_edit()
+        self.__req_model.begin_edit()
         req_node.set(CONST_FIELD_ID, self.__line_id.text())
         req_node.set(CONST_FIELD_TITLE, self.__line_title.text())
         req_node.set(CONST_FIELD_CONTENT, self.__text_md_editor.toPlainText())
-        self.__req_model.after_edit()
+        self.__req_model.end_edit()
         self.__req_data_agent.inform_node_data_updated(req_node)
 
     def __update_req_tree(self):
