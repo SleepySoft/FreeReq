@@ -27,9 +27,9 @@
             "Partial Implemented"
         ],
         "meta_group": [
-            "WHY%05d",
-            "WHAT%05d",
-            "HOW%05d"
+            "WHY",
+            "WHAT",
+            "HOW"
         ]
     },
     "req_data": {
@@ -44,7 +44,7 @@
                 "content": "",
                 "child": [
                     {
-                        "id": "",
+                        "id": "WHY00004",
                         "uuid": "73f95496372641ab8a94f7e817b0c777",
                         "title": "Purpose",
                         "content": "I want a tool to manage my personal software requirement. But the tools I found are not fit for me. Most of them are heavy and commercial. It should looks like:\n\n1. Light weight and free\n\n2. Storage the data in local disk, not network.\n\n3. The file it saved should be text format which is still readable without the tool.\n\n4. It should be a tree style document which just like Caliber.\n\n5. It should support Markdown for good writing and reading.",
