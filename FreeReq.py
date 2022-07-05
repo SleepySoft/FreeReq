@@ -6,6 +6,7 @@ import uuid
 import json
 import markdown2
 import traceback
+# from scanf import scanf
 
 try:
     # Use try catch for running FreeReq without UI
@@ -38,7 +39,20 @@ STATIC_FIELD_CONTENT = 'content'
 STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD]
 
 
-STATIC_META_ID_GROUP = 'meta_group'
+STATIC_META_ID_PREFIX = 'meta_group'
+
+
+# s1 = 'WHY%d'
+# s2 = 'HOW%d'
+# s3 = 'WHAT%d'
+#
+# sa = s1 % 150
+# sb = s2 % 150
+# sc = s3 % 150
+#
+# print(scanf(s1, sa))
+# print(scanf(s1, sb))
+# print(scanf(s1, sc))
 
 
 class ReqNode:
@@ -246,6 +260,94 @@ class IReqAgent:
     def notify_node_child_changed(self, req_name: str, req_node: ReqNode):
         self.__observer.on_node_child_changed(req_name, req_node)
 
+    # ------------------------------ Assistant ------------------------------
+
+    @staticmethod
+    def req_dict_to_nodes(req_dict: dict) -> ReqNode:
+        req_node_root = ReqNode()
+        req_node_root.from_dict(req_dict)
+        return req_node_root
+
+    @staticmethod
+    def req_map(root_node: ReqNode, map_operation) -> dict:
+        """
+        Iterate all nodes and call map_operation with each node
+        :param root_node: The root node you want to iterate since.
+        :param map_operation: Callable object.
+                            : Declaration: f(node: ReqNode, context: dict)
+                            :   node: Current node in iteration.
+                            :   context: A dict that pass to map_operation and finally return by req_map()
+        :return: The context that passed to map_operation
+        """
+        context = {}
+        IReqAgent.__node_iteration(root_node, map_operation, context)
+        return context
+
+    def __node_iteration(self, node: ReqNode, map_operation, context: dict):
+        if node is not None:
+            map_operation(node, context)
+            for child_node in node.children():
+                self.__node_iteration(child_node, map_operation, context)
+
+    @staticmethod
+    def collect_node_information(node: ReqNode) -> dict:
+        """
+        Collect node information by __node_information_collector()
+        :param node: The root node you want to collect from.
+        :return: A dict that includes following keys
+                    'req_id_conflict' - bool
+                    'uuid_instance_table' - dict
+                    'req_id_instance_table' - dict
+        """
+        return IReqAgent.req_map(node, IReqAgent.__node_information_collector)
+
+    @staticmethod
+    def __node_information_collector(node: ReqNode, ctx: dict):
+        if len(ctx) == 0:
+            # Init context
+            ctx['req_id_conflict'] = False
+            ctx['uuid_instance_table'] = {}
+            ctx['req_id_instance_table'] = {}
+
+        _uuid = node.get_uuid().strip()
+        req_id = node.get(STATIC_FIELD_ID, '').strip()
+
+        if _uuid != '':
+            ctx['uuid_instance_table'][_uuid] = node
+
+        if req_id != '':
+            if req_id in ctx['req_id_instance_table'].keys():
+                ctx['req_id_conflict'] = True
+            ctx['req_id_instance_table'][req_id] = node
+
+    @staticmethod
+    def calculate_max_req_id(req_id_prefixes: list, req_id_list: list) -> dict:
+        """
+        Find the max id for each req id prefix.
+        :param req_id_prefixes: The req id prefix list
+        :param req_id_list: The req id list of existing nodes
+        :return: The dict that groups the max id number by id prefix
+        """
+        id_prefixes = req_id_prefixes.copy()
+        id_prefixes = sorted(id_prefixes, key=len, reverse=True)
+
+        req_id_max = {}
+        for req_id in req_id_list:
+            for prefix in id_prefixes:
+                if req_id.startswith(prefix):
+                    try:
+                        id_num = int(req_id[len(prefix):])
+                        if req_id not in req_id_max.keys():
+                            req_id_max[req_id] = id_num
+                        else:
+                            req_id_max[req_id] = max(id_num, req_id_max[req_id])
+                    except Exception as e:
+                        print(str(e))
+                        continue
+                    finally:
+                        break
+        return req_id_max
+
 
 class ReqSingleJsonFileAgent(IReqAgent):
     def __init__(self, req_path: str = self_path):
@@ -259,7 +361,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
         # Node information
         self.__req_id_max = {}
-        self.__req_node_index = {}
+        self.__uuid_node_index = {}
+        self.__req_id_node_index = {}
         self.__collected_information = {}
 
     def init(self) -> bool:
@@ -308,26 +411,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         return self.__req_node_root
 
     def get_req_node(self, req_uuid: str) -> ReqNode:
-        return self.__req_node_index.get(req_uuid, None)
-
-    def req_map(self, map_operation) -> dict:
-        """
-        Iterate all nodes and call map_operation with each node
-        :param map_operation: Callable object.
-                            : Declaration: f(node: ReqNode, context: dict)
-                            :   node: Current node in iteration.
-                            :   context: A dict that pass to map_operation and finally return by req_map()
-        :return: The context that passed to map_operation
-        """
-        context = {}
-        self.__node_iteration(self.__req_node_root, map_operation, context)
-        return context
-
-    def __node_iteration(self, node: ReqNode, map_operation, context: dict):
-        if node is not None:
-            map_operation(node, context)
-            for child_node in node.children():
-                self.__node_iteration(child_node, map_operation, context)
+        return self.__uuid_node_index.get(req_uuid, None)
 
     # --------------------- Notification from remote ---------------------
 
@@ -345,8 +429,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
                 json_dict = json.load(f)
                 self.__req_meta_dict = json_dict.get('req_meta', {})
                 self.__req_data_dict = json_dict.get('req_data', {})
-                self.__req_dict_to_nodes()
-                self.__build_node_information()
+                self.__req_node_root = self.req_dict_to_nodes(self.__req_data_dict)
+                self.__indexing()
         except Exception as e:
             print(str(e))
             print(traceback.format_exc())
@@ -357,7 +441,6 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __save_req_json(self) -> bool:
         try:
-            self.__build_node_information()
             self.__req_data_dict = self.__req_node_root.to_dict()
             json_dict = {
                 'req_meta': self.__req_meta_dict,
@@ -374,28 +457,16 @@ class ReqSingleJsonFileAgent(IReqAgent):
             pass
         return True
 
-    def __req_dict_to_nodes(self):
-        req_node_root = ReqNode()
-        req_node_root.from_dict(self.__req_data_dict)
-        self.__req_node_root = req_node_root
+    def __indexing(self):
+        self.__collected_information = IReqAgent.collect_node_information(self.__req_node_root)
+        self.__req_id_node_index = self.__collected_information.get('req_id_instance_table', {})
+        self.__uuid_node_index = self.__collected_information.get('uuid_instance_table', {})
 
-    def __build_node_information(self):
-        # req_node_index = self.req_map(lambda node, ctx: ctx.update({node.get_uuid(): node}))
-        self.__collected_information = self.req_map(self.__node_information_builder)
-        self.__req_node_index = self.__collected_information['uuid_instance_table']
+        id_prefixes = self.__req_meta_dict.get(STATIC_META_ID_PREFIX, [])
+        self.__req_id_max = IReqAgent.calculate_max_req_id(id_prefixes, list(self.__req_id_node_index.keys()))
 
-    def __find_max_id(self):
-        pass
 
-    @staticmethod
-    def __node_information_builder(node: ReqNode, ctx: dict):
-        if len(ctx) == 0:
-            # Init context
-            ctx['uuid_instance_table'] = {}
-            ctx['id_list'] = []
-        ctx['uuid_instance_table'][node.get_uuid()] = node
-        ctx['id_list'].append(node.get(STATIC_FIELD_ID, ''))
-
+# ----------------------------------------------------------------------------------------------------------------------
 
 class ReqModel(QAbstractItemModel):
     def __init__(self, req_data_agent: IReqAgent):
@@ -1030,7 +1101,7 @@ class ReqMetaBoard(QWidget):
         self.__button_fill_default_id = QPushButton('Fill Example Value')
         self.__button_fill_default_meta = QPushButton('Fill Example Value')
 
-        self.__text_id_groups = QTextEdit(ID_DEFAULT)
+        self.__text_id_prefixes = QTextEdit(ID_DEFAULT)
         self.__text_meta_defines = QTextEdit(META_DEFAULT)
 
         self.__init_ui()
@@ -1052,7 +1123,7 @@ class ReqMetaBoard(QWidget):
         line.addWidget(QLabel(ID_COMMENTS), 99)
         line.addWidget(self.__button_fill_default_id)
         group_layout.addLayout(line)
-        group_layout.addWidget(self.__text_id_groups, 99)
+        group_layout.addWidget(self.__text_id_prefixes, 99)
         self.__group_id.setLayout(group_layout)
 
         group_layout = QVBoxLayout()
@@ -1092,7 +1163,7 @@ class ReqMetaBoard(QWidget):
             self.__req_data_agent.set_req_meta(meta_data)
 
     def on_button_fill_default_id(self):
-        self.__text_id_groups.setText(ID_DEFAULT)
+        self.__text_id_prefixes.setText(ID_DEFAULT)
 
     def on_button_fill_default_meta(self):
         self.__text_meta_defines.setText(META_DEFAULT)
@@ -1107,13 +1178,13 @@ class ReqMetaBoard(QWidget):
             meta_data = self.__req_data_agent.get_req_meta()
             meta_data = meta_data.copy()
 
-            if STATIC_META_ID_GROUP in meta_data.keys():
-                id_group = meta_data[STATIC_META_ID_GROUP]
-                del meta_data[STATIC_META_ID_GROUP]
+            if STATIC_META_id_prefix in meta_data.keys():
+                id_prefix = meta_data[STATIC_META_id_prefix]
+                del meta_data[STATIC_META_id_prefix]
             else:
-                id_group = []
+                id_prefix = []
 
-            id_group_text = ', '.join(id_group)
+            id_prefix_text = ', '.join(id_prefix)
 
             # meta_data_text = json.dumps(meta_data, indent=4)
             # meta_data_text = meta_data_text.strip('{}')
@@ -1124,18 +1195,18 @@ class ReqMetaBoard(QWidget):
                 meta_data_lines.append('"%s": [%s]' % (meta_name, selection_text))
             meta_data_text = ', \n'.join(meta_data_lines)
 
-            self.__text_id_groups.setText(id_group_text)
+            self.__text_id_prefixes.setText(id_prefix_text)
             self.__text_meta_defines.setText(meta_data_text)
 
     def __ui_to_meta(self) -> dict:
-        id_group_text = self.__text_id_groups.toPlainText()
+        id_prefix_text = self.__text_id_prefixes.toPlainText()
         meta_data_text = self.__text_meta_defines.toPlainText()
 
-        id_group = id_group_text.split(',')
-        id_group = [_id.strip() for _id in id_group]
+        id_prefix = id_prefix_text.split(',')
+        id_prefix = [_id.strip() for _id in id_prefix]
 
         meta_data = json.loads('{' + meta_data_text + '}')
-        meta_data[STATIC_META_ID_GROUP] = id_group
+        meta_data[STATIC_META_id_prefix] = id_prefix
 
         return meta_data
 
