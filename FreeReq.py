@@ -907,6 +907,8 @@ class ReqEditorBoard(QWidget):
         self.__line_id = QLineEdit('')
         self.__line_title = QLineEdit('')
 
+        self.__layout_dynamic = QGridLayout()
+
         self.__text_md_editor = QTextEdit()
         self.__text_md_viewer = QTextEdit()
         self.__group_meta_data = QGroupBox()
@@ -944,9 +946,9 @@ class ReqEditorBoard(QWidget):
         static_meta_layout.addWidget(self.__line_id)
         meta_layout.addLayout(static_meta_layout)
 
-        dynamic_meta_layout = QGridLayout()
-        # TODO: Dynamic create controls by meta data
-        meta_layout.addLayout(dynamic_meta_layout)
+        # dynamic_meta_layout = QGridLayout()
+        # # TODO: Dynamic create controls by meta data
+        meta_layout.addLayout(self.__layout_dynamic)
 
         self.__group_meta_data.setLayout(meta_layout)
         root_layout.addWidget(self.__group_meta_data, 1)
@@ -998,7 +1000,40 @@ class ReqEditorBoard(QWidget):
         self.__button_save_content.clicked.connect(self.on_button_save_content)
 
     def __layout_meta_area(self):
-        pass
+        self.__reset_layout()
+        self.__rebuild_meta_ctrl()
+
+    def __reset_layout(self):
+        # https://stackoverflow.com/a/25330164
+        for i in reversed(range(self.__layout_dynamic.count())):
+            widget_to_remove = self.__layout_dynamic.itemAt(i).widget()
+            if widget_to_remove is not None:
+                # remove it from the layout list
+                self.__layout_dynamic.removeWidget(widget_to_remove)
+                # remove it from the gui
+                widget_to_remove.setParent(None)
+
+    def __rebuild_meta_ctrl(self):
+        meta_data_layouts = []
+        meta_data_controls = {}
+        meta_data = self.__req_data_agent.get_req_meta()
+        for meta_name, meta_selection in meta_data.items():
+            if meta_name == STATIC_META_ID_PREFIX:
+                continue
+
+            line = QHBoxLayout()
+            line.addWidget(QLabel(meta_name))
+            if len(meta_selection) != 0:
+                meta_data_edit_ctrl = QComboBox()
+                meta_data_edit_ctrl.setEditable(False)
+                for selection in meta_selection:
+                    meta_data_edit_ctrl.addItem(selection, selection)
+            else:
+                meta_data_edit_ctrl = QLineEdit()
+            line.addWidget(meta_data_edit_ctrl)
+
+            meta_data_layouts.append(line)
+            meta_data_controls[meta_name] = meta_data_edit_ctrl
 
     def on_check_editor(self):
         self.__text_md_editor.setVisible(self.__check_editor.isChecked())
