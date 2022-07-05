@@ -4,6 +4,8 @@ import os
 import sys
 import uuid
 import json
+from functools import partial
+
 import markdown2
 import traceback
 # from scanf import scanf
@@ -205,40 +207,45 @@ class IReqAgent:
         self.__observer: IReqObserver = None
 
     def init(self, *args, **kwargs) -> bool:
-        pass
+        raise ValueError('Not implemented')
 
-    # ----------------------- Req management -----------------------
+    # ------------------------ Override: Req management -----------------------
 
     def list_req(self) -> [str]:
-        pass
+        raise ValueError('Not implemented')
 
     def new_req(self, req_name: str) -> bool:
-        pass
+        raise ValueError('Not implemented')
 
     def open_req(self, req_name: str) -> bool:
-        pass
+        raise ValueError('Not implemented')
 
     def delete_req(self, req_name: str) -> bool:
-        pass
+        raise ValueError('Not implemented')
 
-    # --------------------- After select_op_req() ---------------------
+    # -------------------- Override: After select_op_req() --------------------
 
     def get_req_name(self) -> str:
-        pass
+        raise ValueError('Not implemented')
 
     def get_req_meta(self) -> dict:
-        pass
+        raise ValueError('Not implemented')
 
     def set_req_meta(self, req_meta: dict) -> bool:
-        pass
+        raise ValueError('Not implemented')
 
     def get_req_root(self) -> ReqNode:
-        pass
+        raise ValueError('Not implemented')
 
     def get_req_node(self, req_uuid: str) -> ReqNode:
-        pass
+        raise ValueError('Not implemented')
 
-    # --------------------- Notification from remote ---------------------
+    # ----------------------- Override: Other Functions -----------------------
+
+    def new_req_id(self, id_prefix: str, digit_count: int = 5) -> str:
+        raise ValueError('Not implemented')
+
+    # ------------------------ Notification from remote -----------------------
 
     def inform_node_data_updated(self, req_node: ReqNode):
         pass
@@ -246,7 +253,7 @@ class IReqAgent:
     def inform_node_child_updated(self, req_node: ReqNode):
         pass
 
-    # ------------------------------ Observer ------------------------------
+    # -------------------------------- Observer -------------------------------
 
     def set_observer(self, ob: IReqObserver):
         self.__observer = ob
@@ -260,7 +267,7 @@ class IReqAgent:
     def notify_node_child_changed(self, req_name: str, req_node: ReqNode):
         self.__observer.on_node_child_changed(req_name, req_node)
 
-    # ------------------------------ Assistant ------------------------------
+    # -------------------------------- Assistant -------------------------------
 
     @staticmethod
     def req_dict_to_nodes(req_dict: dict) -> ReqNode:
@@ -283,11 +290,12 @@ class IReqAgent:
         IReqAgent.__node_iteration(root_node, map_operation, context)
         return context
 
-    def __node_iteration(self, node: ReqNode, map_operation, context: dict):
+    @staticmethod
+    def __node_iteration(node: ReqNode, map_operation, context: dict):
         if node is not None:
             map_operation(node, context)
             for child_node in node.children():
-                self.__node_iteration(child_node, map_operation, context)
+                IReqAgent.__node_iteration(child_node, map_operation, context)
 
     @staticmethod
     def collect_node_information(node: ReqNode) -> dict:
@@ -338,9 +346,9 @@ class IReqAgent:
                     try:
                         id_num = int(req_id[len(prefix):])
                         if req_id not in req_id_max.keys():
-                            req_id_max[req_id] = id_num
+                            req_id_max[prefix] = id_num
                         else:
-                            req_id_max[req_id] = max(id_num, req_id_max[req_id])
+                            req_id_max[prefix] = max(id_num, req_id_max[prefix])
                     except Exception as e:
                         print(str(e))
                         continue
@@ -348,6 +356,8 @@ class IReqAgent:
                         break
         return req_id_max
 
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 class ReqSingleJsonFileAgent(IReqAgent):
     def __init__(self, req_path: str = self_path):
@@ -412,6 +422,21 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def get_req_node(self, req_uuid: str) -> ReqNode:
         return self.__uuid_node_index.get(req_uuid, None)
+
+    # -------------------------- Other Functions -------------------------
+
+    def new_req_id(self, id_prefix: str, digit_count: int = 5) -> str:
+        id_prefixes = self.__req_meta_dict.get(STATIC_META_ID_PREFIX, [])
+        if id_prefix in id_prefixes:
+            if id_prefix in self.__req_id_max.keys():
+                self.__req_id_max[id_prefix] += 1
+            else:
+                self.__req_id_max[id_prefix] = 1
+            format_str = '%%s%%0%dd' % digit_count
+            return format_str % (id_prefix, self.__req_id_max[id_prefix])
+        else:
+            # Unknown prefix
+            return id_prefix
 
     # --------------------- Notification from remote ---------------------
 
@@ -996,7 +1021,23 @@ class ReqEditorBoard(QWidget):
         self.__text_md_viewer.setFont(editor_font)
 
     def on_button_re_assign_id(self):
-        pass
+        id_prefixes = self.__req_data_agent.get_req_meta().get(STATIC_META_ID_PREFIX, [])
+
+        if len(id_prefixes) == 0:
+            QMessageBox.information(self, 'No ID Define', 'Please define the ID prefix in mete data first.')
+            return
+
+        if len(id_prefixes) == 1:
+            self.on_menu_assign_id(id_prefixes[0])
+        else:
+            menu = QMenu()
+            for id_prefix in id_prefixes:
+                menu.addAction(id_prefix, partial(self.on_menu_assign_id, id_prefix))
+            menu.exec(QCursor.pos())
+
+    def on_menu_assign_id(self, id_prefix: str):
+        req_id = self.__req_data_agent.new_req_id(id_prefix)
+        self.__line_id.setText(req_id)
 
     def on_button_save_content(self):
         if self.__editing_node is not None:
@@ -1178,9 +1219,9 @@ class ReqMetaBoard(QWidget):
             meta_data = self.__req_data_agent.get_req_meta()
             meta_data = meta_data.copy()
 
-            if STATIC_META_id_prefix in meta_data.keys():
-                id_prefix = meta_data[STATIC_META_id_prefix]
-                del meta_data[STATIC_META_id_prefix]
+            if STATIC_META_ID_PREFIX in meta_data.keys():
+                id_prefix = meta_data[STATIC_META_ID_PREFIX]
+                del meta_data[STATIC_META_ID_PREFIX]
             else:
                 id_prefix = []
 
@@ -1206,7 +1247,7 @@ class ReqMetaBoard(QWidget):
         id_prefix = [_id.strip() for _id in id_prefix]
 
         meta_data = json.loads('{' + meta_data_text + '}')
-        meta_data[STATIC_META_id_prefix] = id_prefix
+        meta_data[STATIC_META_ID_PREFIX] = id_prefix
 
         return meta_data
 
