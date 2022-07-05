@@ -1104,12 +1104,12 @@ class ReqEditorBoard(QWidget):
 # ----------------------------------------------------------------------------------------------------------------------
 
 ID_COMMENTS = """
-The format is like: WHY%05d, WHAT%05d, HOW%05d,
-The "%05d" means the number will be 5 characters, padding with 0. 
+You can specify the prefix of Req ID like: WHY, WHAT, HOW
+Then you will get assigned Req ID like WHY00001, WHAT00001, HOW00001
 """
 
 
-ID_DEFAULT = 'WHY%05d, WHAT%05d, HOW%05d'
+ID_DEFAULT = 'WHY, WHAT, HOW'
 
 
 META_COMMENTS = """"Meta Name 1": [],
