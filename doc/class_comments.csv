@@ -1,0 +1,9 @@
+Class,Usage
+ReqNode,The croe data structure for requirement data management.
+IReqAgent,The interface to manage requirement data storage and access.
+IReqObserver,The interface of IReqAgent observer.
+ReqSingleJsonFileAgent,The implementation of IReqAgent that supports json file local storage.
+ReqModel,The Model for QTreeView. Adapting IReqAgent to QAbstractItemModel.
+ReqEditorBoard,The UI for Reqirement data editing.
+ReqMetaBoard,The UI for Meta data config.
+RequirementUI,The main UI, includes the TreeView, ReqEditorBoard, ReqMetaBoard
