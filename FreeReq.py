@@ -902,7 +902,7 @@ class ReqEditorBoard(QWidget):
 
         self.__req_data_agent = req_data_agent
         self.__req_model = req_model
-        self.__editing_node = None
+        self.__editing_node: ReqNode = None
 
         self.__meta_data_layouts = []
         self.__meta_data_controls = {}
@@ -1093,6 +1093,7 @@ class ReqEditorBoard(QWidget):
 
     def on_button_save_content(self):
         if self.__editing_node is not None:
+            self.__ui_to_meta_data(self.__editing_node)
             self.__ui_to_req_node_data(self.__editing_node)
 
     def on_text_content_edit(self):
@@ -1103,11 +1104,55 @@ class ReqEditorBoard(QWidget):
 
     # ---------------------------------------------------------------------------
 
-    def __meta_data_to_ui(self):
+    def __meta_data_to_ui(self, req_node: ReqNode):
         meta_data = self.__req_data_agent.get_req_meta()
+        for meta_name, meta_selection in meta_data.items():
+            if meta_name == STATIC_META_ID_PREFIX:
+                continue
 
-    def __ui_to_meta_data(self):
+            meta_ctrl = self.__meta_data_controls.get(meta_name, None)
+            if meta_ctrl is None:
+                print('Warning: Cannot find the control for the meta data.')
+                continue
+
+            meta_content = req_node.get(meta_name, '')
+            if len(meta_selection) > 1:
+                if isinstance(meta_ctrl, QComboBox):
+                    index = meta_ctrl.findData(meta_content)
+                    if index == -1:
+                        print('Warning: Meta content out of meta data selection.')
+                        meta_ctrl.setEditable(True)
+                        meta_ctrl.setEditText(meta_content)
+                    else:
+                        meta_ctrl.setEditable(False)
+                        meta_ctrl.setCurrentIndex(index)
+                else:
+                    raise ValueError('The control should be QComboBox')
+            else:
+                if isinstance(meta_ctrl, QLineEdit):
+                    meta_ctrl.setText(meta_content)
+                else:
+                    raise ValueError('The control should be QLineEdit')
+
+    def __ui_to_meta_data(self, req_node: ReqNode):
         meta_data = self.__req_data_agent.get_req_meta()
+        for meta_name, meta_selection in meta_data.items():
+            if meta_name == STATIC_META_ID_PREFIX:
+                continue
+
+            meta_ctrl = self.__meta_data_controls.get(meta_name, None)
+            if meta_ctrl is None:
+                print('Warning: Cannot find the control for the meta data.')
+                continue
+
+            if isinstance(meta_ctrl, QComboBox):
+                meta_content = meta_ctrl.currentText()
+            elif isinstance(meta_ctrl, QLineEdit):
+                meta_content = meta_ctrl.text()
+            else:
+                raise ValueError('Warning: The control for meta must be QComboBox or QLineEdit')
+
+            req_node.set(meta_name, meta_content)
 
     def __req_node_data_to_ui(self, req_node: ReqNode):
         if req_node is not None:
@@ -1160,6 +1205,7 @@ class ReqEditorBoard(QWidget):
 
     def edit_req(self, req_node: ReqNode):
         self.__editing_node = req_node
+        self.__meta_data_to_ui(req_node)
         self.__req_node_data_to_ui(req_node)
 
 

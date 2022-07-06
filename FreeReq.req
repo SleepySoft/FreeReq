@@ -57,10 +57,15 @@
                         "content": "The document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* Link - Link to JIRA or other issue management system\n\n* Implementation - Not Implemented / Full Implemented / Partial Implemented\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
                         "child": [
                             {
-                                "id": "",
+                                "id": "WHY00005",
                                 "uuid": "09b4670a26774a8796d0b000754b039c",
                                 "title": "ID",
                                 "content": "This field is MUST.\n\nUser can config the ID group such as WHY*, WHAT*, HOW*, or just one\n\nWhen user wants to assign an ID to an requirement item. There should be a menu to select the group. The softare shoud auto generate the unique ID number.\n\nOfcause, if user only specify one group. The group selection menu should not popup and an unique ID should be generated immediately.",
+                                "Owner": "Sleepy",
+                                "Version": "1.0",
+                                "Status": "Approved",
+                                "Priority": "Must / Vital",
+                                "Implementation": "Full Implemented",
                                 "child": []
                             },
                             {
