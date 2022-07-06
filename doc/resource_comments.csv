@@ -1,4 +1,3 @@
 Resource,Type,Comments
-TREE_VIEW_STYLE_SHEET,string variant,The QT style sheet. To make QTreeView look pretty.
-MARK_DOWN_CSS_TABLE,string variant,The css style sheet. To make Markdown preview look pretty.
-res,directory,The image for QTreeView style sheet which comes from official site.
+res,directory,The QTreeView style sheet which images that comes from QT official site.
+MARK_DOWN_CSS_TABLE,string variant,The css style sheet. To make Markdown preview looks pretty.

@@ -31,15 +31,13 @@ The reason of putting all classes in one file:
 
 Resource comments:
 
-+────────────────────────+─────────────────+──────────────────────────────────────────────────────────────────────+
-| Resource               | Type            | Comments                                                             |
-+────────────────────────+─────────────────+──────────────────────────────────────────────────────────────────────+
-| TREE_VIEW_STYLE_SHEET  | string variant  | The QT style sheet. To make QTreeView look pretty.                   |
-+────────────────────────+─────────────────+──────────────────────────────────────────────────────────────────────+
-| MARK_DOWN_CSS_TABLE    | string variant  | The css style sheet. To make Markdown preview look pretty.           |
-+────────────────────────+─────────────────+──────────────────────────────────────────────────────────────────────+
-| res                    | directory       | The image for QTreeView style sheet which comes from official site.  |
-+────────────────────────+─────────────────+──────────────────────────────────────────────────────────────────────+
++──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
+| Resource             | Type            | Comments                                                                  |
++──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
+| res                  | directory       | The QTreeView style sheet which images that comes from QT official site.  |
++──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
+| MARK_DOWN_CSS_TABLE  | string variant  | The css style sheet. To make Markdown preview looks pretty.               |
++──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
 
 """
 
@@ -661,88 +659,6 @@ class ReqModel(QAbstractItemModel):
         self.end_edit()
 
         return True
-
-
-# From: https://doc.qt.io/qt-6/stylesheet-examples.html
-
-TREE_VIEW_STYLE_SHEET = """
-QTreeView {
-    alternate-background-color: #f6fafb;
-    background: #e8f4fc;
-}
-QTreeView::item:open {
-    background-color: #c5ebfb;
-    color: blue;
-}
-QTreeView::item:selected {
-    background-color: #1d3dec;
-    color: white;
-}
-QTreeView::branch {
-    background-color: white;
-}
-QTreeView::branch:open {
-    image: url(branch-open.png);
-}
-QTreeView::branch:closed:has-children {
-    image: url(branch-closed.png);
-}
-
-QTreeView {
-    show-decoration-selected: 1;
-}
-
-QTreeView::item {
-    border: 1px solid #d9d9d9;
-    border-top-color: transparent;
-    border-bottom-color: transparent;
-}
-
-QTreeView::item:hover {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #e7effd, stop: 1 #cbdaf1);
-    border: 1px solid #bfcde4;
-}
-
-QTreeView::item:selected {
-    border: 1px solid #567dbc;
-}
-
-QTreeView::item:selected:active{
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #6ea1f1, stop: 1 #567dbc);
-}
-
-QTreeView::item:selected:!active {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #6b9be8, stop: 1 #577fbf);
-}
-
-QTreeView::branch {
-        background: palette(base);
-}
-
-QTreeView::branch:has-siblings:!adjoins-item {
-    border-image: url(res/vline.png) 0;
-}
-
-QTreeView::branch:has-siblings:adjoins-item {
-    border-image: url(res/branch-more.png) 0;
-}
-
-QTreeView::branch:!has-children:!has-siblings:adjoins-item {
-    border-image: url(res/branch-end.png) 0;
-}
-
-QTreeView::branch:has-children:!has-siblings:closed,
-QTreeView::branch:closed:has-children:has-siblings {
-        border-image: none;
-        image: url(res/branch-closed.png);
-}
-
-QTreeView::branch:open:has-children:!has-siblings,
-QTreeView::branch:open:has-children:has-siblings  {
-        border-image: none;
-        image: url(res/branch-open.png);
-}
-"""
 
 
 # https://gist.github.com/xiaolai/aa190255b7dde302d10208ae247fc9f2
@@ -1448,10 +1364,19 @@ class RequirementUI(QWidget):
         self.setWindowTitle('Free Requirement - by Sleepy')
 
         self.__tree_requirements.setModel(self.__req_model)
-        # self.__tree_requirements.setRootIndex(self.__tree_requirements.rootIndex())
         self.__tree_requirements.setAlternatingRowColors(True)
-        self.__tree_requirements.setStyleSheet(TREE_VIEW_STYLE_SHEET)
         self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
+
+        try:
+            # QTreeView style From: https://doc.qt.io/qt-6/stylesheet-examples.html
+            with open(os.path.join(self_path, 'res', 'tree_style.qss'), 'rt') as f:
+                tree_style = f.read()
+                self.__tree_requirements.setStyleSheet(tree_style)
+        except Exception as e:
+            print(str(e))
+            print('QTreeView style not applied.')
+        finally:
+            pass
 
         self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
 
