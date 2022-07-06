@@ -4,24 +4,18 @@ import os
 import sys
 import uuid
 import json
-from functools import partial
-
 import markdown2
 import traceback
-# from scanf import scanf
+from functools import partial
 
 try:
     # Use try catch for running FreeReq without UI
 
-    from PyQt5 import QtCore
-    from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QCursor
-    from PyQt5.QtCore import pyqtSignal, Qt, QAbstractTableModel, QModelIndex, QRect, QVariant, QSize, QTimer, \
-        QAbstractItemModel, QPoint
-    from PyQt5.QtWidgets import QMainWindow, QApplication, QHBoxLayout, QGridLayout, QWidget, QPushButton, \
-        QDockWidget, QAction, qApp, QMessageBox, QDialog, QVBoxLayout, QLabel, QGroupBox, QTableWidget, \
-        QTableWidgetItem, QTabWidget, QLayout, QTextEdit, QListWidget, QListWidgetItem, QMenu, QHeaderView, \
-        QStyle, QStyleOptionButton, QTableView, QLineEdit, QCheckBox, QFileDialog, QComboBox, QTreeView, \
-        QAbstractItemView, QInputDialog, QSizePolicy
+    from PyQt5.QtGui import QFont, QCursor
+    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint
+    from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
+        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -42,19 +36,6 @@ STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_
 
 
 STATIC_META_ID_PREFIX = 'meta_group'
-
-
-# s1 = 'WHY%d'
-# s2 = 'HOW%d'
-# s3 = 'WHAT%d'
-#
-# sa = s1 % 150
-# sb = s2 % 150
-# sc = s3 % 150
-#
-# print(scanf(s1, sa))
-# print(scanf(s1, sb))
-# print(scanf(s1, sc))
 
 
 class ReqNode:
@@ -552,7 +533,7 @@ class ReqModel(QAbstractItemModel):
         else:
             parent_item: ReqNode = parent.internalPointer()
 
-        if not QtCore.QAbstractItemModel.hasIndex(self, row, column, parent):
+        if not QAbstractItemModel.hasIndex(self, row, column, parent):
             return QModelIndex()
 
         child_item = parent_item.child(row)
@@ -574,10 +555,10 @@ class ReqModel(QAbstractItemModel):
             return QModelIndex()
 
         if parent_item == self.__req_data_agent.get_req_root():
-            return QtCore.QAbstractItemModel.createIndex(self, 0, 0, parent_item)
+            return QAbstractItemModel.createIndex(self, 0, 0, parent_item)
         row = parent_item.order()
 
-        return QtCore.QAbstractItemModel.createIndex(self, row, 0, parent_item)
+        return QAbstractItemModel.createIndex(self, row, 0, parent_item)
 
     def rowCount(self, parent: QModelIndex = None, *args, **kwargs):
         if self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
@@ -601,11 +582,11 @@ class ReqModel(QAbstractItemModel):
         if self.__req_data_agent is None:
             return None
 
-        role = QtCore.Qt.ItemDataRole(role)
-        if role != QtCore.Qt.DisplayRole:
+        role = Qt.ItemDataRole(role)
+        if role != Qt.DisplayRole:
             return None
 
-        if orientation == QtCore.Qt.Horizontal:
+        if orientation == Qt.Horizontal:
             return self.__req_data_agent.get_req_name()
         return None
 
