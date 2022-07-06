@@ -1102,6 +1102,9 @@ class ReqEditorBoard(QWidget):
         # self.__text_md_viewer.setMarkdown(text)
         self.__text_md_viewer.setHtml(html_text)
 
+    def on_meta_data_updated(self):
+        self.__layout_meta_area()
+
     # ---------------------------------------------------------------------------
 
     def __meta_data_to_ui(self, req_node: ReqNode):
@@ -1238,10 +1241,11 @@ META_DEFAULT = """"Owner": [],
 
 
 class ReqMetaBoard(QWidget):
-    def __init__(self, req_data_agent: IReqAgent):
+    def __init__(self, req_data_agent: IReqAgent, meta_update_cb=None):
         super(ReqMetaBoard, self).__init__()
 
         self.__req_data_agent = req_data_agent
+        self.__on_meta_data_updated = meta_update_cb
 
         self.__group_id = QGroupBox('ID Config')
         self.__group_meta = QGroupBox('Meta Data Config')
@@ -1310,6 +1314,8 @@ class ReqMetaBoard(QWidget):
 
         if meta_data is not None:
             self.__req_data_agent.set_req_meta(meta_data)
+            if self.__on_meta_data_updated is not None:
+                self.__on_meta_data_updated()
 
     def on_button_fill_default_id(self):
         self.__text_id_prefixes.setText(ID_DEFAULT)
@@ -1378,7 +1384,7 @@ class RequirementUI(QWidget):
         self.__button_req_refresh = QPushButton('Refresh')
 
         self.__edit_tab = QTabWidget()
-        self.__meta_board = ReqMetaBoard(self.__req_data_agent)
+        self.__meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
         self.__edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
 
         self.__init_ui()
@@ -1590,6 +1596,9 @@ class RequirementUI(QWidget):
             self.__selected_node = None
             self.__selected_index = None
             self.__edit_board.edit_req(None)
+
+    def __on_meta_data_updated(self):
+        self.__edit_board.on_meta_data_updated()
 
 
 # ---------------------------------------------------------------------------------------------------------------------
