@@ -904,6 +904,9 @@ class ReqEditorBoard(QWidget):
         self.__req_model = req_model
         self.__editing_node = None
 
+        self.__meta_data_layouts = []
+        self.__meta_data_controls = {}
+
         self.__line_id = QLineEdit('')
         self.__line_title = QLineEdit('')
 
@@ -944,6 +947,7 @@ class ReqEditorBoard(QWidget):
         static_meta_layout.addWidget(QLabel('  '))
         static_meta_layout.addWidget(QLabel('ID: '))
         static_meta_layout.addWidget(self.__line_id)
+        static_meta_layout.addWidget(self.__button_re_assign_id)
         meta_layout.addLayout(static_meta_layout)
 
         # dynamic_meta_layout = QGridLayout()
@@ -961,7 +965,6 @@ class ReqEditorBoard(QWidget):
         line.addWidget(QLabel(''), 99)
         line.addWidget(self.__check_editor)
         line.addWidget(self.__check_viewer)
-        line.addWidget(self.__button_re_assign_id)
         line.addWidget(self.__button_save_content)
         root_layout.addLayout(line)
 
@@ -1002,6 +1005,7 @@ class ReqEditorBoard(QWidget):
     def __layout_meta_area(self):
         self.__reset_layout()
         self.__rebuild_meta_ctrl()
+        self.__layout_meta_data_ctrl()
 
     def __reset_layout(self):
         # https://stackoverflow.com/a/25330164
@@ -1021,19 +1025,32 @@ class ReqEditorBoard(QWidget):
             if meta_name == STATIC_META_ID_PREFIX:
                 continue
 
-            line = QHBoxLayout()
-            line.addWidget(QLabel(meta_name))
+            # line = QHBoxLayout()
+            # line.addWidget(QLabel(meta_name))
             if len(meta_selection) != 0:
                 meta_data_edit_ctrl = QComboBox()
+                meta_data_edit_ctrl.addItem('', '')
                 meta_data_edit_ctrl.setEditable(False)
                 for selection in meta_selection:
                     meta_data_edit_ctrl.addItem(selection, selection)
             else:
                 meta_data_edit_ctrl = QLineEdit()
-            line.addWidget(meta_data_edit_ctrl)
+            # line.addWidget(meta_data_edit_ctrl)
 
-            meta_data_layouts.append(line)
+            # meta_data_layouts.append(line)
+            meta_data_layouts.append([QLabel(meta_name + ' :'), meta_data_edit_ctrl])
             meta_data_controls[meta_name] = meta_data_edit_ctrl
+
+            self.__meta_data_layouts = meta_data_layouts
+            self.__meta_data_controls = meta_data_controls
+
+    def __layout_meta_data_ctrl(self):
+        count = 0
+        config_per_row = 3
+        for _label, _input in self.__meta_data_layouts:
+            self.__layout_dynamic.addWidget(_label, count // config_per_row, (count % config_per_row) * 2 + 0)
+            self.__layout_dynamic.addWidget(_input, count // config_per_row, (count % config_per_row) * 2 + 1)
+            count += 1
 
     def on_check_editor(self):
         self.__text_md_editor.setVisible(self.__check_editor.isChecked())
@@ -1084,6 +1101,14 @@ class ReqEditorBoard(QWidget):
         # self.__text_md_viewer.setMarkdown(text)
         self.__text_md_viewer.setHtml(html_text)
 
+    # ---------------------------------------------------------------------------
+
+    def __meta_data_to_ui(self):
+        meta_data = self.__req_data_agent.get_req_meta()
+
+    def __ui_to_meta_data(self):
+        meta_data = self.__req_data_agent.get_req_meta()
+
     def __req_node_data_to_ui(self, req_node: ReqNode):
         if req_node is not None:
             self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
@@ -1101,6 +1126,8 @@ class ReqEditorBoard(QWidget):
         req_node.set(STATIC_FIELD_CONTENT, self.__text_md_editor.toPlainText())
         self.__req_model.end_edit()
         self.__req_data_agent.inform_node_data_updated(req_node)
+
+    # ---------------------------------------------------------------------------
 
     @staticmethod
     def render_markdown(md_text: str) -> str:
