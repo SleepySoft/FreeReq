@@ -69,17 +69,27 @@
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHY00006",
                                 "uuid": "07be5cbfd34e439f9b81a0681de906e4",
                                 "title": "Author / Owner",
                                 "content": "Option but recommended filed.",
+                                "Owner": "Sleepy",
+                                "Version": "1.0",
+                                "Status": "Approved",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Full Implemented",
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHY00007",
                                 "uuid": "6be7f39a27ad40bd8b24f9caa8b25ba8",
                                 "title": "Version",
                                 "content": "Option but recommended filed.",
+                                "Owner": "Sleepy",
+                                "Version": "1.0",
+                                "Status": "Approved",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Full Implemented",
                                 "child": []
                             },
                             {
@@ -90,17 +100,27 @@
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHY00008",
                                 "uuid": "a9b230242f9e463fb56ca816f8222fe7",
                                 "title": "Link",
                                 "content": "Option but recommended filed.",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Not Implemented",
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHY00009",
                                 "uuid": "dfc80d4bc1fe494088f9ae8c9d25ca55",
                                 "title": "Implementation",
                                 "content": "Option but recommended filed.",
+                                "Owner": "Sleepy",
+                                "Version": "1.0",
+                                "Status": "Approved",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Full Implemented",
                                 "child": []
                             }
                         ]
@@ -112,17 +132,27 @@
                         "content": "The data must be saved on local, as text file. It can be XML or JSON.",
                         "child": [
                             {
-                                "id": "",
+                                "id": "WHY00010",
                                 "uuid": "36d3bb18d8c944aca2a9a629b16a3d90",
                                 "title": "Auto save",
                                 "content": "The editor should support auto save after node adding and content editing.",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Must / Vital",
+                                "Implementation": "Not Implemented",
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHY00011",
                                 "uuid": "f5fb6c9641ba48019baa71cae715156d",
                                 "title": "Multiple Storage Method Support",
                                 "content": "The requirement can be stroaged in local file or remote server.",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Not Implemented",
                                 "child": []
                             }
                         ]
@@ -140,17 +170,27 @@
                                 "content": "",
                                 "child": [
                                     {
-                                        "id": "",
+                                        "id": "WHY00012",
                                         "uuid": "5f3e7213d779485b8494202459d4cb93",
                                         "title": "Support Markdown",
                                         "content": "The editor must support Markdown.\n\nThe Markdown editor should support realtime preview.",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "Approved",
+                                        "Priority": "Must / Vital",
+                                        "Implementation": "Full Implemented",
                                         "child": []
                                     },
                                     {
-                                        "id": "",
+                                        "id": "WHY00013",
                                         "uuid": "55961ed503954976bc8b70250a34c49d",
                                         "title": "Zoom the display",
                                         "content": "The display of requirement can be zoomed. It dosen't mean the font changed but only be larger in the editor and viewer.",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "Approved",
+                                        "Priority": "Should / Necessary",
+                                        "Implementation": "Full Implemented",
                                         "child": []
                                     }
                                 ]
@@ -164,7 +204,45 @@
                 "uuid": "d482e027840e4fcc860d8cc26e44e83c",
                 "title": "Stakeholder Requirements (WHAT)",
                 "content": "",
-                "child": []
+                "child": [
+                    {
+                        "id": "",
+                        "uuid": "fbe8c15815414f928221755b4c4ee124",
+                        "title": "Document Structure",
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "348268da6cea42728b9a26c1e44a9380",
+                                "title": "ID",
+                                "child": [],
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": ""
+                            },
+                            {
+                                "id": "WHAT00002",
+                                "uuid": "d5f6ecaedce64a4b9a9569a3dbba3fa1",
+                                "title": "Other Meta Data",
+                                "child": [],
+                                "content": "Owner - In default meta config\n\nVersion - In default meta config\n\nVersion - In default meta config\n\nStatus - In default meta config\n\nImplementation - In default meta config\n\nLink - User defines, not in default meta config",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Partial Implemented"
+                            }
+                        ],
+                        "content": "",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": ""
+                    }
+                ]
             },
             {
                 "id": "",
