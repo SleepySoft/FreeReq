@@ -1101,14 +1101,9 @@ class ReqEditorBoard(QWidget):
             req_node.set(meta_name, meta_content)
 
     def __req_node_data_to_ui(self, req_node: ReqNode):
-        if req_node is not None:
-            self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
-            self.__line_title.setText(req_node.get(STATIC_FIELD_TITLE, 'N/A'))
-            self.__text_md_editor.setText(req_node.get(STATIC_FIELD_CONTENT, ''))
-        else:
-            self.__line_id.setText('')
-            self.__line_title.setText('')
-            self.__text_md_editor.setText('')
+        self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
+        self.__line_title.setText(req_node.get(STATIC_FIELD_TITLE, 'N/A'))
+        self.__text_md_editor.setText(req_node.get(STATIC_FIELD_CONTENT, ''))
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
         self.__req_model.begin_edit()
@@ -1117,6 +1112,16 @@ class ReqEditorBoard(QWidget):
         req_node.set(STATIC_FIELD_CONTENT, self.__text_md_editor.toPlainText())
         self.__req_model.end_edit()
         self.__req_data_agent.inform_node_data_updated(req_node)
+
+    def __reset_ui_content(self):
+        for _, meta_ctrl in self.__meta_data_controls.items():
+            if isinstance(meta_ctrl, QComboBox):
+                meta_ctrl.setCurrentIndex(-1)
+            elif isinstance(meta_ctrl, QLineEdit):
+                meta_ctrl.setText('')
+        self.__line_id.setText('')
+        self.__line_title.setText('')
+        self.__text_md_editor.setText('')
 
     # ---------------------------------------------------------------------------
 
@@ -1151,8 +1156,11 @@ class ReqEditorBoard(QWidget):
 
     def edit_req(self, req_node: ReqNode):
         self.__editing_node = req_node
-        self.__meta_data_to_ui(req_node)
-        self.__req_node_data_to_ui(req_node)
+        if req_node is not None:
+            self.__meta_data_to_ui(req_node)
+            self.__req_node_data_to_ui(req_node)
+        else:
+            self.__reset_ui_content()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
