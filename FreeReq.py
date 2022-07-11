@@ -58,7 +58,7 @@ try:
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog
+        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -389,7 +389,6 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def __init__(self, req_path: str = self_path):
         super(ReqSingleJsonFileAgent, self).__init__()
         self.__req_path = req_path
-        self.__req_name = ''
         self.__req_file_name = ''
         self.__req_meta_dict = {}
         self.__req_data_dict = {}
@@ -416,16 +415,17 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def new_req(self, req_name: str, overwrite: bool = False) -> bool:
         if not overwrite and req_name in self.list_req():
             return False
-        self.__req_name = req_name
         self.__req_file_name = req_name + '.req'
         self.__req_node_root = ReqNode(req_name)
         return True
 
     def open_req(self, req_name: str) -> bool:
-        if req_name not in self.list_req():
-            return False
-        self.__req_name = req_name
-        self.__req_file_name = req_name + '.req'
+        # if req_name not in self.list_req():
+        #     return False
+        if req_name.lower().endswith('.req'):
+            self.__req_file_name = req_name
+        else:
+            self.__req_file_name = req_name + '.req'
         return self.__load_req_json()
 
     def delete_req(self, req_name: str) -> bool:
@@ -434,7 +434,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
     # --------------------- After select_op_req() ---------------------
 
     def get_req_name(self) -> str:
-        return self.__req_name
+        return self.__req_node_root.get_title() if self.__req_node_root is not None else ''
 
     def get_req_meta(self) -> dict:
         return self.__req_meta_dict
@@ -485,6 +485,9 @@ class ReqSingleJsonFileAgent(IReqAgent):
         except Exception as e:
             print(str(e))
             print(traceback.format_exc())
+            self.__req_meta_dict = {}
+            self.__req_data_dict = {}
+            self.__req_node_root = ReqNode('New Requirement')
             return False
         finally:
             pass
@@ -1424,8 +1427,11 @@ class RequirementUI(QWidget):
             self.__update_selected_index(None)
 
             menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
+            menu.addAction('Rename Requirement', self.on_requirement_tree_menu_rename_req)
             menu.addSeparator()
             menu.addAction('Create a New Requirement', self.on_requirement_tree_menu_create_new_req)
+            menu.addSeparator()
+            menu.addAction('Open Local Requirement File', self.on_requirement_tree_menu_open_local_file)
         menu.exec(QCursor.pos())
 
     def on_requirement_tree_menu_add_top_item(self):
@@ -1521,10 +1527,20 @@ class RequirementUI(QWidget):
 
                 self.__update_selected_index(None)
 
+    def on_requirement_tree_menu_rename_req(self):
+        req_name, is_ok = QInputDialog.getText(
+            self, "Rename Requirement", "Requirement Name: ", QLineEdit.Normal, "")
+        req_name = req_name.strip()
+        if is_ok and req_name != '':
+            node_root = self.__req_data_agent.get_req_root()
+            if node_root is not None:
+                node_root.set_title(req_name)
+                self.__req_data_agent.notify_node_data_changed(node_root)
+
     def on_requirement_tree_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
             self, "Create New Requirement", "Requirement Name: ", QLineEdit.Normal, "")
-        req_name.strip()
+        req_name = req_name.strip()
         if is_ok and req_name != '':
             if req_name in self.__req_data_agent.list_req():
                 ret = QMessageBox.question(
@@ -1537,6 +1553,16 @@ class RequirementUI(QWidget):
                 self.__req_model.begin_edit()
                 self.__root_node.append_child(req_root)
                 self.__req_model.end_edit()
+
+    def on_requirement_tree_menu_open_local_file(self):
+        file_path, is_ok = QFileDialog.getOpenFileName(
+            self, 'Select File', '', 'Requirement File (*.req);;All files (*.*)')
+        if is_ok:
+            req_agent = ReqSingleJsonFileAgent()
+            req_agent.init()
+            req_agent.open_req(file_path)
+            self.__req_data_agent = req_agent
+            self.__update_req_tree()
 
     def __update_req_tree(self):
         self.__tree_requirements.setModel(self.__req_model)
