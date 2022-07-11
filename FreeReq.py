@@ -240,7 +240,7 @@ class IReqAgent:
     def list_req(self) -> [str]:
         raise ValueError('Not implemented')
 
-    def new_req(self, req_name: str) -> bool:
+    def new_req(self, req_name: str, overwrite: bool = False) -> bool:
         raise ValueError('Not implemented')
 
     def open_req(self, req_name: str) -> bool:
@@ -415,7 +415,12 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def new_req(self, req_name: str, overwrite: bool = False) -> bool:
         if not overwrite and req_name in self.list_req():
             return False
-        self.__req_file_name = req_name + '.req'
+        if req_name.lower().endswith('.req'):
+            self.__req_file_name = req_name
+        else:
+            self.__req_file_name = req_name + '.req'
+        self.__req_meta_dict = {}
+        self.__req_data_dict = {}
         self.__req_node_root = ReqNode(req_name)
         return True
 
@@ -1048,9 +1053,6 @@ class ReqEditorBoard(QWidget):
         # self.__text_md_viewer.setMarkdown(text)
         self.__text_md_viewer.setHtml(html_text)
 
-    def on_meta_data_updated(self):
-        self.__layout_meta_area()
-
     # ---------------------------------------------------------------------------
 
     def __meta_data_to_ui(self, req_node: ReqNode):
@@ -1104,8 +1106,9 @@ class ReqEditorBoard(QWidget):
             req_node.set(meta_name, meta_content)
 
     def __req_node_data_to_ui(self, req_node: ReqNode):
+        self.__group_meta_data.setTitle('Req UUID: ' + req_node.get_uuid())
+        self.__line_title.setText(req_node.get_title())
         self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
-        self.__line_title.setText(req_node.get(STATIC_FIELD_TITLE, 'N/A'))
         self.__text_md_editor.setText(req_node.get(STATIC_FIELD_CONTENT, ''))
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
@@ -1125,6 +1128,7 @@ class ReqEditorBoard(QWidget):
         self.__line_id.setText('')
         self.__line_title.setText('')
         self.__text_md_editor.setText('')
+        self.__group_meta_data.setTitle('')
 
     # ---------------------------------------------------------------------------
 
@@ -1164,6 +1168,13 @@ class ReqEditorBoard(QWidget):
             self.__req_node_data_to_ui(req_node)
         else:
             self.__reset_ui_content()
+
+    # def set_data_agent(self, req_data_agent: IReqAgent):
+    #     self.edit_req(None)
+    #     self.__req_data_agent = req_data_agent
+
+    def on_meta_data_updated(self):
+        self.__layout_meta_area()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1280,6 +1291,10 @@ class ReqMetaBoard(QWidget):
     def reload_meta_data(self):
         self.__meta_to_ui()
 
+    # def set_data_agent(self, req_data_agent: IReqAgent):
+    #     self.__req_data_agent = req_data_agent
+    #     self.reload_meta_data()
+
     # ----------------------------------------------------------------------
 
     def __meta_to_ui(self):
@@ -1342,7 +1357,6 @@ class RequirementUI(QWidget):
         self.__edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
 
         self.__init_ui()
-        self.__update_req_tree()
 
     def __init_ui(self):
         self.__layout_ui()
@@ -1391,6 +1405,7 @@ class RequirementUI(QWidget):
 
         self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
 
+        self.__tree_requirements.setModel(self.__req_model)
         self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
 
@@ -1535,7 +1550,7 @@ class RequirementUI(QWidget):
             node_root = self.__req_data_agent.get_req_root()
             if node_root is not None:
                 node_root.set_title(req_name)
-                self.__req_data_agent.notify_node_data_changed(node_root)
+                self.__req_data_agent.inform_node_data_updated(node_root)
 
     def on_requirement_tree_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
@@ -1548,24 +1563,42 @@ class RequirementUI(QWidget):
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if ret != QMessageBox.Yes:
                     return
-            if self.__req_data_agent.new_req(req_name):
-                req_root = self.__req_data_agent.get_req_root()
-                self.__req_model.begin_edit()
-                self.__root_node.append_child(req_root)
-                self.__req_model.end_edit()
+
+            self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
+            self.__req_data_agent.new_req(req_name, overwrite=True)
+            self.__req_model.endRemoveRows()
+
+            self.__edit_board.edit_req(None)
+            self.__meta_board.reload_meta_data()
+
+            # req_root = self.__req_data_agent.get_req_root()
+            # self.__req_model.begin_edit()
+            # self.__root_node.append_child(req_root)
+            # self.__req_model.end_edit()
 
     def on_requirement_tree_menu_open_local_file(self):
         file_path, is_ok = QFileDialog.getOpenFileName(
             self, 'Select File', '', 'Requirement File (*.req);;All files (*.*)')
         if is_ok:
-            req_agent = ReqSingleJsonFileAgent()
-            req_agent.init()
-            req_agent.open_req(file_path)
-            self.__req_data_agent = req_agent
-            self.__update_req_tree()
+            self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
+            self.__req_data_agent.open_req(file_path)
+            self.__req_model.endRemoveRows()
 
-    def __update_req_tree(self):
-        self.__tree_requirements.setModel(self.__req_model)
+            self.__edit_board.edit_req(None)
+            self.__meta_board.reload_meta_data()
+
+            # req_agent = ReqSingleJsonFileAgent()
+            # req_agent.init()
+            # req_agent.open_req(file_path)
+            # req_model = ReqModel(req_agent)
+            #
+            # self.__req_data_agent = req_agent
+            # self.__req_model = req_model
+
+            # self.__update_req_tree()
+
+    # def __update_req_tree(self):
+    #     self.__tree_requirements.setModel(self.__req_model)
 
     def __tree_item_selected(self) -> bool:
         return self.__selected_index is not None and \

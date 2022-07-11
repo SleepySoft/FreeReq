@@ -35,7 +35,7 @@
     "req_data": {
         "id": "",
         "uuid": "ce188a5bd68d4c87b53aaf880c373e11",
-        "title": "Example",
+        "title": "FreeReq",
         "child": [
             {
                 "id": "",
@@ -209,38 +209,38 @@
                         "id": "",
                         "uuid": "fbe8c15815414f928221755b4c4ee124",
                         "title": "Document Structure",
-                        "child": [
-                            {
-                                "id": "",
-                                "uuid": "348268da6cea42728b9a26c1e44a9380",
-                                "title": "ID",
-                                "child": [],
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "",
-                                "Priority": "",
-                                "Implementation": ""
-                            },
-                            {
-                                "id": "WHAT00002",
-                                "uuid": "d5f6ecaedce64a4b9a9569a3dbba3fa1",
-                                "title": "Other Meta Data",
-                                "child": [],
-                                "content": "Owner - In default meta config\n\nVersion - In default meta config\n\nVersion - In default meta config\n\nStatus - In default meta config\n\nImplementation - In default meta config\n\nLink - User defines, not in default meta config",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Partial Implemented"
-                            }
-                        ],
                         "content": "",
                         "Owner": "",
                         "Version": "",
                         "Status": "",
                         "Priority": "",
-                        "Implementation": ""
+                        "Implementation": "",
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "348268da6cea42728b9a26c1e44a9380",
+                                "title": "ID",
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "child": []
+                            },
+                            {
+                                "id": "WHAT00002",
+                                "uuid": "d5f6ecaedce64a4b9a9569a3dbba3fa1",
+                                "title": "Other Meta Data",
+                                "content": "Owner - In default meta config\n\nVersion - In default meta config\n\nVersion - In default meta config\n\nStatus - In default meta config\n\nImplementation - In default meta config\n\nLink - User defines, not in default meta config",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Could / Nice to Have",
+                                "Implementation": "Partial Implemented",
+                                "child": []
+                            }
+                        ]
                     }
                 ]
             },
