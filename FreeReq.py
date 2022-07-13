@@ -55,7 +55,7 @@ try:
     # Use try catch for running FreeReq without UI
 
     from PyQt5.QtGui import QFont, QCursor
-    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint
+    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog
@@ -855,6 +855,7 @@ class ReqEditorBoard(QWidget):
         self.__req_model = req_model
         self.__editing_node: ReqNode = None
 
+        self.__content_edited = False
         self.__meta_data_layouts = []
         self.__meta_data_controls = {}
 
@@ -945,6 +946,7 @@ class ReqEditorBoard(QWidget):
         self.__check_editor.clicked.connect(self.on_check_editor)
         self.__check_viewer.clicked.connect(self.on_check_viewer)
 
+        self.__line_title.textChanged.connect(self.on_content_changed)
         self.__text_md_editor.textChanged.connect(self.on_text_content_edit)
 
         self.__button_increase_font.clicked.connect(self.on_button_increase_font)
@@ -984,12 +986,14 @@ class ReqEditorBoard(QWidget):
                 meta_data_edit_ctrl.setEditable(False)
                 for selection in meta_selection:
                     meta_data_edit_ctrl.addItem(selection, selection)
+                meta_data_edit_ctrl.currentTextChanged.connect(self.on_content_changed)
             else:
                 meta_data_edit_ctrl = QLineEdit()
+                meta_data_edit_ctrl.textChanged.connect(self.on_content_changed)
             # line.addWidget(meta_data_edit_ctrl)
 
             # meta_data_layouts.append(line)
-            meta_data_layouts.append([QLabel(meta_name + ' :'), meta_data_edit_ctrl])
+            meta_data_layouts.append([QLabel(meta_name + ': '), meta_data_edit_ctrl])
             meta_data_controls[meta_name] = meta_data_edit_ctrl
 
             self.__meta_data_layouts = meta_data_layouts
@@ -1032,6 +1036,7 @@ class ReqEditorBoard(QWidget):
 
         if len(id_prefixes) == 1:
             self.on_menu_assign_id(id_prefixes[0])
+            self.update_content_edited_status(True)
         else:
             menu = QMenu()
             for id_prefix in id_prefixes:
@@ -1041,17 +1046,23 @@ class ReqEditorBoard(QWidget):
     def on_menu_assign_id(self, id_prefix: str):
         req_id = self.__req_data_agent.new_req_id(id_prefix)
         self.__line_id.setText(req_id)
+        self.update_content_edited_status(True)
 
     def on_button_save_content(self):
         if self.__editing_node is not None:
             self.__ui_to_meta_data(self.__editing_node)
             self.__ui_to_req_node_data(self.__editing_node)
+        self.update_content_edited_status(False)
 
     def on_text_content_edit(self):
         md_text = self.__text_md_editor.toPlainText()
         html_text = self.render_markdown(md_text)
         # self.__text_md_viewer.setMarkdown(text)
         self.__text_md_viewer.setHtml(html_text)
+        self.on_content_changed()
+
+    def on_content_changed(self, *args):
+        self.update_content_edited_status(True)
 
     # ---------------------------------------------------------------------------
 
@@ -1130,6 +1141,10 @@ class ReqEditorBoard(QWidget):
         self.__text_md_editor.setText('')
         self.__group_meta_data.setTitle('')
 
+    def update_content_edited_status(self, edited: bool):
+        self.__content_edited = edited
+        self.__button_save_content.setText('* Save Content' if edited else 'Save Content')
+
     # ---------------------------------------------------------------------------
 
     @staticmethod
@@ -1168,10 +1183,14 @@ class ReqEditorBoard(QWidget):
             self.__req_node_data_to_ui(req_node)
         else:
             self.__reset_ui_content()
+        self.update_content_edited_status(False)
 
     # def set_data_agent(self, req_data_agent: IReqAgent):
     #     self.edit_req(None)
     #     self.__req_data_agent = req_data_agent
+
+    def is_content_edited(self) -> bool:
+        return self.__content_edited
 
     def on_meta_data_updated(self):
         self.__layout_meta_area()
@@ -1408,12 +1427,14 @@ class RequirementUI(QWidget):
         self.__tree_requirements.setModel(self.__req_model)
         self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
+        self.__tree_requirements.selectionModel().selectionChanged.connect(self.on_requirement_tree_selection_changed)
 
     def on_button_req_refresh(self):
         pass
 
     def on_requirement_tree_click(self, index: QModelIndex):
-        self.__update_selected_index(index)
+        pass
+        # self.__update_selected_index(index)
         # if index.isValid():
         #     req_node: ReqNode = index.internalPointer()
         #     self.__selected_node = req_node
@@ -1424,7 +1445,7 @@ class RequirementUI(QWidget):
         menu = QMenu()
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
         if sel_index is not None and sel_index.isValid():
-            self.__update_selected_index(sel_index)
+            # self.__update_selected_index(sel_index)
             # self.__selected_index = sel_index
             # self.__selected_node = self.__req_model.get_node_from_index(sel_index)
 
@@ -1439,7 +1460,7 @@ class RequirementUI(QWidget):
             menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)
 
         else:
-            self.__update_selected_index(None)
+            # self.__update_selected_index(None)
 
             menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
             menu.addAction('Rename Requirement', self.on_requirement_tree_menu_rename_req)
@@ -1449,8 +1470,22 @@ class RequirementUI(QWidget):
             menu.addAction('Open Local Requirement File', self.on_requirement_tree_menu_open_local_file)
         menu.exec(QCursor.pos())
 
+    def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
+        if self.__selected_node is not None and self.__edit_board.is_content_edited():
+            ret = QMessageBox.question(self, 'Save or Not',
+                                       'Requirement Content Changed.\r\nSave?',
+                                       QMessageBox.Yes | QMessageBox.No)
+            if ret == QMessageBox.Yes:
+                self.__edit_board.on_button_save_content()
+
+        selected_indexes = selected.indexes()
+        if len(selected_indexes) > 0:
+            selected_index = selected_indexes[0]
+            self.__update_selected_index(selected_index)
+
     def on_requirement_tree_menu_add_top_item(self):
         self.__req_model.insertRow(-1)
+        self.__req_data_agent.inform_node_child_updated(self.__req_data_agent.get_req_root())
 
         # req_root = self.__req_data_agent.get_req_root()
         # if req_root is not None:
@@ -1462,6 +1497,7 @@ class RequirementUI(QWidget):
 
     def on_requirement_tree_menu_append_child(self):
         if self.__tree_item_selected():
+            selected_node = self.__selected_node
             self.__req_model.insertRow(-1, self.__selected_index)
             # new_node = ReqNode('New Item')
             # parent_node = self.__req_model.parent(self.__selected_index)
@@ -1469,13 +1505,14 @@ class RequirementUI(QWidget):
             # self.__req_model.beginInsertRows(parent_node, append_pos, append_pos)
             # self.__selected_node.append_child(new_node)
             # self.__req_model.endInsertRows()
-            self.__req_data_agent.inform_node_data_updated(self.__selected_node)
+            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():
             # new_node = ReqNode('New Item')
             # parent_node = self.__req_model.parent(self.__selected_index)
 
+            selected_node = self.__selected_node
             insert_pos = self.__selected_node.order()
             parent_index = self.__req_model.parent(self.__selected_index)
             self.__req_model.insertRow(insert_pos, parent_index)
@@ -1483,13 +1520,14 @@ class RequirementUI(QWidget):
             # self.__req_model.beginInsertRows(parent_node, insert_pos - 1, insert_pos)
             # self.__selected_node.insert_sibling_left(new_node)
             # self.__req_model.endInsertRows()
-            self.__req_data_agent.inform_node_data_updated(self.__selected_node)
+            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_add_sibling_down(self):
         if self.__tree_item_selected():
             # new_node = ReqNode('New Item')
             # parent_node = self.__req_model.parent(self.__selected_index)
 
+            selected_node = self.__selected_node
             insert_pos = self.__selected_node.order() + 1
             parent_index = self.__req_model.parent(self.__selected_index)
             self.__req_model.insertRow(insert_pos, parent_index)
@@ -1497,10 +1535,11 @@ class RequirementUI(QWidget):
             # self.__req_model.beginInsertRows(parent_node, insert_pos, insert_pos)
             # self.__selected_node.insert_sibling_right(new_node)
             # self.__req_model.endInsertRows()
-            self.__req_data_agent.inform_node_data_updated(self.__selected_node)
+            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_shift_item_up(self):
         if self.__tree_item_selected():
+            selected_node = self.__selected_node
             node_order = self.__selected_node.order()
             sibling_list = self.__selected_node.sibling()
             # parent_index = self.__req_model.parent(self.__selected_index)
@@ -1512,10 +1551,11 @@ class RequirementUI(QWidget):
                     sibling_list[node_order], sibling_list[node_order - 1]
                 self.__req_model.end_edit()
                 # self.__req_model.endMoveRows()
-            self.__req_data_agent.inform_node_child_updated(self.__selected_node.parent())
+            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_shift_item_down(self):
         if self.__tree_item_selected():
+            selected_node = self.__selected_node
             node_order = self.__selected_node.order()
             sibling_list = self.__selected_node.sibling()
             # parent_index = self.__req_model.parent(self.__selected_index)
@@ -1527,20 +1567,23 @@ class RequirementUI(QWidget):
                     sibling_list[node_order], sibling_list[node_order + 1]
                 self.__req_model.end_edit()
                 # self.__req_model.endMoveRows()
-            self.__req_data_agent.inform_node_child_updated(self.__selected_node.parent())
+            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_delete_item(self):
         if self.__tree_item_selected():
+            selected_node = self.__selected_node
             node_order = self.__selected_node.order()
             node_parent = self.__selected_node.parent()
             if node_parent is not None:
+                # Because beginRemoveRows() will change the selected node
+
                 self.__req_model.beginRemoveRows(
                     self.__req_model.parent(self.__selected_index), node_order, node_order + 1)
-                node_parent.remove_child(self.__selected_node)
+                node_parent.remove_child(selected_node)
                 self.__req_model.endRemoveRows()
                 self.__req_data_agent.inform_node_child_updated(node_parent)
 
-                self.__update_selected_index(None)
+                # self.__update_selected_index(None)
 
     def on_requirement_tree_menu_rename_req(self):
         req_name, is_ok = QInputDialog.getText(
@@ -1615,6 +1658,7 @@ class RequirementUI(QWidget):
             self.__selected_node = None
             self.__selected_index = None
             self.__edit_board.edit_req(None)
+        print('Select Node:　' + str(self.__selected_node))
 
     def __on_meta_data_updated(self):
         self.__edit_board.on_meta_data_updated()
