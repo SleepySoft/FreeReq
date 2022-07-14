@@ -183,16 +183,20 @@ class ReqNode:
         self.__children.clear()
 
     def insert_sibling_left(self, node: ReqNode) -> int:
-        node.set_parent(self)
-        index = self.order()
-        self.__sibling.insert(self.order(), node)
-        return index
+        if self.__parent is not None:
+            index = self.order()
+            self.__parent.insert_children(node, index)
+            return index
+        else:
+            return -1
 
     def insert_sibling_right(self, node: ReqNode) -> int:
-        node.set_parent(self)
-        index = self.order() + 1
-        self.__sibling.insert(self.order() + 1, node)
-        return index
+        if self.__parent is not None:
+            index = self.order() + 1
+            self.__parent.insert_children(node, index)
+            return index
+        else:
+            return -1
 
     # ------------------------------------ Persists ------------------------------------
 
@@ -651,22 +655,44 @@ class ReqModel(QAbstractItemModel):
             return False
 
         if parent is None or not parent.isValid():
-            parent = QModelIndex()
+            # parent = QModelIndex()
             parent_node: ReqNode = self.__req_data_agent.get_req_root()
         else:
             parent_node: ReqNode = parent.internalPointer()
 
-        if row < 0:
-            row = parent_node.child_count()
+        self.insert_node_children(parent_node, [ReqNode() for _ in range(count)], row)
 
-        self.begin_edit()
-        self.beginInsertRows(parent, row, row + count - 1)
-        if parent_node is not None:
-            parent_node.insert_children([ReqNode() for _ in range(count)], row)
-        self.endInsertRows()
-        self.end_edit()
+        # if row < 0:
+        #     row = parent_node.child_count()
+        #
+        # self.begin_edit()
+        # self.beginInsertRows(parent, row, row + count - 1)
+        # if parent_node is not None:
+        #     parent_node.insert_children([ReqNode() for _ in range(count)], row)
+        # self.endInsertRows()
+        # self.end_edit()
 
         return True
+
+    # ---------------------------------- Node Operation ----------------------------------
+
+    def insert_node_children(self, parent_node: ReqNode, insert_nodes: ReqNode or [ReqNode], pos: int):
+        if isinstance(insert_nodes, ReqNode):
+            insert_nodes = [insert_nodes]
+        if parent_node is None:
+            parent = QModelIndex()
+            parent_node = self.__req_data_agent.get_req_root()
+        else:
+            parent = self.index_of_node(parent_node)
+
+        if pos < 0:
+            pos = parent_node.child_count()
+
+        self.begin_edit()
+        self.beginInsertRows(parent, pos, pos + len(insert_nodes) - 1)
+        parent_node.insert_children(insert_nodes, pos)
+        self.endInsertRows()
+        self.end_edit()
 
 
 # https://gist.github.com/xiaolai/aa190255b7dde302d10208ae247fc9f2
@@ -1363,6 +1389,7 @@ class RequirementUI(QWidget):
         self.__req_data_agent = req_data_agent
         self.__req_model = ReqModel(self.__req_data_agent)
 
+        self.__cut_items = []
         self.__selected_node: ReqNode = None
         self.__selected_index: QModelIndex = None
 
@@ -1457,12 +1484,21 @@ class RequirementUI(QWidget):
             menu.addAction('Shift item up', self.on_requirement_tree_menu_shift_item_up)
             menu.addAction('Shift item Down', self.on_requirement_tree_menu_shift_item_down)
             menu.addSeparator()
+            if len(self.__cut_items) > 0:
+                menu.addAction('Paste Item as child', partial(self.on_requirement_tree_menu_paste_item, 'child'))
+                menu.addAction('Paste Item as up sibling', partial(self.on_requirement_tree_menu_paste_item, 'up'))
+                menu.addAction('Paste Item as down sibling', partial(self.on_requirement_tree_menu_paste_item, 'down'))
+            menu.addAction('Cut item', self.on_requirement_tree_menu_cut_item)
+            menu.addSeparator()
             menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)
 
         else:
             # self.__update_selected_index(None)
 
             menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
+            if len(self.__cut_items) > 0:
+                menu.addAction('Paste as Top Item', partial(self.on_requirement_tree_menu_paste_item, 'top'))
+            menu.addSeparator()
             menu.addAction('Rename Requirement', self.on_requirement_tree_menu_rename_req)
             menu.addSeparator()
             menu.addAction('Create a New Requirement', self.on_requirement_tree_menu_create_new_req)
@@ -1569,6 +1605,34 @@ class RequirementUI(QWidget):
                 # self.__req_model.endMoveRows()
             self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
+    def on_requirement_tree_menu_cut_item(self):
+        if self.__tree_item_selected():
+            self.__cut_items.append(self.__selected_node)
+            self.on_requirement_tree_menu_delete_item()
+
+    def on_requirement_tree_menu_paste_item(self, pos: str):
+        if pos == 'top' or self.__tree_item_selected():
+            if len(self.__cut_items) > 0:
+                paste_node = self.__cut_items.pop()
+
+                if pos == 'top':
+                    parent_node = self.__req_data_agent.get_req_root()
+                elif pos == 'child':
+                    parent_node = self.__selected_node
+                else:
+                    parent_node = self.__selected_node.parent()
+
+                if pos in ['top', 'child']:
+                    self.__req_model.insert_node_children(parent_node, paste_node, -1)
+                elif pos == 'up':
+                    paste_pos = self.__selected_node.order()
+                    self.__req_model.insert_node_children(parent_node, paste_node, paste_pos)
+                elif pos == 'down':
+                    paste_pos = self.__selected_node.order() + 1
+                    self.__req_model.insert_node_children(parent_node, paste_node, paste_pos)
+
+                self.__req_data_agent.inform_node_child_updated(parent_node)
+
     def on_requirement_tree_menu_delete_item(self):
         if self.__tree_item_selected():
             selected_node = self.__selected_node
@@ -1658,7 +1722,7 @@ class RequirementUI(QWidget):
             self.__selected_node = None
             self.__selected_index = None
             self.__edit_board.edit_req(None)
-        print('Select Node:　' + str(self.__selected_node))
+        # print('Select Node:　' + str(self.__selected_node))
 
     def __on_meta_data_updated(self):
         self.__edit_board.on_meta_data_updated()
