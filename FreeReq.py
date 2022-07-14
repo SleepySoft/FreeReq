@@ -1488,6 +1488,7 @@ class RequirementUI(QWidget):
                 menu.addAction('Paste Item as child', partial(self.on_requirement_tree_menu_paste_item, 'child'))
                 menu.addAction('Paste Item as up sibling', partial(self.on_requirement_tree_menu_paste_item, 'up'))
                 menu.addAction('Paste Item as down sibling', partial(self.on_requirement_tree_menu_paste_item, 'down'))
+            menu.addSeparator()
             menu.addAction('Cut item', self.on_requirement_tree_menu_cut_item)
             menu.addSeparator()
             menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)

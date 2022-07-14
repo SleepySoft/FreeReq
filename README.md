@@ -21,3 +21,7 @@ More requirement entry information can be added by editing the metadata. The edi
 ![](doc/ui_req_edit.png)
 
 ![](doc/ui_meta_edit.png)
+
+![](doc/ui_r_button_on_empty.png)
+
+![](doc/ui_r_button_on_item.png)
