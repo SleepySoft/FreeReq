@@ -485,7 +485,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __load_req_json(self) -> bool:
         try:
-            with open(self.__req_file_name, 'rt', encoding='utf-8') as f:
+            with open(self.__req_file_name, 'rt', encoding='utf8') as f:
                 json_dict = json.load(f)
                 self.__req_meta_dict = json_dict.get('req_meta', {})
                 self.__req_data_dict = json_dict.get('req_data', {})
@@ -510,8 +510,9 @@ class ReqSingleJsonFileAgent(IReqAgent):
                 'req_data': self.__req_data_dict
             }
 
-            with open(self.__req_file_name, 'wt', encoding='utf-8') as f:
-                json.dump(json_dict, f, indent=4, ensure_ascii=False)
+            json_text = json.dumps(json_dict, indent=4, ensure_ascii=False)
+            with open(self.__req_file_name, 'wt', encoding='utf8') as f:
+                f.write(json_text)
         except Exception as e:
             print(str(e))
             print(traceback.format_exc())
