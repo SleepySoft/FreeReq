@@ -60,13 +60,13 @@
                                 "id": "WHY00014",
                                 "uuid": "34dc7bc15a6e4d00b3b8d928abd5db25",
                                 "title": "Title (Name)",
-                                "child": [],
                                 "content": "This field is MUST.\n\nThe title (name) will show as the tree node name.",
                                 "Owner": "Sleepy",
                                 "Version": "1.0",
                                 "Status": "Approved",
                                 "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
+                                "Implementation": "Full Implemented",
+                                "child": []
                             },
                             {
                                 "id": "WHY00005",
@@ -84,13 +84,13 @@
                                 "id": "WHY00015",
                                 "uuid": "74c4765be9dc44b29fee8c586467e1f5",
                                 "title": "Content",
-                                "child": [],
                                 "content": "This field is MUST.\n\nThe main content of one requirement.",
                                 "Owner": "Sleepy",
                                 "Version": "1.0",
                                 "Status": "Approved",
                                 "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
+                                "Implementation": "Full Implemented",
+                                "child": []
                             },
                             {
                                 "id": "WHY00006",
@@ -187,13 +187,13 @@
                                         "id": "WHY00016",
                                         "uuid": "32442c5160ca44d98fa19adff178af2b",
                                         "title": "Local storage",
-                                        "child": [],
                                         "content": "This software MUST support local storage, as text file which can compare and merge easily.",
                                         "Owner": "Sleepy",
                                         "Version": "1.0",
                                         "Status": "Approved",
                                         "Priority": "Must / Vital",
-                                        "Implementation": "Full Implemented"
+                                        "Implementation": "Full Implemented",
+                                        "child": []
                                     }
                                 ]
                             }
@@ -209,13 +209,13 @@
                                 "id": "WHY00017",
                                 "uuid": "2891bfbf9efe4a109bf1556339133326",
                                 "title": "Tree View",
-                                "child": [],
                                 "content": "The main interface should show all requirement enrty in a tree view. When click on one item. Show its detail on the editor area.",
                                 "Owner": "Sleepy",
                                 "Version": "",
                                 "Status": "Approved",
                                 "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
+                                "Implementation": "Full Implemented",
+                                "child": []
                             },
                             {
                                 "id": "",
@@ -255,8 +255,32 @@
                         "id": "",
                         "uuid": "9e5fed8db5e842639083e53b13a4a8db",
                         "title": "Search and Indexing",
-                        "child": [],
                         "content": "Requirement can be searched by:\n\n* Name\n\n* ID\n\n* The text in content\n\n* UUID\n\n* Extra data (meta data)",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "Draft",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "831bf7aea3094c819075de13d704b454",
+                        "title": "Filter and Export",
+                        "content": "The requirement can be exported as various format, such as\n\n* Text file\n\n* Excel File\n\n* Sub .req file\n\n* Other format as per user's requirement\n\nThe exported content can be filtered before exporting. In this case, the export file should only contain filtered content.",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "Draft",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "ae62244719d74e0fac24f6d10ac119e9",
+                        "title": "Batch operation",
+                        "child": [],
+                        "content": "As an user, I want to do batch operation on:\n\n+ ID\n\n+ Other extra data that configed by meta data.",
                         "Owner": "",
                         "Version": "",
                         "Status": "Draft",
@@ -265,10 +289,10 @@
                     },
                     {
                         "id": "",
-                        "uuid": "831bf7aea3094c819075de13d704b454",
-                        "title": "Filter and Export",
+                        "uuid": "878f48bb93a54cf68882a90fc2c6b18e",
+                        "title": "Statistics",
                         "child": [],
-                        "content": "The requirement can be exported as various format, such as\n\n* Text file\n\n* Excel File\n\n* Sub .req file\n\n* Other format as per user's requirement\n\nThe exported content can be filtered before exporting. In this case, the export file should only contain filtered content.",
+                        "content": "As an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub",
                         "Owner": "",
                         "Version": "",
                         "Status": "Draft",
@@ -298,13 +322,13 @@
                                 "id": "WHAT00003",
                                 "uuid": "c2854fbc4c93467985a51a7a8678248d",
                                 "title": "Title (Name)",
-                                "child": [],
                                 "content": "",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "",
                                 "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
+                                "Implementation": "Full Implemented",
+                                "child": []
                             },
                             {
                                 "id": "WHAT00005",
@@ -322,13 +346,13 @@
                                 "id": "WHAT00004",
                                 "uuid": "c0c81af94db14a03866d2ff9075481c3",
                                 "title": "Content",
-                                "child": [],
                                 "content": "",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "Approved",
                                 "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
+                                "Implementation": "Full Implemented",
+                                "child": []
                             },
                             {
                                 "id": "WHAT00002",
@@ -348,75 +372,75 @@
                         "id": "",
                         "uuid": "91a652735c994c868080c8cf6f0f049e",
                         "title": "Storage",
-                        "child": [
-                            {
-                                "id": "WHAT00006",
-                                "uuid": "aa63419e43574685bcd87f3672516a17",
-                                "title": "Local XML storage",
-                                "child": [],
-                                "content": "Requirement can be storaged as XML, which is good organized.",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Rejected",
-                                "Priority": "To Be Defined",
-                                "Implementation": "Not Implemented"
-                            },
-                            {
-                                "id": "WHAT00007",
-                                "uuid": "7348dee92b1f4e2993db5cf4e1afa7bb",
-                                "title": "Local JSON storage",
-                                "child": [],
-                                "content": "The document can be saved as JSON, which is easy for persistence and load. It's also readable, though it's less pretty than XML.",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
-                            }
-                        ],
                         "content": "",
                         "Owner": "",
                         "Version": "",
                         "Status": "Approved",
                         "Priority": "Must / Vital",
-                        "Implementation": ""
+                        "Implementation": "",
+                        "child": [
+                            {
+                                "id": "WHAT00006",
+                                "uuid": "aa63419e43574685bcd87f3672516a17",
+                                "title": "Local XML storage",
+                                "content": "Requirement can be storaged as XML, which is good organized.\n\nThe file should be readable, not encoded (for some unicode text).",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Rejected",
+                                "Priority": "To Be Defined",
+                                "Implementation": "Not Implemented",
+                                "child": []
+                            },
+                            {
+                                "id": "WHAT00007",
+                                "uuid": "7348dee92b1f4e2993db5cf4e1afa7bb",
+                                "title": "Local JSON storage",
+                                "content": "The document can be saved as JSON, which is easy for persistence and load. It's also readable, though it's less pretty than XML.\n\nThe file should be readable, not encoded (for some unicode text).",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Must / Vital",
+                                "Implementation": "Full Implemented",
+                                "child": []
+                            }
+                        ]
                     },
                     {
                         "id": "WHAT00008",
                         "uuid": "3c09178a2ebb44e89f82438478c700eb",
                         "title": "UI",
-                        "child": [
-                            {
-                                "id": "WHAT00009",
-                                "uuid": "b599ccfeacdd4489a96eae4391f5bf2d",
-                                "title": "UI by pyqt",
-                                "child": [],
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented"
-                            },
-                            {
-                                "id": "WHAT00010",
-                                "uuid": "15f6b85843f74e6086e1601b17046592",
-                                "title": "UI by web",
-                                "child": [],
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Draft",
-                                "Priority": "Should / Necessary",
-                                "Implementation": "Not Implemented"
-                            }
-                        ],
                         "content": "This soft MUST provide basic UI for requirement browsing.",
                         "Owner": "",
                         "Version": "",
                         "Status": "Approved",
                         "Priority": "Must / Vital",
-                        "Implementation": "Partial Implemented"
+                        "Implementation": "Partial Implemented",
+                        "child": [
+                            {
+                                "id": "WHAT00009",
+                                "uuid": "b599ccfeacdd4489a96eae4391f5bf2d",
+                                "title": "UI by pyqt",
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Must / Vital",
+                                "Implementation": "Full Implemented",
+                                "child": []
+                            },
+                            {
+                                "id": "WHAT00010",
+                                "uuid": "15f6b85843f74e6086e1601b17046592",
+                                "title": "UI by web",
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "Should / Necessary",
+                                "Implementation": "Not Implemented",
+                                "child": []
+                            }
+                        ]
                     }
                 ]
             },
