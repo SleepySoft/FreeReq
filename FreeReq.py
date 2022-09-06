@@ -970,6 +970,9 @@ class ReqEditorBoard(QWidget):
         self.__text_md_editor.setFont(editor_font)
         self.__text_md_viewer.setFont(editor_font)
 
+        self.__text_md_editor.setAcceptRichText(False)
+        self.__text_md_viewer.setAcceptRichText(False)
+
         self.__check_editor.clicked.connect(self.on_check_editor)
         self.__check_viewer.clicked.connect(self.on_check_viewer)
 
