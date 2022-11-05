@@ -485,7 +485,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __load_req_json(self) -> bool:
         try:
-            with open(self.__req_file_name, 'rt') as f:
+            with open(self.__req_file_name, 'rt', encoding='utf-8') as f:
                 json_dict = json.load(f)
                 self.__req_meta_dict = json_dict.get('req_meta', {})
                 self.__req_data_dict = json_dict.get('req_data', {})
