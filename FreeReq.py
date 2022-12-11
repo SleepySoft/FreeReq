@@ -510,8 +510,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
                 'req_data': self.__req_data_dict
             }
 
-            with open(self.__req_file_name, 'wt') as f:
-                json.dump(json_dict, f, indent=4)
+            with open(self.__req_file_name, 'wt', encoding='utf-8') as f:
+                json.dump(json_dict, f, indent=4, ensure_ascii=False)
         except Exception as e:
             print(str(e))
             print(traceback.format_exc())
