@@ -874,6 +874,21 @@ table tr th {
 """
 
 
+HTML_TEMPLATE = """
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="content-type" />
+<style>
+    {css}
+</style>
+</head>
+<body>
+    {content}
+</body>
+</html>
+        """
+
+
 class ReqEditorBoard(QWidget):
     def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel):
         super(ReqEditorBoard, self).__init__()
@@ -1087,6 +1102,7 @@ class ReqEditorBoard(QWidget):
     def on_text_content_edit(self):
         md_text = self.__text_md_editor.toPlainText()
         html_text = self.render_markdown(md_text)
+        html_text = html_text.replace('strike>', 'del>')
         # self.__text_md_viewer.setMarkdown(text)
         self.__text_md_viewer.setHtml(html_text)
         self.on_content_changed()
@@ -1184,25 +1200,14 @@ class ReqEditorBoard(QWidget):
         :param md_text:
         :return:
         """
-        extras = ['code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
+
+        # https://github.com/trentm/python-markdown2/blob/master/lib/markdown2.py
+        extras = ['strike', 'underline', 'tg-spoiler', 'smarty-pants', 'break-on-newline',
+                  'code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
                   'cuddled-lists', 'header ids', 'nofollow']
 
-        html_template = """
-                <html>
-                <head>
-                <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-                <style>
-                    {css}
-                </style>
-                </head>
-                <body>
-                    {content}
-                </body>
-                </html>
-                """
-
         ret = markdown2.markdown(md_text, extras=extras)
-        return html_template.format(css=MARK_DOWN_CSS_TABLE, content=ret)
+        return HTML_TEMPLATE.format(css=MARK_DOWN_CSS_TABLE, content=ret)
 
     # ----------------------------------------------------------------------------------
 
