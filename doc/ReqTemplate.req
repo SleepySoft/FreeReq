@@ -1,0 +1,63 @@
+{
+    "req_meta": {
+        "Owner": [],
+        "Version": [],
+        "Status": [
+            "Draft",
+            "Submitted",
+            "Reviewing",
+            "Reserved",
+            "Approved",
+            "Deferred",
+            "Rejected"
+        ],
+        "Priority": [
+            "Must / Vital",
+            "Should / Necessary",
+            "Could / Nice to Have",
+            "To Be Defined"
+        ],
+        "Implementation": [
+            "Not Implemented",
+            "Planing",
+            "Designing",
+            "Implementing",
+            "Verifying",
+            "Full Implemented",
+            "Partial Implemented"
+        ],
+        "meta_group": [
+            "WHY",
+            "WHAT",
+            "HOW"
+        ]
+    },
+    "req_data": {
+        "id": "",
+        "uuid": "ce188a5bd68d4c87b53aaf880c373e11",
+        "title": "RightClickToRenameRequirement",
+        "child": [
+            {
+                "id": "",
+                "uuid": "11c1266e145249858bc47eb007808fe1",
+                "title": "Business Needs (WHY)",
+                "content": "",
+                "child": []
+            },
+            {
+                "id": "",
+                "uuid": "d482e027840e4fcc860d8cc26e44e83c",
+                "title": "Stakeholder Requirements (WHAT)",
+                "content": "",
+                "child": []
+            },
+            {
+                "id": "",
+                "uuid": "26be32db0cbe46709520b80b3bd38659",
+                "title": "System Requirements (HOW)",
+                "content": "",
+                "child": []
+            }
+        ]
+    }
+}
