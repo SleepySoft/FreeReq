@@ -6,7 +6,7 @@ This file includes following class:
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
 | Class                   | Usage                                                                   |
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
-| ReqNode                 | The croe data structure for requirement data management.                |
+| ReqNode                 | The core data structure for requirement data management.                |
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
 | IReqAgent               | The interface to manage requirement data storage and access.            |
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
@@ -16,7 +16,7 @@ This file includes following class:
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
 | ReqModel                | The Model for QTreeView. Adapting IReqAgent to QAbstractItemModel.      |
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
-| ReqEditorBoard          | The UI for Reqirement data editing.                                     |
+| ReqEditorBoard          | The UI for Requirement data editing.                                     |
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
 | ReqMetaBoard            | The UI for Meta data config.                                            |
 +─────────────────────────+─────────────────────────────────────────────────────────────────────────+
@@ -49,6 +49,7 @@ import uuid
 import json
 import markdown2
 import traceback
+from typing import Callable, List
 from functools import partial
 
 try:
@@ -75,7 +76,7 @@ STATIC_FIELD_TITLE = 'title'
 STATIC_FIELD_CHILD = 'child'
 STATIC_FIELD_CONTENT = 'content'
 
-STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD]
+STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD, STATIC_FIELD_CONTENT]
 
 
 STATIC_META_ID_PREFIX = 'meta_group'
@@ -214,6 +215,26 @@ class ReqNode:
                 node.from_dict(sub_dict)
                 self.append_child(node)
             del self.__data[STATIC_FIELD_CHILD]
+
+    # --------------------
+
+    def map(self, func: Callable[[ReqNode], None]):
+        func(self)
+        for child in self.__children:
+            child.map(func)
+
+    def filter(self, func: Callable[[ReqNode], bool]) -> List[ReqNode]:
+        result = []
+        for child in self.__children:
+            if func(child):
+                result.append(child)
+            result.extend(child.filter(func))
+        return result
+
+    def for_each(self, func: Callable[[ReqNode], None]):
+        func(self)
+        for child in self.__children:
+            child.for_each(func)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1399,6 +1420,8 @@ class RequirementUI(QWidget):
         self.__req_model = ReqModel(self.__req_data_agent)
 
         self.__cut_items = []
+        self.__filter_index = -1
+        self.__filter_nodes = []
         self.__selected_node: ReqNode = None
         self.__selected_index: QModelIndex = None
 
@@ -1464,6 +1487,16 @@ class RequirementUI(QWidget):
         self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
         self.__tree_requirements.selectionModel().selectionChanged.connect(self.on_requirement_tree_selection_changed)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
+            text, ok = QInputDialog.getText(self, 'Search', 'Enter text:')
+            if ok:
+                self.search_tree(text)
+        elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
+            self.jump_to_prev_search()
+        elif event.key() == Qt.Key_F3:
+            self.jump_to_next_search()
 
     def on_button_req_refresh(self):
         pass
@@ -1716,6 +1749,39 @@ class RequirementUI(QWidget):
 
     # def __update_req_tree(self):
     #     self.__tree_requirements.setModel(self.__req_model)
+
+    def search_tree(self, text: str):
+        root_node = self.__req_data_agent.get_req_root()
+        self.__filter_nodes = root_node.filter(partial(RequirementUI.__find_node_any_data, text))
+        self.__filter_index = -1
+        self.jump_to_next_search()
+
+    def jump_to_prev_search(self):
+        self.__filter_index -= 1
+        if self.__filter_index < 0:
+            self.__filter_index = len(self.__filter_nodes) - 1
+        if self.__filter_index >= 0:
+            self.jump_to_node(self.__filter_nodes[self.__filter_index])
+
+    def jump_to_next_search(self):
+        self.__filter_index += 1
+        if self.__filter_index >= len(self.__filter_nodes):
+            self.__filter_index = -1
+        if self.__filter_index >= 0:
+            self.jump_to_node(self.__filter_nodes[self.__filter_index])
+
+    def jump_to_node(self, node: ReqNode):
+        index = self.__req_model.index_of_node(node)
+        self.__tree_requirements.expand(index)
+        self.__tree_requirements.scrollTo(index)
+        self.__tree_requirements.setCurrentIndex(index)
+
+    @staticmethod
+    def __find_node_any_data(text: str, node: ReqNode) -> bool:
+        for v in node.data().values():
+            if isinstance(v, str) and text in v:
+                return True
+        return False
 
     def __tree_item_selected(self) -> bool:
         return self.__selected_index is not None and \
