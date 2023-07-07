@@ -1499,6 +1499,8 @@ class RequirementUI(QWidget):
             text, ok = QInputDialog.getText(self, 'Search', 'Enter search text: \nF3 Jump Next\nSHIFT + F3 Jump Prev')
             if ok:
                 self.search_tree(text)
+        elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
+            self.__edit_board.on_button_save_content()
         elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
             self.jump_to_prev_search()
         elif event.key() == Qt.Key_F3:
