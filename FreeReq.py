@@ -58,8 +58,8 @@ try:
     from PyQt5.QtGui import QFont, QCursor
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
-        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog
+    QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+    QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1425,10 +1425,10 @@ class RequirementUI(QWidget):
         self.__selected_node: ReqNode = None
         self.__selected_index: QModelIndex = None
 
-        self.__combo_req_select = QComboBox()
+        # self.__combo_req_select = QComboBox()
         self.__tree_requirements = QTreeView()
 
-        self.__button_req_refresh = QPushButton('Refresh')
+        # self.__button_req_refresh = QPushButton('Refresh')
 
         self.__edit_tab = QTabWidget()
         self.__meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
@@ -1445,17 +1445,23 @@ class RequirementUI(QWidget):
         self.setLayout(root_layout)
 
         left_area = QVBoxLayout()
-        root_layout.addLayout(left_area)
-        root_layout.addWidget(self.__edit_tab, 99)
-        root_layout.addWidget(self.__edit_board, 99)
+        # root_layout.addLayout(left_area)
+        # root_layout.addWidget(self.__edit_tab, 99)
+        # root_layout.addWidget(self.__edit_board, 99)
+
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(self.__tree_requirements)
+        splitter.addWidget(self.__edit_tab)
+
+        root_layout.addWidget(splitter)
 
         # ------------------------- Left area ------------------------
 
-        line = QHBoxLayout()
-        line.addWidget(self.__combo_req_select)
-        line.addWidget(self.__button_req_refresh)
-        left_area.addLayout(line)
-        left_area.addWidget(self.__tree_requirements)
+        # line = QHBoxLayout()
+        # line.addWidget(self.__combo_req_select)
+        # line.addWidget(self.__button_req_refresh)
+        # left_area.addLayout(line)
+        # left_area.addWidget(self.__tree_requirements)
 
         # ------------------------ Right area ------------------------
 
@@ -1481,16 +1487,16 @@ class RequirementUI(QWidget):
         finally:
             pass
 
-        self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
+        # self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
 
         self.__tree_requirements.setModel(self.__req_model)
-        self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
+        # self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
         self.__tree_requirements.selectionModel().selectionChanged.connect(self.on_requirement_tree_selection_changed)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
-            text, ok = QInputDialog.getText(self, 'Search', 'Enter text:')
+            text, ok = QInputDialog.getText(self, 'Search', 'Enter search text: \nF3 Jump Next\nSHIFT + F3 Jump Prev')
             if ok:
                 self.search_tree(text)
         elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
@@ -1498,11 +1504,11 @@ class RequirementUI(QWidget):
         elif event.key() == Qt.Key_F3:
             self.jump_to_next_search()
 
-    def on_button_req_refresh(self):
-        pass
+    # def on_button_req_refresh(self):
+    #     pass
 
-    def on_requirement_tree_click(self, index: QModelIndex):
-        pass
+    # def on_requirement_tree_click(self, index: QModelIndex):
+    #     pass
         # self.__update_selected_index(index)
         # if index.isValid():
         #     req_node: ReqNode = index.internalPointer()
