@@ -16,3 +16,22 @@
 我使用pyqt5，有一个QTextEdit，名为self.__text_md_editor。
 我希望它能接受文件图片粘贴，并弹出输入框要求用户给图片命名（默认输入内容是一个随机UUID），直到名字不冲突为止。
 将剪贴版中的图片以此名字保存到attachment目录下，生成一段markdown文本，引用对应的图片。
+
+
+
+请完成TODO中的代码，将其中的相对路径转换为QWebEngineView能识别的绝对路径。包括src和href中的相对路径，但不要转换非相对路径的url。
+把req_root_path加到相对路径前面，并把'\\'转换为'/'。
+
+def on_text_content_edit(self):
+    md_text = self.__text_md_editor.toPlainText()
+    html_text = self.render_markdown(md_text)
+    html_text = html_text.replace('strike>', 'del>')
+    # self.__text_md_viewer.setMarkdown(text)
+    req_root_path = self.__req_data_agent.get_req_root()
+    if isinstance(self.__text_md_viewer, QWebEngineView):
+        # TODO: Parse the url in html_text as abs path like: file:///
+        pass
+    self.__text_md_viewer.setHtml(html_text)
+    self.on_content_changed()
+
+

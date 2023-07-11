@@ -55,11 +55,13 @@ from io import StringIO
 from typing import Callable, List, Tuple
 from functools import partial
 
+from PyQt5.QtWebEngineCore import QWebEngineUrlSchemeHandler
+
 try:
     # Use try catch for running FreeReq without UI
 
     from PyQt5.QtGui import QFont, QCursor
-    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection
+    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter
@@ -71,7 +73,52 @@ finally:
     pass
 
 try:
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
+    from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEngineProfile
+
+    class LocalFileSchemeHandler(QWebEngineUrlSchemeHandler):
+        def __init__(self, root_path):
+            super().__init__()
+            self.root_path = root_path
+
+        def requestStarted(self, job):
+            url = job.requestUrl().toString()
+            if url.startswith('local:///'):
+                file_path = url.replace('local:///', '')
+                file = QFile(self.root_path + '/' + file_path)
+                if file.open(QIODevice.ReadOnly):
+                    job.reply(b'image/png', file)
+
+
+    class LocalWebEngineView(QWebEngineView):
+        def __init__(self, root_path, parent=None):
+            super().__init__(parent)
+            self.root_path = root_path
+            profile = QWebEngineProfile.defaultProfile()
+            handler = LocalFileSchemeHandler(root_path)
+            profile.installUrlSchemeHandler(b'local', handler)
+
+        def update_root(self, root_path: str):
+            self.root_path = root_path
+
+        def setHtml(self, html_text):
+            html_text = self.convert_relative_path(html_text)
+            super().setHtml(html_text)
+
+        def convert_relative_path(self, html_text):
+            from bs4 import BeautifulSoup
+            import os
+            soup = BeautifulSoup(html_text, 'html.parser')
+            for tag in soup.find_all(['img', 'a']):
+                url = tag.get('src') or tag.get('href')
+                if url and not url.startswith(('http://', 'https://', 'file://', '/')):
+                    abs_path = os.path.abspath(os.path.join(self.root_path, url)).replace('\\', '/')
+                    url = f'local:///{abs_path}'
+                    if tag.name == 'img':
+                        tag['src'] = url
+                    else:
+                        tag['href'] = url
+            return str(soup)
+
 except Exception as e:
     print(e)
     print('No QtWebEngineWidgets module')
@@ -481,7 +528,10 @@ class ReqSingleJsonFileAgent(IReqAgent):
         return self.__req_node_root.get_title() if self.__req_node_root is not None else ''
 
     def get_req_path(self):
-        return os.path.dirname(self.__req_file_name)
+        req_path = os.path.dirname(self.__req_file_name)
+        if req_path == '':
+            req_path = self_path
+        return req_path
 
     def get_req_meta(self) -> dict:
         return self.__req_meta_dict
@@ -952,25 +1002,38 @@ class MarkdownEditor(QTextEdit):
 
     def insertFromMimeData(self, source):
         if source.hasFormat('application/x-qt-windows-mime;value="XML Spreadsheet"'):
-            # Complex table sheet may cause exception.
-            # If so, just paste it as image.
-            try:
-                # 粘贴的数据是表格类型
-                data = source.text()
-                markdown_text = convert_table_to_markdown(data)
-                self.insertPlainText(markdown_text)
-                return
-            except Exception as e:
-                print('Error: Try to parse paste table data to markdown format fail.')
-                print(e)
-            finally:
+            result = QMessageBox.question(
+                None,
+                'How to process paste table data',
+                'Do you want to parse paste table data to markdown?\nSelect No to paste table as an image.',
+                QMessageBox.Yes | QMessageBox.No
+            )
+
+            if result == QMessageBox.Yes:
+                # Complex table sheet may cause exception.
+                # If so, just paste it as image.
+                try:
+                    # 粘贴的数据是表格类型
+                    data = source.text()
+                    markdown_text = convert_table_to_markdown(data)
+                    self.insertPlainText(markdown_text)
+                    return
+                except Exception as e:
+                    print('Error: Try to parse paste table data to markdown format fail.')
+                    print(e)
+                    QMessageBox.information(None, 'Error', 'Parse table to markdown error. Paste it as image.')
+                finally:
+                    pass
+            else:
                 pass
 
         if source.hasImage():
             image = source.imageData()
             new_file_path, file_name = self.__require_file_name(self.attachment_folder)
             if new_file_path != '':
-                image.save(new_file_path + '.png', "PNG")
+                if not new_file_path.lower().endswith('.png'):
+                    new_file_path += '.png'
+                image.save(new_file_path, "PNG")
                 markdown_text = f"![{file_name}]({new_file_path})"
                 self.insertPlainText(markdown_text)
         else:
@@ -1040,9 +1103,12 @@ class ReqEditorBoard(QWidget):
 
         self.__text_md_editor = MarkdownEditor()
         try:
-            self.__text_md_viewer = QWebEngineView()
+            self.__text_md_viewer = LocalWebEngineView(self_path)
+            settings = QWebEngineSettings.globalSettings()
+            settings.setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
             print('Try to use QtWebEngineWidgets fail. Just use QTextEdit to render HTML.')
             self.__text_md_viewer = QTextEdit()
             self.__text_md_viewer.setReadOnly(True)
@@ -1243,6 +1309,10 @@ class ReqEditorBoard(QWidget):
         html_text = self.render_markdown(md_text)
         html_text = html_text.replace('strike>', 'del>')
         # self.__text_md_viewer.setMarkdown(text)
+
+        if isinstance(self.__text_md_viewer, LocalWebEngineView):
+            req_root_path = self.__req_data_agent.get_req_path()
+            self.__text_md_viewer.update_root(req_root_path)
         self.__text_md_viewer.setHtml(html_text)
         self.on_content_changed()
 
@@ -1940,13 +2010,28 @@ class RequirementUI(QWidget):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
+class LocalFileSchemeHandler(QWebEngineUrlSchemeHandler):
+    def requestStarted(self, job):
+        url = job.requestUrl().toString()
+        if url.startswith('local:///'):
+            file_path = url.replace('local:///', '')
+            file = QFile(file_path)
+            if file.open(QIODevice.ReadOnly):
+                job.reply(b'image/png', file)
+
+
 def main():
     app = QApplication(sys.argv)
+
+    profile = QWebEngineProfile.defaultProfile()
+    handler = LocalFileSchemeHandler()
+    profile.installUrlSchemeHandler(b'local', handler)
 
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)
+    print('Current path: ' + os.getcwd())
     w = RequirementUI(req_agent)
 
     w.show()
