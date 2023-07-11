@@ -1057,7 +1057,7 @@ class ReqEditorBoard(QWidget):
         self.__text_md_editor = MarkdownEditor()
 
         try:
-            self.__text_md_viewer = QWebEngineView(self_path)
+            self.__text_md_viewer = QWebEngineView()
         except Exception as e:
             print(e)
             print(traceback.format_exc())
