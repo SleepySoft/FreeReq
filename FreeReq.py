@@ -280,6 +280,9 @@ class IReqAgent:
     def get_req_name(self) -> str:
         raise ValueError('Not implemented')
 
+    def get_req_path(self) -> str:
+        raise ValueError('Not implemented')
+
     def get_req_meta(self) -> dict:
         raise ValueError('Not implemented')
 
@@ -466,6 +469,9 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def get_req_name(self) -> str:
         return self.__req_node_root.get_title() if self.__req_node_root is not None else ''
+
+    def get_req_path(self):
+        return os.path.dirname(self.__req_file_name)
 
     def get_req_meta(self) -> dict:
         return self.__req_meta_dict
@@ -1806,6 +1812,12 @@ class RequirementUI(QWidget):
 
             self.__edit_board.edit_req(None)
             self.__meta_board.reload_meta_data()
+
+            # Change the current path to the requirement file path.
+            # So the relative markdown file link will be correct.
+            req_path = self.__req_data_agent.get_req_path()
+            print('Change current path to: ' + req_path)
+            os.chdir(req_path)
 
             # req_agent = ReqSingleJsonFileAgent()
             # req_agent.init()
