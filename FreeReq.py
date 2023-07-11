@@ -55,13 +55,11 @@ from io import StringIO
 from typing import Callable, List, Tuple
 from functools import partial
 
-from PyQt5.QtWebEngineCore import QWebEngineUrlSchemeHandler
-
 try:
     # Use try catch for running FreeReq without UI
 
     from PyQt5.QtGui import QFont, QCursor
-    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice
+    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter
@@ -72,58 +70,13 @@ except Exception as e:
 finally:
     pass
 
-# try:
-#     from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEngineProfile
-#
-#     class LocalFileSchemeHandler(QWebEngineUrlSchemeHandler):
-#         def __init__(self):
-#             super(LocalFileSchemeHandler, self).__init__()
-#
-#         def requestStarted(self, job):
-#             url = job.requestUrl().toString()
-#             if url.startswith('local:///'):
-#                 file_path = url.replace('local:///', '')
-#                 file = QFile(file_path)
-#                 if file.open(QIODevice.ReadOnly):
-#                     job.reply(b'image/png', file)
-#
-#     def install_local_url_handler():
-#         profile = QWebEngineProfile.defaultProfile()
-#         handler = LocalFileSchemeHandler()
-#         profile.installUrlSchemeHandler(b'local', handler)
-#
-#     class LocalWebEngineView(QWebEngineView):
-#         def __init__(self, root_path, parent=None):
-#             super().__init__(parent)
-#             self.root_path = root_path
-#
-#         def update_root(self, root_path: str):
-#             self.root_path = root_path
-#
-#         def setHtml(self, html_text):
-#             html_text = self.convert_relative_path(html_text)
-#             super().setHtml(html_text)
-#
-#         def convert_relative_path(self, html_text):
-#             from bs4 import BeautifulSoup
-#             import os
-#             soup = BeautifulSoup(html_text, 'html.parser')
-#             for tag in soup.find_all(['img', 'a']):
-#                 url = tag.get('src') or tag.get('href')
-#                 if url and not url.startswith(('http://', 'https://', 'file://', '/')):
-#                     abs_path = os.path.abspath(os.path.join(self.root_path, url)).replace('\\', '/')
-#                     url = f'local:///{abs_path}'
-#                     if tag.name == 'img':
-#                         tag['src'] = url
-#                     else:
-#                         tag['href'] = url
-#             return str(soup)
-#
-# except Exception as e:
-#     print(e)
-#     print('No QtWebEngineWidgets module')
-# finally:
-#     pass
+try:
+    from PyQt5.QtWebEngineWidgets import QWebEngineView
+except Exception as e:
+    print(e)
+    print('No QWebEngineView')
+finally:
+    pass
 
 self_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -1102,22 +1055,20 @@ class ReqEditorBoard(QWidget):
         self.__layout_dynamic = QGridLayout()
 
         self.__text_md_editor = MarkdownEditor()
-        # try:
-        #     self.__text_md_viewer = LocalWebEngineView(self_path)
-        #     # settings = QWebEngineSettings.globalSettings()
-        #     # settings.setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
-        # except Exception as e:
-        #     print(e)
-        #     print(traceback.format_exc())
-        #     print('Try to use QtWebEngineWidgets fail. Just use QTextEdit to render HTML.')
 
-        # Though the LocalWebEngineView shows the table well. But it's hard to support local relative path.
-        self.__text_md_viewer = QTextEdit()
-        self.__text_md_viewer.setReadOnly(True)
-        self.__text_md_viewer.setAcceptRichText(False)
+        try:
+            self.__text_md_viewer = QWebEngineView(self_path)
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
+            print('Try to use QtWebEngineWidgets fail. Just use QTextEdit to render HTML.')
 
-        # finally:
-        #     pass
+            self.__text_md_viewer = QTextEdit()
+            self.__text_md_viewer.setReadOnly(True)
+            self.__text_md_viewer.setAcceptRichText(False)
+        finally:
+            pass
+
         self.__group_meta_data = QGroupBox()
 
         self.__check_editor = QCheckBox('Editor')
@@ -1192,7 +1143,7 @@ class ReqEditorBoard(QWidget):
         editor_font = self.__text_md_editor.font()
         editor_font.setPointSizeF(10)
         self.__text_md_editor.setFont(editor_font)
-        self.__text_md_viewer.setFont(editor_font)
+        # self.__text_md_viewer.setFont(editor_font)
 
         self.__text_md_editor.setAcceptRichText(False)
 
@@ -1271,14 +1222,14 @@ class ReqEditorBoard(QWidget):
         font_size = editor_font.pointSizeF()
         editor_font.setPointSizeF(font_size * 1.05)
         self.__text_md_editor.setFont(editor_font)
-        self.__text_md_viewer.setFont(editor_font)
+        # self.__text_md_viewer.setFont(editor_font)
 
     def on_button_decrease_font(self):
         editor_font = self.__text_md_editor.font()
         font_size = editor_font.pointSizeF()
         editor_font.setPointSizeF(font_size / 1.05)
         self.__text_md_editor.setFont(editor_font)
-        self.__text_md_viewer.setFont(editor_font)
+        # self.__text_md_viewer.setFont(editor_font)
 
     def on_button_re_assign_id(self):
         id_prefixes = self.__req_data_agent.get_req_meta().get(STATIC_META_ID_PREFIX, [])
@@ -1313,10 +1264,22 @@ class ReqEditorBoard(QWidget):
         html_text = html_text.replace('strike>', 'del>')
         # self.__text_md_viewer.setMarkdown(text)
 
-        # if isinstance(self.__text_md_viewer, LocalWebEngineView):
-        #     req_root_path = self.__req_data_agent.get_req_path()
-        #     self.__text_md_viewer.update_root(req_root_path)
-        self.__text_md_viewer.setHtml(html_text)
+        try:
+            if isinstance(self.__text_md_viewer, QWebEngineView):
+                req_root_path = self.__req_data_agent.get_req_path()
+                req_root_path_url = ('file:///' + req_root_path).replace('\\', '/') + '/'
+
+                # I can't believe that it can be solved in this simple way.
+                # I've talked with NewBing for a whole afternoon but it totally useless.
+                # Reference: https://stackoverflow.com/questions/74191037/why-qwebengineview-doesnt-show-my-image
+                self.__text_md_viewer.setHtml(html_text, baseUrl=QUrl(req_root_path_url))
+            else:
+                raise ValueError('Not a QWebEngineView. It should be QTextView.')
+        except Exception as e:
+            self.__text_md_viewer.setHtml(html_text)
+        finally:
+            pass
+
         self.on_content_changed()
 
     def on_content_changed(self, *args):
