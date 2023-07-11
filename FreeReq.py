@@ -44,12 +44,14 @@ Resource comments:
 from __future__ import annotations
 
 import os
-import shutil
 import sys
+import csv
 import uuid
 import json
+import shutil
 import markdown2
 import traceback
+from io import StringIO
 from typing import Callable, List, Tuple
 from functools import partial
 
@@ -917,10 +919,54 @@ HTML_TEMPLATE = """
         """
 
 
+def convert_table_to_markdown(data):
+    # 解析TSV数据
+    reader = csv.reader(StringIO(data), delimiter='\t')
+    markdown_table = list(reader)
+
+    # 获取表格中的行和列
+    num_cols = max([len(row) for row in markdown_table])
+
+    # 格式化Markdown表格
+    markdown_text = ''
+    for i, row in enumerate(markdown_table):
+        markdown_text += '| ' + ' | '.join(row) + ' |\n'
+        if i == 0:
+            markdown_text += '| ' + ' | '.join(['---'] * num_cols) + ' |\n'
+
+    return markdown_text
+
+
 class MarkdownEditor(QTextEdit):
     def __init__(self, attachment_folder='attachment', parent=None):
         super(MarkdownEditor, self).__init__(parent)
         self.attachment_folder = attachment_folder
+
+    def insertFromMimeData(self, source):
+        if source.hasFormat('application/x-qt-windows-mime;value="XML Spreadsheet"'):
+            # Complex table sheet may cause exception.
+            # If so, just paste it as image.
+            try:
+                # 粘贴的数据是表格类型
+                data = source.text()
+                markdown_text = convert_table_to_markdown(data)
+                self.insertPlainText(markdown_text)
+                return
+            except Exception as e:
+                print('Error: Try to parse paste table data to markdown format fail.')
+                print(e)
+            finally:
+                pass
+
+        if source.hasImage():
+            image = source.imageData()
+            new_file_path, file_name = self.__require_file_name(self.attachment_folder)
+            if new_file_path != '':
+                image.save(new_file_path + '.png', "PNG")
+                markdown_text = f"![{file_name}]({new_file_path})"
+                self.insertPlainText(markdown_text)
+        else:
+            super(MarkdownEditor, self).insertFromMimeData(source)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -952,17 +998,6 @@ class MarkdownEditor(QTextEdit):
 
             if markdown_text != '':
                 self.insertPlainText(markdown_text)
-
-    def insertFromMimeData(self, source):
-        if source.hasImage():
-            image = source.imageData()
-            new_file_path, file_name = self.__require_file_name(self.attachment_folder)
-            if new_file_path != '':
-                image.save(new_file_path + '.png', "PNG")
-                markdown_text = f"![{file_name}]({new_file_path})"
-                self.insertPlainText(markdown_text)
-        else:
-            super(MarkdownEditor, self).insertFromMimeData(source)
 
     def __require_file_name(self, folder: str) -> Tuple[str, str]:
         if not os.path.exists(folder):
@@ -996,7 +1031,15 @@ class ReqEditorBoard(QWidget):
         self.__layout_dynamic = QGridLayout()
 
         self.__text_md_editor = MarkdownEditor()
-        self.__text_md_viewer = QTextEdit()
+        try:
+            from PyQt5 import QtWebEngineWidgets
+            self.__text_md_viewer = QtWebEngineWidgets()
+        except Exception as e:
+            print(e)
+            print('Try to use QtWebEngineWidgets fail. Just use QTextEdit to render HTML.')
+            self.__text_md_viewer = QTextEdit()
+        finally:
+            pass
         self.__group_meta_data = QGroupBox()
 
         self.__check_editor = QCheckBox('Editor')
@@ -1548,7 +1591,9 @@ class RequirementUI(QWidget):
             # QTreeView style From: https://doc.qt.io/qt-6/stylesheet-examples.html
             with open(os.path.join(self_path, 'res', 'tree_style.qss'), 'rt') as f:
                 tree_style = f.read()
-                self.__tree_requirements.setStyleSheet(tree_style)
+                tree_style_abs_path = tree_style.replace('res/', os.path.join(self_path, 'res', ''))
+                tree_style_abs_path = tree_style_abs_path.replace('\\', '/')
+                self.__tree_requirements.setStyleSheet(tree_style_abs_path)
         except Exception as e:
             print(str(e))
             print('QTreeView style not applied.')
