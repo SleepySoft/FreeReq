@@ -44,12 +44,13 @@ Resource comments:
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 import uuid
 import json
 import markdown2
 import traceback
-from typing import Callable, List
+from typing import Callable, List, Tuple
 from functools import partial
 
 try:
@@ -910,6 +911,67 @@ HTML_TEMPLATE = """
         """
 
 
+class MarkdownEditor(QTextEdit):
+    def __init__(self, attachment_folder='attachment', parent=None):
+        super(MarkdownEditor, self).__init__(parent)
+        self.attachment_folder = attachment_folder
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            url = event.mimeData().urls()[0]
+            file_path = url.toLocalFile()
+            file_name = os.path.basename(file_path)
+            markdown_text = ''
+
+            msgBox = QMessageBox()
+            msgBox.setText("Select operation")
+            copyButton = msgBox.addButton("Copy to attachment folder", QMessageBox.ActionRole)
+            linkButton = msgBox.addButton("Link to original file", QMessageBox.ActionRole)
+            msgBox.addButton(QMessageBox.Cancel)
+            msgBox.exec_()
+
+            if msgBox.clickedButton() == copyButton:
+                new_file_path = os.path.join(self.attachment_folder, file_name)
+                if os.path.exists(new_file_path):
+                    new_file_path, file_name = self.__require_file_name(self.attachment_folder)
+                if new_file_path != '':
+                    shutil.copy(file_path, new_file_path)
+                    markdown_text = f"[{file_name}]({new_file_path})"
+            elif msgBox.clickedButton() == linkButton:
+                markdown_text = f"[{file_name}]({file_path})"
+
+            if markdown_text != '':
+                self.insertPlainText(markdown_text)
+
+    def insertFromMimeData(self, source):
+        if source.hasImage():
+            image = source.imageData()
+            new_file_path, file_name = self.__require_file_name(self.attachment_folder)
+            if new_file_path != '':
+                image.save(new_file_path + '.png', "PNG")
+                markdown_text = f"![{file_name}]({new_file_path})"
+                self.insertPlainText(markdown_text)
+        else:
+            super(MarkdownEditor, self).insertFromMimeData(source)
+
+    def __require_file_name(self, folder: str) -> Tuple[str, str]:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        while True:
+            file_name, ok = QInputDialog.getText(self, "Name for the file", "File Name: ",
+                                                 QLineEdit.Normal, str(uuid.uuid4()))
+            if ok:
+                new_file_path = os.path.join(folder, file_name)
+                if not os.path.exists(new_file_path):
+                    return new_file_path, file_name
+            else:
+                return '', ''
+
+
 class ReqEditorBoard(QWidget):
     def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel):
         super(ReqEditorBoard, self).__init__()
@@ -927,7 +989,7 @@ class ReqEditorBoard(QWidget):
 
         self.__layout_dynamic = QGridLayout()
 
-        self.__text_md_editor = QTextEdit()
+        self.__text_md_editor = MarkdownEditor()
         self.__text_md_viewer = QTextEdit()
         self.__group_meta_data = QGroupBox()
 
