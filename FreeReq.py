@@ -61,12 +61,20 @@ try:
     from PyQt5.QtGui import QFont, QCursor
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
-    QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-    QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter
+        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter
 except Exception as e:
     print('UI disabled.')
     print(str(e))
     print(traceback.format_exc())
+finally:
+    pass
+
+try:
+    from PyQt5.QtWebEngineWidgets import QWebEngineView
+except Exception as e:
+    print(e)
+    print('No QtWebEngineWidgets module')
 finally:
     pass
 
@@ -1032,12 +1040,13 @@ class ReqEditorBoard(QWidget):
 
         self.__text_md_editor = MarkdownEditor()
         try:
-            from PyQt5 import QtWebEngineWidgets
-            self.__text_md_viewer = QtWebEngineWidgets()
+            self.__text_md_viewer = QWebEngineView()
         except Exception as e:
             print(e)
             print('Try to use QtWebEngineWidgets fail. Just use QTextEdit to render HTML.')
             self.__text_md_viewer = QTextEdit()
+            self.__text_md_viewer.setReadOnly(True)
+            self.__text_md_viewer.setAcceptRichText(False)
         finally:
             pass
         self.__group_meta_data = QGroupBox()
@@ -1099,15 +1108,14 @@ class ReqEditorBoard(QWidget):
         edit_area = QHBoxLayout()
         root_layout.addLayout(edit_area, 9)
 
-        edit_area.addWidget(self.__text_md_editor)
-        edit_area.addWidget(self.__text_md_viewer)
+        edit_area.addWidget(self.__text_md_editor, 5)
+        edit_area.addWidget(self.__text_md_viewer, 5)
 
     def __config_ui(self):
         self.__check_editor.setChecked(True)
         self.__check_viewer.setChecked(True)
 
         self.__line_id.setReadOnly(True)
-        self.__text_md_viewer.setReadOnly(True)
 
         self.__button_increase_font.setMaximumSize(30, 30)
         self.__button_decrease_font.setMaximumSize(30, 30)
@@ -1118,7 +1126,6 @@ class ReqEditorBoard(QWidget):
         self.__text_md_viewer.setFont(editor_font)
 
         self.__text_md_editor.setAcceptRichText(False)
-        self.__text_md_viewer.setAcceptRichText(False)
 
         self.__check_editor.clicked.connect(self.on_check_editor)
         self.__check_viewer.clicked.connect(self.on_check_viewer)
