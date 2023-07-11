@@ -16,6 +16,15 @@ The name, ID, and content are the basic information of a requirement entry.
 More requirement entry information can be added by editing the metadata. The editor ui will automatically generate the editing controls.
 
 
+# Update
+
+## 20230711
+
++ Add CTRL+F to search whole tree and all content (F3 Find Next, SHIFT + F3 Find Previous)
++ The editor can accept file dropping. You can select the following action.
++ The editor supports image and table pasting. You can select the following action.
++ Use QWebEngineView for markdown preview (optional) which is better looking than QTextView.
+
 # Usage
 
 ![](doc/ui_req_edit.png)
