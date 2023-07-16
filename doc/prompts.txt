@@ -35,3 +35,20 @@ def on_text_content_edit(self):
     self.on_content_changed()
 
 
+
+
+我有一个refactor_result列表，里面的内容是多个[distance, key]，其中key有重复。
+我需要整理这个列表，使得其中key不重复，且distance为该key最小的distance。
+返回值按distance从小到大排序。
+
+
+
+
+
+
+
+
+
+
+
+
