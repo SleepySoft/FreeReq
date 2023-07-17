@@ -2003,6 +2003,8 @@ class RequirementUI(QWidget):
         self.__tree_requirements.scrollTo(index)
         self.__tree_requirements.setCurrentIndex(index)
 
+    # --------------------------------------------------------
+
     @staticmethod
     def __find_node_any_data(text: str, node: ReqNode) -> bool:
         for v in node.data().values():

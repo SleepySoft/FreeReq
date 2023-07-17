@@ -57,14 +57,28 @@ class EmbeddingIndexing(IReqObserver):
         pass
 
     def on_node_data_changed(self, req_name: str, req_node: ReqNode):
-        pass
+        self.__index_node(req_node, False)
 
     def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
-        pass
+        if operation == 'add':
+            self.__index_node(child_node, False)
+        elif operation == 'remove':
+            self.index.remove_document(child_node.get_uuid())
+        else:
+            pass
+
+    # ---------------------------------------------------------------
 
     def __index_node(self, node: ReqNode, recursive: bool):
         node_text = node.get_title() + node.get(STATIC_FIELD_CONTENT)
-
+        if len(node_text.strip()) == 0:
+            return
+        paragraph = average_split_text(node_text, self.split_threshold, 0.2)
+        documents = [self.embedding.encode(p) for p in paragraph]
+        self.index.update_document(documents, node.get_uuid())
+        if recursive:
+            for n in node.children():
+                self.__index_node(n, True)
 
     def __reindex_all(self):
         self.index.reset()

@@ -121,7 +121,17 @@ class DocumentKeyFaiss:
         sorted_result = sorted(refactor_result.items(), key=lambda x: x[1])
         return [(v, k) for k, v in sorted_result]
 
-    def add_document(self, data: Union[List[float], List[List[float]]], key: Any):
+    def update_document(self, data: Union[List[float], List[List[float]]], key: Any):
+        if key in self.ext_key_to_int_key.keys():
+            self.__del_document(key)
+        self.__add_document(data, key)
+
+    def remove_document(self, key: Any):
+        self.__del_document(key)
+
+    # -----------------------------------------------------------------------------
+
+    def __add_document(self, data: Union[List[float], List[List[float]]], key: Any):
         if not isinstance(data, np.ndarray):
             return
         if isinstance(data, list):
@@ -135,7 +145,7 @@ class DocumentKeyFaiss:
             self.int_key_to_ext_key[k] = key
         self.ext_key_to_int_key[key] = internal_keys
 
-    def remove_document(self, key: Any):
+    def __del_document(self, key: Any):
         if key not in self.ext_key_to_int_key.keys():
             return
         internal_keys = self.ext_key_to_int_key[key]
@@ -231,7 +241,7 @@ def test_document_key_faiss():
 
     # 将数据添加到索引中
     for doc_data, doc_key in zip(data, keys):
-        document_key_faiss.add_document(doc_data, doc_key)
+        document_key_faiss.update_document(doc_data, doc_key)
 
     for doc_index, doc in enumerate(data):
         for embedding in doc:
