@@ -1,26 +1,5 @@
 from typing import Union, List
-
 from FreeReq import IReqObserver, ReqNode
-
-
-class IndexIdxAligned:
-    def __init__(self):
-        self.__any_index_idx_aligned = []
-        self.__any_index_faiss_mapping = {}
-
-    def item_add(self, index: any, idx: Union[int, List[int]]):
-        if not isinstance(idx, list):
-            idx = [idx]
-        if index not in self.__any_index_faiss_mapping.keys():
-            self.__any_index_faiss_mapping[index] = idx
-            while
-            self.__any_index_idx_aligned[idx] = index
-        else:
-            exists_idx = self.__any_index_faiss_mapping[index]
-            exists_idx = list(set(exists_idx + idx))
-            self.__any_index_faiss_mapping[index] = idx
-
-
 
 
 class ChatReq(IReqObserver):
