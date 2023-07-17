@@ -142,6 +142,9 @@ class ReqNode:
     def data(self) -> dict:
         return self.__data
 
+    def copy_data(self, node: ReqNode):
+        self.__data = node.data()
+
     def get_uuid(self) -> str:
         return self.__data.get(STATIC_FIELD_UUID, '')
 
@@ -282,7 +285,7 @@ class IReqObserver:
     def on_node_data_changed(self, req_name: str, req_node: ReqNode):
         pass
 
-    def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
+    def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: [ReqNode], operation: str):
         """
 
         :param req_name:
@@ -337,7 +340,7 @@ class IReqAgent:
 
     # ----------------------- Override: Node  Operation -----------------------
 
-    def insert_node(self, parent_uuid: str, insert_pos: int, node: ReqNode):
+    def insert_node(self, parent_uuid: str, insert_pos: int, insert_nodes: Union[ReqNode, List[ReqNode]]):
         raise NotImplementedError('Not implemented: insert_node')
 
     def remove_node(self, node_uuid: str):
@@ -350,14 +353,6 @@ class IReqAgent:
 
     def new_req_id(self, id_prefix: str, digit_count: int = 5) -> str:
         raise NotImplementedError('Not implemented: new_req_id')
-
-    # ------------------------ Notification from remote -----------------------
-
-    def inform_node_data_updated(self, req_node: ReqNode):
-        pass
-
-    def inform_node_child_updated(self, req_node: ReqNode):
-        pass
 
     # -------------------------------- Observer -------------------------------
 
@@ -380,7 +375,7 @@ class IReqAgent:
         for ob in self.__observer:
             ob.on_node_data_changed(req_name, req_node)
 
-    def notify_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
+    def notify_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: [ReqNode], operation: str):
         for ob in self.__observer:
             ob.on_node_structure_changed(req_name, parent_node, child_node, operation)
 
@@ -566,23 +561,32 @@ class ReqSingleJsonFileAgent(IReqAgent):
         else:
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
+            self.__save_req_json()
+            self.notify_node_structure_changed(self.get_req_name(), parent_node, insert_nodes, 'add')
+
     def remove_node(self, node_uuid: str):
         remove_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
         if len(remove_node) != 1:
             print('Cannot find remove node.')
             return
-        node_parent = remove_node[0].parent()
-        if node_parent is not None:
-            node_parent.remove_child(remove_node[0])
+        parent_node = remove_node[0].parent()
+        if parent_node is not None:
+            parent_node.remove_child(remove_node[0])
+
+            self.__save_req_json()
+            self.notify_node_structure_changed(self.get_req_name(), parent_node, [remove_node], 'remove')
 
     def update_node(self, node: ReqNode):
         update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())
         if len(update_node) != 1:
             print('Cannot find update node.')
             return
-        if update_node is not node:
+        if update_node[0] is not node:
             # If they are not the same instance
-            update_node.__data = node.data()
+            update_node[0].copy_data(node)
+
+            self.__save_req_json()
+            self.notify_node_data_changed(update_node[0])
 
     # -------------------------- Other Functions -------------------------
 
@@ -599,15 +603,13 @@ class ReqSingleJsonFileAgent(IReqAgent):
             # Unknown prefix
             return id_prefix
 
-    # --------------------- Notification from remote ---------------------
-
-    def inform_node_data_updated(self, req_node: ReqNode):
-        self.__save_req_json()
-
-    def inform_node_child_updated(self, req_node: ReqNode):
-        self.__save_req_json()
-
     # -------------------------------------------------------------------------------
+
+    def __on_node_data_updated(self):
+        self.__save_req_json()
+
+    def __on_node_child_updated(self):
+        self.__save_req_json()
 
     def __load_req_json(self) -> bool:
         try:
@@ -817,12 +819,13 @@ class ReqModel(QAbstractItemModel):
 
         self.begin_edit()
         self.beginInsertRows(parent, pos, pos + len(insert_nodes) - 1)
-        parent_node.insert_children(insert_nodes, pos)
+
+        # All operation by agent
+        # parent_node.insert_children(insert_nodes, pos)
+        self.__req_data_agent.insert_node(parent_node.get_uuid(), pos, insert_nodes)
+
         self.endInsertRows()
         self.end_edit()
-
-        for node in insert_nodes:
-            self.__req_data_agent.notify_node_structure_changed('', parent_node, node, 'add')
 
 
 # https://gist.github.com/xiaolai/aa190255b7dde302d10208ae247fc9f2
