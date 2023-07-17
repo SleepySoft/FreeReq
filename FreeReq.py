@@ -77,9 +77,7 @@ except Exception as e:
 finally:
     pass
 
-
 self_path = os.path.dirname(os.path.abspath(__file__))
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -89,6 +87,7 @@ self_path = os.path.dirname(os.path.abspath(__file__))
 
 try:
     from plugin.plugin_manager import PluginManager
+
     plugin_manager = PluginManager(os.path.join(self_path, 'plugin'))
 except Exception as e:
     print(e)
@@ -96,7 +95,6 @@ except Exception as e:
     plugin_manager = None
 finally:
     pass
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -107,7 +105,6 @@ STATIC_FIELD_CHILD = 'child'
 STATIC_FIELD_CONTENT = 'content'
 
 STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD, STATIC_FIELD_CONTENT]
-
 
 STATIC_META_ID_PREFIX = 'meta_group'
 
@@ -121,7 +118,7 @@ class ReqNode:
             STATIC_FIELD_ID: '',
             STATIC_FIELD_UUID: str(uuid.uuid4().hex),
             STATIC_FIELD_TITLE: title,
-            STATIC_FIELD_CHILD: [],     # Special field. Only for serialize/deserialize.
+            STATIC_FIELD_CHILD: [],  # Special field. Only for serialize/deserialize.
             STATIC_FIELD_CONTENT: ''
         }
         self.__parent = None
@@ -348,6 +345,9 @@ class IReqAgent:
 
     def update_node(self, node: ReqNode):
         raise NotImplementedError('Not implemented: update_node')
+
+    def shift_node(self, node_uuid: str, shift_offset: int):
+        raise NotImplementedError('Not implemented: shift_offset')
 
     # ----------------------- Override: Other Functions -----------------------
 
@@ -587,6 +587,26 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
             self.__save_req_json()
             self.notify_node_data_changed(update_node[0])
+
+    def shift_node(self, node_uuid: str, shift_offset: int):
+        shift_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
+        if len(shift_node) != 1:
+            return
+        shift_node = shift_node[0]
+        parent_node = shift_node.parent()
+        children = parent_node.children()
+
+        # 获取当前节点在子节点列表中的索引
+        current_index = children.index(shift_node)
+        # 计算新的索引
+        new_index = current_index + shift_offset
+        # 确保新的索引不越界
+        new_index = max(0, min(new_index, len(children) - 1))
+
+        # 移除当前节点
+        children.remove(shift_node)
+        # 在新的位置插入当前节点
+        children.insert(new_index, shift_node)
 
     # -------------------------- Other Functions -------------------------
 
@@ -1004,7 +1024,6 @@ table tr th {
   background-color: #009688;
 }
 """
-
 
 HTML_TEMPLATE = """
 <html>
@@ -1510,9 +1529,7 @@ You can specify the prefix of Req ID like: WHY, WHAT, HOW
 Then you will get assigned Req ID like WHY00001, WHAT00001, HOW00001
 """
 
-
 ID_DEFAULT = 'WHY, WHAT, HOW'
-
 
 META_COMMENTS = """"Meta Name 1": [],
 "Meta Name 2": ["Selection 1", "Selection 2"],
@@ -1521,7 +1538,6 @@ Meta Name: The name of config.
 Selections: If selection is not empty, the config will be limited with selection, otherwise free input text.
 The meta items are divided by comma (,).
 """
-
 
 META_DEFAULT = """"Owner": [],
 "Version": [],
@@ -1769,12 +1785,12 @@ class RequirementUI(QWidget):
 
     # def on_requirement_tree_click(self, index: QModelIndex):
     #     pass
-        # self.__update_selected_index(index)
-        # if index.isValid():
-        #     req_node: ReqNode = index.internalPointer()
-        #     self.__selected_node = req_node
-        #     self.__selected_index = index
-        #     self.__edit_board.edit_req(req_node)
+    # self.__update_selected_index(index)
+    # if index.isValid():
+    #     req_node: ReqNode = index.internalPointer()
+    #     self.__selected_node = req_node
+    #     self.__selected_index = index
+    #     self.__edit_board.edit_req(req_node)
 
     def on_requirement_tree_menu(self, pos: QPoint):
         menu = QMenu()
@@ -1841,7 +1857,7 @@ class RequirementUI(QWidget):
 
     def on_requirement_tree_menu_append_child(self):
         if self.__tree_item_selected():
-            selected_node = self.__selected_node
+            # selected_node = self.__selected_node
             self.__req_model.insertRow(-1, self.__selected_index)
             # new_node = ReqNode('New Item')
             # parent_node = self.__req_model.parent(self.__selected_index)
@@ -1849,14 +1865,14 @@ class RequirementUI(QWidget):
             # self.__req_model.beginInsertRows(parent_node, append_pos, append_pos)
             # self.__selected_node.append_child(new_node)
             # self.__req_model.endInsertRows()
-            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
+            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():
             # new_node = ReqNode('New Item')
             # parent_node = self.__req_model.parent(self.__selected_index)
 
-            selected_node = self.__selected_node
+            # selected_node = self.__selected_node
             insert_pos = self.__selected_node.order()
             parent_index = self.__req_model.parent(self.__selected_index)
             self.__req_model.insertRow(insert_pos, parent_index)
@@ -1864,14 +1880,14 @@ class RequirementUI(QWidget):
             # self.__req_model.beginInsertRows(parent_node, insert_pos - 1, insert_pos)
             # self.__selected_node.insert_sibling_left(new_node)
             # self.__req_model.endInsertRows()
-            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
+            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_add_sibling_down(self):
         if self.__tree_item_selected():
             # new_node = ReqNode('New Item')
             # parent_node = self.__req_model.parent(self.__selected_index)
 
-            selected_node = self.__selected_node
+            # selected_node = self.__selected_node
             insert_pos = self.__selected_node.order() + 1
             parent_index = self.__req_model.parent(self.__selected_index)
             self.__req_model.insertRow(insert_pos, parent_index)
@@ -1879,39 +1895,47 @@ class RequirementUI(QWidget):
             # self.__req_model.beginInsertRows(parent_node, insert_pos, insert_pos)
             # self.__selected_node.insert_sibling_right(new_node)
             # self.__req_model.endInsertRows()
-            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
+            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_shift_item_up(self):
         if self.__tree_item_selected():
-            selected_node = self.__selected_node
-            node_order = self.__selected_node.order()
-            sibling_list = self.__selected_node.sibling()
-            # parent_index = self.__req_model.parent(self.__selected_index)
-            if node_order > 0:
-                # self.__req_model.beginMoveRows(parent_index, node_order - 1, node_order,
-                #                                parent_index, node_order)
-                self.__req_model.begin_edit()
-                sibling_list[node_order - 1], sibling_list[node_order] = \
-                    sibling_list[node_order], sibling_list[node_order - 1]
-                self.__req_model.end_edit()
-                # self.__req_model.endMoveRows()
-            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
+            self.__req_model.begin_edit()
+            self.__req_data_agent.shift_node(self.__selected_node.get_uuid(), -1)
+            self.__req_model.end_edit()
+
+            # # selected_node = self.__selected_node
+            # node_order = self.__selected_node.order()
+            # sibling_list = self.__selected_node.sibling()
+            # # parent_index = self.__req_model.parent(self.__selected_index)
+            # if node_order > 0:
+            #     # self.__req_model.beginMoveRows(parent_index, node_order - 1, node_order,
+            #     #                                parent_index, node_order)
+            #     self.__req_model.begin_edit()
+            #     sibling_list[node_order - 1], sibling_list[node_order] = \
+            #         sibling_list[node_order], sibling_list[node_order - 1]
+            #     self.__req_model.end_edit()
+            #     # self.__req_model.endMoveRows()
+            # # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_shift_item_down(self):
         if self.__tree_item_selected():
-            selected_node = self.__selected_node
-            node_order = self.__selected_node.order()
-            sibling_list = self.__selected_node.sibling()
+            # selected_node = self.__selected_node
+            # node_order = self.__selected_node.order()
+            # sibling_list = self.__selected_node.sibling()
             # parent_index = self.__req_model.parent(self.__selected_index)
-            if node_order + 1 < len(sibling_list):
-                # self.__req_model.beginMoveRows(parent_index, node_order, node_order + 1,
-                #                                parent_index, node_order)
-                self.__req_model.begin_edit()
-                sibling_list[node_order + 1], sibling_list[node_order] = \
-                    sibling_list[node_order], sibling_list[node_order + 1]
-                self.__req_model.end_edit()
-                # self.__req_model.endMoveRows()
-            self.__req_data_agent.inform_node_child_updated(selected_node.parent())
+            # if node_order + 1 < len(sibling_list):
+            # sibling_list[node_order + 1], sibling_list[node_order] = \
+            #     sibling_list[node_order], sibling_list[node_order + 1]
+
+            # self.__req_model.beginMoveRows(parent_index, node_order, node_order + 1,
+            #                                parent_index, node_order)
+
+            self.__req_model.begin_edit()
+            self.__req_data_agent.shift_node(self.__selected_node.get_uuid(), 1)
+            self.__req_model.end_edit()
+
+            # self.__req_model.endMoveRows()
+            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_cut_item(self):
         if self.__tree_item_selected():
@@ -1939,7 +1963,7 @@ class RequirementUI(QWidget):
                     paste_pos = self.__selected_node.order() + 1
                     self.__req_model.insert_node_children(parent_node, paste_node, paste_pos)
 
-                self.__req_data_agent.inform_node_child_updated(parent_node)
+                # self.__req_data_agent.inform_node_child_updated(parent_node)
 
     def on_requirement_tree_menu_delete_item(self):
         if self.__tree_item_selected():
@@ -1951,9 +1975,10 @@ class RequirementUI(QWidget):
 
                 self.__req_model.beginRemoveRows(
                     self.__req_model.parent(self.__selected_index), node_order, node_order + 1)
-                node_parent.remove_child(selected_node)
+                self.__req_data_agent.remove_node(selected_node.get_uuid())
+                # node_parent.remove_child(selected_node)
                 self.__req_model.endRemoveRows()
-                self.__req_data_agent.inform_node_child_updated(node_parent)
+                # self.__req_data_agent.inform_node_child_updated(node_parent)
 
                 self.__req_data_agent.notify_node_structure_changed('', node_parent, selected_node, 'remove')
 
@@ -1967,7 +1992,8 @@ class RequirementUI(QWidget):
             node_root = self.__req_data_agent.get_req_root()
             if node_root is not None:
                 node_root.set_title(req_name)
-                self.__req_data_agent.inform_node_data_updated(node_root)
+                self.__req_data_agent.update_node(node_root)
+                # self.__req_data_agent.inform_node_data_updated(node_root)
 
     def on_requirement_tree_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
