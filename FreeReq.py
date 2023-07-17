@@ -51,7 +51,7 @@ import shutil
 import markdown2
 import traceback
 from io import StringIO
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Union
 from functools import partial
 
 try:
@@ -121,7 +121,7 @@ class ReqNode:
             STATIC_FIELD_ID: '',
             STATIC_FIELD_UUID: str(uuid.uuid4().hex),
             STATIC_FIELD_TITLE: title,
-            STATIC_FIELD_CHILD: [],
+            STATIC_FIELD_CHILD: [],     # Special field. Only for serialize/deserialize.
             STATIC_FIELD_CONTENT: ''
         }
         self.__parent = None
@@ -304,41 +304,52 @@ class IReqAgent:
     # ------------------------ Override: Req management -----------------------
 
     def list_req(self) -> [str]:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: list_req')
 
     def new_req(self, req_name: str, overwrite: bool = False) -> bool:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: new_req')
 
     def open_req(self, req_name: str) -> bool:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: open_req')
 
     def delete_req(self, req_name: str) -> bool:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: delete_req')
 
     # -------------------- Override: After select_op_req() --------------------
 
     def get_req_name(self) -> str:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: get_req_name')
 
     def get_req_path(self) -> str:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: get_req_path')
 
     def get_req_meta(self) -> dict:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: get_req_meta')
 
     def set_req_meta(self, req_meta: dict) -> bool:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: set_req_meta')
 
     def get_req_root(self) -> ReqNode:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: get_req_root')
 
     def get_req_node(self, req_uuid: str) -> ReqNode:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: get_req_node')
+
+    # ----------------------- Override: Node  Operation -----------------------
+
+    def insert_node(self, parent_uuid: str, insert_pos: int, node: ReqNode):
+        raise NotImplementedError('Not implemented: insert_node')
+
+    def remove_node(self, node_uuid: str):
+        raise NotImplementedError('Not implemented: remove_node')
+
+    def update_node(self, node: ReqNode):
+        raise NotImplementedError('Not implemented: update_node')
 
     # ----------------------- Override: Other Functions -----------------------
 
     def new_req_id(self, id_prefix: str, digit_count: int = 5) -> str:
-        raise ValueError('Not implemented')
+        raise NotImplementedError('Not implemented: new_req_id')
 
     # ------------------------ Notification from remote -----------------------
 
@@ -544,6 +555,34 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def get_req_node(self, req_uuid: str) -> ReqNode:
         return self.__uuid_node_index.get(req_uuid, None)
+
+    # ----------------------- Override: Node  Operation -----------------------
+
+    def insert_node(self, parent_uuid: str, insert_pos: int, insert_nodes: Union[ReqNode, List[ReqNode]]):
+        insert_nodes = [insert_nodes] if isinstance(insert_nodes, ReqNode) else insert_nodes
+        parent_node = self.__req_node_root.filter(lambda x: x.get_uuid() == parent_uuid)
+        if len(parent_node) != 1:
+            print('Cannot find parent node.')
+        else:
+            parent_node[0].insert_children(insert_nodes, insert_pos)
+
+    def remove_node(self, node_uuid: str):
+        remove_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
+        if len(remove_node) != 1:
+            print('Cannot find remove node.')
+            return
+        node_parent = remove_node[0].parent()
+        if node_parent is not None:
+            node_parent.remove_child(remove_node[0])
+
+    def update_node(self, node: ReqNode):
+        update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())
+        if len(update_node) != 1:
+            print('Cannot find update node.')
+            return
+        if update_node is not node:
+            # If they are not the same instance
+            update_node.__data = node.data()
 
     # -------------------------- Other Functions -------------------------
 
@@ -781,6 +820,9 @@ class ReqModel(QAbstractItemModel):
         parent_node.insert_children(insert_nodes, pos)
         self.endInsertRows()
         self.end_edit()
+
+        for node in insert_nodes:
+            self.__req_data_agent.notify_node_structure_changed('', parent_node, node, 'add')
 
 
 # https://gist.github.com/xiaolai/aa190255b7dde302d10208ae247fc9f2
@@ -1785,7 +1827,6 @@ class RequirementUI(QWidget):
 
     def on_requirement_tree_menu_add_top_item(self):
         self.__req_model.insertRow(-1)
-        self.__req_data_agent.inform_node_child_updated(self.__req_data_agent.get_req_root())
 
         # req_root = self.__req_data_agent.get_req_root()
         # if req_root is not None:
@@ -1910,6 +1951,8 @@ class RequirementUI(QWidget):
                 node_parent.remove_child(selected_node)
                 self.__req_model.endRemoveRows()
                 self.__req_data_agent.inform_node_child_updated(node_parent)
+
+                self.__req_data_agent.notify_node_structure_changed('', node_parent, selected_node, 'remove')
 
                 # self.__update_selected_index(None)
 
