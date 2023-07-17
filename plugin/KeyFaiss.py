@@ -75,6 +75,8 @@ class KeyFaiss:
             del self.key_to_id[key]
 
     def __shift_ids(self, removed_ids: Union[int, List[int]]):
+        if len(self.id_to_key) == 0:
+            return
         # 如果removed_ids是一个整数，将其转换为列表
         if isinstance(removed_ids, int):
             removed_ids = [removed_ids]
@@ -227,12 +229,21 @@ def test_document_key_faiss():
 
     print('document_key_faiss test finished.')
 
-    # # 从索引中删除一个文档
-    # document_key_faiss.remove_document(keys[0])
-    #
-    # # 删除文档后再次搜索
-    # result = document_key_faiss.search(xq, k)
-    # print(f"删除文档后的搜索结果: {result}")
+    # -----------------------------------------------------------
+
+    for i, key in enumerate(keys):
+        document_key_faiss.remove_document(key)
+
+        # After document removed. The search will not be 100% match.
+        for embedding in data[i]:
+            result = document_key_faiss.search(embedding, 1)
+            assert (len(result) == 0 or result[0][0] > 0.00001)
+
+        # After document removed. The mapping should also be removed.
+        assert(len(key_faiss.key_to_id) == (nb - i - 1) * ne)
+        assert(len(key_faiss.id_to_key) == (nb - i - 1) * ne)
+        assert(len(document_key_faiss.ext_key_to_int_key) == nb - i - 1)
+        assert(len(document_key_faiss.int_key_to_ext_key) == (nb - i - 1) * ne)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
