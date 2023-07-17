@@ -39,6 +39,10 @@ Resource comments:
 | MARK_DOWN_CSS_TABLE  | string variant  | The css style sheet. To make Markdown preview looks pretty.               |
 +──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
 
+Plugin:
+    before_ui_create()
+    after_ui_created()
+
 """
 
 from __future__ import annotations
@@ -92,6 +96,8 @@ STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_
 
 STATIC_META_ID_PREFIX = 'meta_group'
 
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 class ReqNode:
     def __call__(self):
@@ -1053,6 +1059,8 @@ class ReqEditorBoard(QWidget):
         self.__line_title = QLineEdit('')
 
         self.__layout_dynamic = QGridLayout()
+        self.layout_root = QVBoxLayout()
+        self.layout_feature_area = QHBoxLayout()
 
         self.__text_md_editor = MarkdownEditor()
 
@@ -1089,8 +1097,7 @@ class ReqEditorBoard(QWidget):
         self.__layout_meta_area()
 
     def __layout_ui(self):
-        root_layout = QVBoxLayout()
-        self.setLayout(root_layout)
+        self.setLayout(self.layout_root)
 
         # up - meta area
 
@@ -1110,26 +1117,31 @@ class ReqEditorBoard(QWidget):
         meta_layout.addLayout(self.__layout_dynamic)
 
         self.__group_meta_data.setLayout(meta_layout)
-        root_layout.addWidget(self.__group_meta_data, 1)
+        self.layout_root.addWidget(self.__group_meta_data, 1)
 
         # mid
 
-        line = QHBoxLayout()
-        line.addWidget(self.__button_increase_font)
-        line.addWidget(self.__button_decrease_font)
-        line.addWidget(QLabel(''), 99)
-        line.addWidget(self.__check_editor)
-        line.addWidget(self.__check_viewer)
-        line.addWidget(self.__button_save_content)
-        root_layout.addLayout(line)
+        self.layout_feature_area.addWidget(self.__button_increase_font)
+        self.layout_feature_area.addWidget(self.__button_decrease_font)
+        self.layout_feature_area.addWidget(QLabel(''), 99)
+        self.layout_feature_area.addWidget(self.__check_editor)
+        self.layout_feature_area.addWidget(self.__check_viewer)
+        self.layout_feature_area.addWidget(self.__button_save_content)
+        self.layout_root.addLayout(self.layout_feature_area)
 
-        # down
+        # bottom
 
-        edit_area = QHBoxLayout()
-        root_layout.addLayout(edit_area, 9)
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(self.__text_md_editor)
+        splitter.addWidget(self.__text_md_viewer)
+        splitter.setSizes([200, 200])
+        self.layout_root.addWidget(splitter, 9)
 
-        edit_area.addWidget(self.__text_md_editor, 5)
-        edit_area.addWidget(self.__text_md_viewer, 5)
+        # edit_area = QHBoxLayout()
+        # self.layout_root.addLayout(edit_area, 9)
+
+        # edit_area.addWidget(self.__text_md_editor, 5)
+        # edit_area.addWidget(self.__text_md_viewer, 5)
 
     def __config_ui(self):
         self.__check_editor.setChecked(True)
@@ -1451,6 +1463,8 @@ class ReqMetaBoard(QWidget):
         self.__text_id_prefixes = QTextEdit(ID_DEFAULT)
         self.__text_meta_defines = QTextEdit(META_DEFAULT)
 
+        self.layout_root = QVBoxLayout()
+
         self.__init_ui()
         self.reload_meta_data()
 
@@ -1459,11 +1473,10 @@ class ReqMetaBoard(QWidget):
         self.__config_ui()
 
     def __layout_ui(self):
-        root_layout = QVBoxLayout()
-        self.setLayout(root_layout)
+        self.setLayout(self.layout_root)
 
-        root_layout.addWidget(self.__group_id, 2)
-        root_layout.addWidget(self.__group_meta, 8)
+        self.layout_root.addWidget(self.__group_id, 2)
+        self.layout_root.addWidget(self.__group_meta, 8)
 
         group_layout = QVBoxLayout()
         line = QHBoxLayout()
@@ -1485,7 +1498,7 @@ class ReqMetaBoard(QWidget):
         line.addStretch(100)
         line.addWidget(self.__button_save)
 
-        root_layout.addLayout(line)
+        self.layout_root.addLayout(line)
 
     def __config_ui(self):
         self.__button_save.clicked.connect(self.on_button_save)
@@ -1582,6 +1595,8 @@ class RequirementUI(QWidget):
         # self.__combo_req_select = QComboBox()
         self.__tree_requirements = QTreeView()
 
+        self.layout_root = QHBoxLayout()
+
         # self.__button_req_refresh = QPushButton('Refresh')
 
         self.__edit_tab = QTabWidget()
@@ -1595,10 +1610,9 @@ class RequirementUI(QWidget):
         self.__config_ui()
 
     def __layout_ui(self):
-        root_layout = QHBoxLayout()
-        self.setLayout(root_layout)
+        self.setLayout(self.layout_root)
 
-        left_area = QVBoxLayout()
+        # left_area = QVBoxLayout()
         # root_layout.addLayout(left_area)
         # root_layout.addWidget(self.__edit_tab, 99)
         # root_layout.addWidget(self.__edit_board, 99)
@@ -1607,7 +1621,7 @@ class RequirementUI(QWidget):
         splitter.addWidget(self.__tree_requirements)
         splitter.addWidget(self.__edit_tab)
 
-        root_layout.addWidget(splitter)
+        self.layout_root.addWidget(splitter)
 
         # ------------------------- Left area ------------------------
 
