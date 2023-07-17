@@ -260,19 +260,30 @@ class IReqObserver:
     def __init__(self):
         pass
 
+    def on_req_reloaded(self):
+        pass
+
     def on_meta_data_changed(self, req_name: str):
         pass
 
     def on_node_data_changed(self, req_name: str, req_node: ReqNode):
         pass
 
-    def on_node_child_changed(self, req_name: str, req_node: ReqNode):
+    def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
+        """
+
+        :param req_name:
+        :param parent_node:
+        :param child_node:
+        :param operation: Can be 'add', 'remove'
+        :return:
+        """
         pass
 
 
 class IReqAgent:
     def __init__(self):
-        self.__observer: IReqObserver = None
+        self.__observer: List[IReqObserver] = []
 
     def init(self, *args, **kwargs) -> bool:
         raise ValueError('Not implemented')
@@ -326,17 +337,28 @@ class IReqAgent:
 
     # -------------------------------- Observer -------------------------------
 
-    def set_observer(self, ob: IReqObserver):
-        self.__observer = ob
+    def add_observer(self, ob: IReqObserver):
+        self.__observer.append(ob)
+
+    def remove_observer(self, ob: IReqObserver):
+        if ob in self.__observer:
+            self.__observer.remove(ob)
+
+    def notify_req_reloaded(self):
+        for ob in self.__observer:
+            ob.on_req_reloaded()
 
     def notify_meta_data_changed(self, req_name: str):
-        self.__observer.on_meta_data_changed(req_name)
+        for ob in self.__observer:
+            ob.on_meta_data_changed(req_name)
 
     def notify_node_data_changed(self, req_name: str, req_node: ReqNode):
-        self.__observer.on_node_data_changed(req_name, req_node)
+        for ob in self.__observer:
+            ob.on_node_data_changed(req_name, req_node)
 
-    def notify_node_child_changed(self, req_name: str, req_node: ReqNode):
-        self.__observer.on_node_child_changed(req_name, req_node)
+    def notify_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
+        for ob in self.__observer:
+            ob.on_node_structure_changed(req_name, parent_node, child_node, operation)
 
     # -------------------------------- Assistant -------------------------------
 
@@ -467,6 +489,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         self.__req_meta_dict = {}
         self.__req_data_dict = {}
         self.__req_node_root = ReqNode(req_name)
+        self.notify_req_reloaded()
         return True
 
     def open_req(self, req_name: str) -> bool:
@@ -476,7 +499,10 @@ class ReqSingleJsonFileAgent(IReqAgent):
             self.__req_file_name = req_name
         else:
             self.__req_file_name = req_name + '.req'
-        return self.__load_req_json()
+
+        ret = self.__load_req_json()
+        self.notify_req_reloaded()
+        return ret
 
     def delete_req(self, req_name: str) -> bool:
         return False
@@ -497,6 +523,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def set_req_meta(self, req_meta: dict) -> bool:
         self.__req_meta_dict = req_meta
+        self.notify_meta_data_changed(self.get_req_name())
         return self.__save_req_json()
 
     def get_req_root(self) -> ReqNode:
