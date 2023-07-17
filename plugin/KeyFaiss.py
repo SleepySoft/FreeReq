@@ -25,6 +25,12 @@ class KeyFaiss:
         self.id_to_key = {}
         self.next_id = 0
 
+    def reset(self):
+        self.index.reset()
+        self.key_to_id.clear()
+        self.id_to_key.clear()
+        self.next_id = 0
+
     def search(self, xq: np.ndarray, k: int) -> List[Tuple[float, Any]]:
         vector = np.array([xq], dtype=np.float32)
         distance, indices = self.index.search(vector, k)
@@ -98,6 +104,11 @@ class DocumentKeyFaiss:
         self.index = index
         self.ext_key_to_int_key = {}
         self.int_key_to_ext_key = {}
+
+    def reset(self):
+        self.index.reset()
+        self.ext_key_to_int_key.clear()
+        self.int_key_to_ext_key.clear()
 
     def search(self, xq: np.ndarray, k: int) -> List[Tuple[float, Any]]:
         result = self.index.search(xq, k)

@@ -44,7 +44,10 @@ def on_text_content_edit(self):
 
 
 
-
+使用python实现一个函数：average_split_text(text: str, threshold: int, tolerance: float)
+如果text的长度小于threshold * (1 + tolerance)，则不分割。
+否则将文本分割为不大于threshold且均匀的部分。
+最后返回结果列表。
 
 
 

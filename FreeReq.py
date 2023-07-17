@@ -38,11 +38,6 @@ Resource comments:
 +──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
 | MARK_DOWN_CSS_TABLE  | string variant  | The css style sheet. To make Markdown preview looks pretty.               |
 +──────────────────────+─────────────────+───────────────────────────────────────────────────────────────────────────+
-
-Plugin:
-    before_ui_create()
-    after_ui_created()
-
 """
 
 from __future__ import annotations
@@ -82,8 +77,28 @@ except Exception as e:
 finally:
     pass
 
+
 self_path = os.path.dirname(os.path.abspath(__file__))
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Plugin:
+#   req_agent_prepared(req: IReqAgent)
+#   after_ui_created(req_ui: RequirementUI)
+
+try:
+    from plugin.plugin_manager import PluginManager
+    plugin_manager = PluginManager(os.path.join(self_path, 'plugin'))
+except Exception as e:
+    print(e)
+    print('No PluginManager')
+    plugin_manager = None
+finally:
+    pass
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 STATIC_FIELD_ID = 'id'
 STATIC_FIELD_UUID = 'uuid'
@@ -96,8 +111,6 @@ STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_
 
 STATIC_META_ID_PREFIX = 'meta_group'
 
-
-# ----------------------------------------------------------------------------------------------------------------------
 
 class ReqNode:
     def __call__(self):
@@ -1632,6 +1645,9 @@ class RequirementUI(QWidget):
 
         self.__init_ui()
 
+        if plugin_manager is not None:
+            plugin_manager.execute_all_module_function('after_ui_created', self)
+
     def __init_ui(self):
         self.__layout_ui()
         self.__config_ui()
@@ -2024,6 +2040,10 @@ def main():
 
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
+
+    if plugin_manager is not None:
+        plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
+
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)
     print('Current path: ' + os.getcwd())
