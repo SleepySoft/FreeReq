@@ -61,9 +61,9 @@ class EmbeddingIndexing(IReqObserver):
 
     def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
         if operation == 'add':
-            self.__index_node(child_node, False)
+            self.__index_node(child_node, True)
         elif operation == 'remove':
-            self.index.remove_document(child_node.get_uuid())
+            self.__remove_node_index(child_node)
         else:
             pass
 
@@ -84,6 +84,11 @@ class EmbeddingIndexing(IReqObserver):
         self.index.reset()
         root_node = self.req_agent.get_req_root()
         self.__index_node(root_node, True)
+
+    def __remove_node_index(self, node: ReqNode):
+        self.index.remove_document(node.get_uuid())
+        for n in node.children():
+            self.__remove_node_index(n)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

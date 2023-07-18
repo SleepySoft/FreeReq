@@ -206,6 +206,7 @@ class ReqNode:
     def remove_child(self, node: ReqNode) -> bool:
         if node in self.__children:
             self.__children.remove(node)
+            node.set_parent(None)
             return True
         else:
             return False
