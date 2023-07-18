@@ -60,9 +60,9 @@ try:
     from PyQt5.QtGui import QFont, QCursor
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
-    QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-    QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-    QAbstractItemView
+        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
+        QAbstractItemView
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -79,6 +79,10 @@ finally:
     pass
 
 self_path = os.path.dirname(os.path.abspath(__file__))
+
+os.environ['HTTP_PROXY'] = 'http://10.190.10.145:80'
+os.environ['HTTPS_PROXY'] = 'http://10.190.10.145:80'
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -1769,9 +1773,9 @@ class RequirementUI(QWidget):
 
         # self.__button_req_refresh = QPushButton('Refresh')
 
-        self.__edit_tab = QTabWidget()
-        self.__meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
-        self.__edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
+        self.edit_tab = QTabWidget()
+        self.meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
+        self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
 
         self.__init_ui()
 
@@ -1792,7 +1796,7 @@ class RequirementUI(QWidget):
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.__tree_requirements)
-        splitter.addWidget(self.__edit_tab)
+        splitter.addWidget(self.edit_tab)
 
         self.layout_root.addWidget(splitter)
 
@@ -1806,8 +1810,8 @@ class RequirementUI(QWidget):
 
         # ------------------------ Right area ------------------------
 
-        self.__edit_tab.addTab(self.__edit_board, 'Requirement Edit')
-        self.__edit_tab.addTab(self.__meta_board, 'Meta Config')
+        self.edit_tab.addTab(self.edit_board, 'Requirement Edit')
+        self.edit_tab.addTab(self.meta_board, 'Meta Config')
 
     def __config_ui(self):
         self.setMinimumSize(800, 600)
@@ -1903,12 +1907,12 @@ class RequirementUI(QWidget):
         menu.exec(QCursor.pos())
 
     def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
-        if self.__selected_node is not None and self.__edit_board.is_content_edited():
+        if self.__selected_node is not None and self.edit_board.is_content_edited():
             ret = QMessageBox.question(self, 'Save or Not',
                                        'Requirement Content Changed.\r\nSave?',
                                        QMessageBox.Yes | QMessageBox.No)
             if ret == QMessageBox.Yes:
-                self.__edit_board.on_button_save_content()
+                self.edit_board.on_button_save_content()
 
         selected_indexes = selected.indexes()
         if len(selected_indexes) > 0:
@@ -2082,8 +2086,8 @@ class RequirementUI(QWidget):
             self.__req_data_agent.new_req(req_name, overwrite=True)
             self.__req_model.endRemoveRows()
 
-            self.__edit_board.edit_req(None)
-            self.__meta_board.reload_meta_data()
+            self.edit_board.edit_req(None)
+            self.meta_board.reload_meta_data()
 
             # req_root = self.__req_data_agent.get_req_root()
             # self.__req_model.begin_edit()
@@ -2098,8 +2102,8 @@ class RequirementUI(QWidget):
             self.__req_data_agent.open_req(file_path)
             self.__req_model.endRemoveRows()
 
-            self.__edit_board.edit_req(None)
-            self.__meta_board.reload_meta_data()
+            self.edit_board.edit_req(None)
+            self.meta_board.reload_meta_data()
 
             # Change the current path to the requirement file path.
             # So the relative markdown file link will be correct.
@@ -2179,15 +2183,15 @@ class RequirementUI(QWidget):
             req_node: ReqNode = index.internalPointer()
             self.__selected_node = req_node
             self.__selected_index = index
-            self.__edit_board.edit_req(req_node)
+            self.edit_board.edit_req(req_node)
         else:
             self.__selected_node = None
             self.__selected_index = None
-            self.__edit_board.edit_req(None)
+            self.edit_board.edit_req(None)
         # print('Select Node:　' + str(self.__selected_node))
 
     def __on_meta_data_updated(self):
-        self.__edit_board.on_meta_data_updated()
+        self.edit_board.on_meta_data_updated()
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -2200,9 +2204,9 @@ def main():
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
 
-    # if plugin_manager is not None:
-    #     plugin_manager.reload_plugin()
-    #     plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
+    if plugin_manager is not None:
+        plugin_manager.reload_plugin()
+        plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
 
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)

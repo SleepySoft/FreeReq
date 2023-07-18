@@ -1,10 +1,17 @@
 import torch
 import faiss
 from math import ceil
-from typing import Dict, List
+from typing import Dict, List, Tuple
+
+from PyQt5.QtWidgets import QPushButton, QInputDialog
 from text2vec import SentenceModel
 from extra.KeyFaiss import KeyFaiss, DocumentKeyFaiss
 from FreeReq import IReqAgent, RequirementUI, IReqObserver, ReqNode, STATIC_FIELD_CONTENT
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+main_ui: RequirementUI = None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -51,6 +58,11 @@ class EmbeddingIndexing(IReqObserver):
         document_key_faiss = DocumentKeyFaiss(key_faiss)
         self.index = document_key_faiss
 
+    def search(self, text: str) -> List[Tuple[float, str]]:
+        search_embedding = self.embedding.encode(text)
+        result = self.index.search(search_embedding, TOP_K)
+        return result
+
     def on_req_reloaded(self):
         print('Indexing......')
         self.__reindex_all()
@@ -96,6 +108,29 @@ class EmbeddingIndexing(IReqObserver):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+req_agent: IReqAgent = None
+emb_index: EmbeddingIndexing = None
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def on_embedding_search():
+    text, ok = QInputDialog.getText(None, 'Search', 'Enter search text:')
+    if ok:
+        result = emb_index.search(text)
+
+        default_index_window = main_ui.sub_window_index['default']
+        default_index_window.clear_index()
+
+        for distance, index in result:
+            filter_nodes = req_agent.get_req_root().filter(lambda x: x.get_uuid() == index)
+            if len(filter_nodes) > 0:
+                default_index_window.append_index(filter_nodes[0].get_title(), filter_nodes[0].get_uuid())
+                default_index_window.show_right_bottom()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 
 def plugin_prob() -> Dict[str, str]:
     return {
@@ -111,10 +146,6 @@ def plugin_capacities() -> List[str]:
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-req_agent = None
-emb_index = None
-
-
 def req_agent_prepared(req: IReqAgent):
     global req_agent
     global emb_index
@@ -124,5 +155,8 @@ def req_agent_prepared(req: IReqAgent):
 
 
 def after_ui_created(req_ui: RequirementUI):
-    pass
-
+    global main_ui
+    main_ui = req_ui
+    embedding_search_button = QPushButton('Embedding Search')
+    main_ui.edit_board.layout_plugin_area.addWidget(embedding_search_button)
+    embedding_search_button.clicked.connect(on_embedding_search)
