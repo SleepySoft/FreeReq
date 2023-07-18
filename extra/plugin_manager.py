@@ -72,18 +72,6 @@ class PluginManager:
     def get_prob_functions(self) -> [str]:
         return self.__prob_functions
 
-    def find_module_has_capacity(self, capacity: str) -> [object]:
-        """
-        Finds the module that supports the specified feature.
-        :param capacity: The capacity you want to check.
-        :return: The module list that has this capacity.
-        """
-        module_list = []
-        for file_name, plugin in self.__plugins:
-            if self.__safe_execute(plugin, 'plugin_adapt', capacity):
-                module_list.append(plugin)
-        return module_list
-
     def check_module_has_function(self, module: object, function: str) -> bool:
         try:
             return callable(getattr(module, function))

@@ -60,8 +60,9 @@ try:
     from PyQt5.QtGui import QFont, QCursor
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
-        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter
+    QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+    QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
+    QAbstractItemView
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1174,6 +1175,7 @@ class ReqEditorBoard(QWidget):
         self.__layout_dynamic = QGridLayout()
         self.layout_root = QVBoxLayout()
         self.layout_feature_area = QHBoxLayout()
+        self.layout_plugin_area = QHBoxLayout()
 
         self.__text_md_editor = MarkdownEditor()
 
@@ -1192,8 +1194,8 @@ class ReqEditorBoard(QWidget):
 
         self.__group_meta_data = QGroupBox()
 
-        self.__check_editor = QCheckBox('Editor')
-        self.__check_viewer = QCheckBox('Viewer')
+        # self.__check_editor = QCheckBox('Editor')
+        # self.__check_viewer = QCheckBox('Viewer')
 
         self.__button_increase_font = QPushButton('+')
         self.__button_decrease_font = QPushButton('-')
@@ -1234,11 +1236,12 @@ class ReqEditorBoard(QWidget):
 
         # mid
 
-        self.layout_feature_area.addWidget(self.__button_increase_font)
         self.layout_feature_area.addWidget(self.__button_decrease_font)
+        self.layout_feature_area.addWidget(self.__button_increase_font)
+        self.layout_feature_area.addLayout(self.layout_plugin_area)
         self.layout_feature_area.addWidget(QLabel(''), 99)
-        self.layout_feature_area.addWidget(self.__check_editor)
-        self.layout_feature_area.addWidget(self.__check_viewer)
+        # self.layout_feature_area.addWidget(self.__check_editor)
+        # self.layout_feature_area.addWidget(self.__check_viewer)
         self.layout_feature_area.addWidget(self.__button_save_content)
         self.layout_root.addLayout(self.layout_feature_area)
 
@@ -1257,8 +1260,8 @@ class ReqEditorBoard(QWidget):
         # edit_area.addWidget(self.__text_md_viewer, 5)
 
     def __config_ui(self):
-        self.__check_editor.setChecked(True)
-        self.__check_viewer.setChecked(True)
+        # self.__check_editor.setChecked(True)
+        # self.__check_viewer.setChecked(True)
 
         self.__line_id.setReadOnly(True)
 
@@ -1272,8 +1275,8 @@ class ReqEditorBoard(QWidget):
 
         self.__text_md_editor.setAcceptRichText(False)
 
-        self.__check_editor.clicked.connect(self.on_check_editor)
-        self.__check_viewer.clicked.connect(self.on_check_viewer)
+        # self.__check_editor.clicked.connect(self.on_check_editor)
+        # self.__check_viewer.clicked.connect(self.on_check_viewer)
 
         self.__line_title.textChanged.connect(self.on_content_changed)
         self.__text_md_editor.textChanged.connect(self.on_text_content_edit)
@@ -1336,11 +1339,11 @@ class ReqEditorBoard(QWidget):
             self.__layout_dynamic.addWidget(_input, count // config_per_row, (count % config_per_row) * 2 + 1)
             count += 1
 
-    def on_check_editor(self):
-        self.__text_md_editor.setVisible(self.__check_editor.isChecked())
-
-    def on_check_viewer(self):
-        self.__text_md_viewer.setVisible(self.__check_viewer.isChecked())
+    # def on_check_editor(self):
+    #     self.__text_md_editor.setVisible(self.__check_editor.isChecked())
+    #
+    # def on_check_viewer(self):
+    #     self.__text_md_viewer.setVisible(self.__check_viewer.isChecked())
 
     def on_button_increase_font(self):
         editor_font = self.__text_md_editor.font()
@@ -1690,6 +1693,61 @@ class ReqMetaBoard(QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class IndexListUI(QWidget):
+    def __init__(self, main_ui: RequirementUI):
+        super().__init__()
+        self.main_ui = main_ui
+
+        # 设置窗口初始大小和位置
+        self.setGeometry(0, 0, 400, 600)
+
+        # 设置窗口无最大最小化按钮
+        self.setWindowFlags(Qt.WindowCloseButtonHint)
+
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+
+        # 创建列表控件
+        self.index_list = QTableWidget(self)
+        self.index_list.setColumnCount(2)
+        self.index_list.setHorizontalHeaderLabels(['Title', 'ID'])
+        self.index_list.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.index_list.setSelectionMode(QAbstractItemView.SingleSelection)
+
+        # 布局
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.index_list)
+
+        # 信号连接
+        self.index_list.cellClicked.connect(self.on_index_list_cell_clicked)
+
+    def append_index(self, title: str, index: str):
+        row = self.index_list.rowCount()
+        self.index_list.insertRow(row)
+        self.index_list.setItem(row, 0, QTableWidgetItem(title))
+        self.index_list.setItem(row, 1, QTableWidgetItem(index))
+
+    def clear_index(self):
+        self.index_list.setRowCount(0)
+
+    def on_index_list_cell_clicked(self, row, column):
+        index = self.index_list.item(row, 1).text()
+        self.main_ui.jump_by_id(index)
+        # print(f'Index clicked: {index}')
+
+    def show_right_bottom(self):
+        # 计算并设置窗口初始位置
+        main_ui_geometry = self.main_ui.frameGeometry()
+        self.move(main_ui_geometry.bottomRight() - self.rect().bottomRight())
+        self.show()
+
+    def closeEvent(self, event):
+        # 当用户点击关闭时，窗口隐藏
+        event.ignore()
+        self.hide()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class RequirementUI(QWidget):
     def __init__(self, req_data_agent: IReqAgent):
         super(RequirementUI, self).__init__()
@@ -1698,8 +1756,8 @@ class RequirementUI(QWidget):
         self.__req_model = ReqModel(self.__req_data_agent)
 
         self.__cut_items = []
-        self.__filter_index = -1
-        self.__filter_nodes = []
+        # self.__filter_index = -1
+        # self.__filter_nodes = []
         self.__selected_node: ReqNode = None
         self.__selected_index: QModelIndex = None
 
@@ -1707,6 +1765,7 @@ class RequirementUI(QWidget):
         self.__tree_requirements = QTreeView()
 
         self.layout_root = QHBoxLayout()
+        self.sub_window_index = {'default': IndexListUI(self)}
 
         # self.__button_req_refresh = QPushButton('Refresh')
 
@@ -1754,6 +1813,8 @@ class RequirementUI(QWidget):
         self.setMinimumSize(800, 600)
         self.setWindowTitle('Free Requirement - by Sleepy')
 
+        self.sub_window_index['default'].setWindowTitle('Search Result')
+
         self.__tree_requirements.setModel(self.__req_model)
         self.__tree_requirements.setAlternatingRowColors(True)
         self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -1780,15 +1841,15 @@ class RequirementUI(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
-            text, ok = QInputDialog.getText(self, 'Search', 'Enter search text: \nF3 Jump Next\nSHIFT + F3 Jump Prev')
+            text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
             if ok:
                 self.search_tree(text)
-        elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
-            self.__edit_board.on_button_save_content()
-        elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
-            self.jump_to_prev_search()
-        elif event.key() == Qt.Key_F3:
-            self.jump_to_next_search()
+        # elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
+        #     self.__edit_board.on_button_save_content()
+        # elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
+        #     self.jump_to_prev_search()
+        # elif event.key() == Qt.Key_F3:
+        #     self.jump_to_next_search()
 
     # def on_button_req_refresh(self):
     #     pass
@@ -2061,23 +2122,37 @@ class RequirementUI(QWidget):
 
     def search_tree(self, text: str):
         root_node = self.__req_data_agent.get_req_root()
-        self.__filter_nodes = root_node.filter(partial(RequirementUI.__find_node_any_data, text))
-        self.__filter_index = -1
-        self.jump_to_next_search()
+        filter_nodes = root_node.filter(partial(RequirementUI.__find_node_any_data, text))
 
-    def jump_to_prev_search(self):
-        self.__filter_index -= 1
-        if self.__filter_index < 0:
-            self.__filter_index = len(self.__filter_nodes) - 1
-        if self.__filter_index >= 0:
-            self.jump_to_node(self.__filter_nodes[self.__filter_index])
+        default_index_window = self.sub_window_index['default']
+        default_index_window.clear_index()
 
-    def jump_to_next_search(self):
-        self.__filter_index += 1
-        if self.__filter_index >= len(self.__filter_nodes):
-            self.__filter_index = -1
-        if self.__filter_index >= 0:
-            self.jump_to_node(self.__filter_nodes[self.__filter_index])
+        for node in filter_nodes:
+            default_index_window.append_index(node.get_title(), node.get_uuid())
+        default_index_window.show_right_bottom()
+
+        # self.__filter_index = -1
+        # self.jump_to_next_search()
+
+    # def jump_to_prev_search(self):
+    #     self.__filter_index -= 1
+    #     if self.__filter_index < 0:
+    #         self.__filter_index = len(self.__filter_nodes) - 1
+    #     if self.__filter_index >= 0:
+    #         self.jump_to_node(self.__filter_nodes[self.__filter_index])
+    #
+    # def jump_to_next_search(self):
+    #     self.__filter_index += 1
+    #     if self.__filter_index >= len(self.__filter_nodes):
+    #         self.__filter_index = -1
+    #     if self.__filter_index >= 0:
+    #         self.jump_to_node(self.__filter_nodes[self.__filter_index])
+
+    def jump_by_id(self, node_id: str):
+        root_node = self.__req_data_agent.get_req_root()
+        find_node = root_node.filter(lambda x: x.get_uuid() == node_id)
+        if len(find_node) > 0:
+            self.jump_to_node(find_node[0])
 
     def jump_to_node(self, node: ReqNode):
         index = self.__req_model.index_of_node(node)
@@ -2125,9 +2200,9 @@ def main():
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
 
-    if plugin_manager is not None:
-        plugin_manager.reload_plugin()
-        plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
+    # if plugin_manager is not None:
+    #     plugin_manager.reload_plugin()
+    #     plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
 
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)

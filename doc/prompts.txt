@@ -52,6 +52,13 @@ def on_text_content_edit(self):
 
 
 
+使用Python写一个窗口：IndexListUI，它包含一个列表控件，名为index_list，包含两列：Title和ID，单行且整行选择。
+窗口初始大小为300 * 600并出现在屏幕右下角。
+无最大最小化按钮。当用户点击关闭时，窗口隐藏，下次显示时保持隐藏之前的位置。
+提供接口append_index和clear_index，前者接受title，和index作为参数，均为str。将其加入index_list。
+当用户点击index_list中的一行，响应事件，并取出index备用。
+
+
 
 
 
