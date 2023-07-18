@@ -1,10 +1,11 @@
-from typing import Dict, List
-
+import torch
 import faiss
 from math import ceil
+from typing import Dict, List
 from text2vec import SentenceModel
-from plugin.KeyFaiss import KeyFaiss, DocumentKeyFaiss
+from extra.KeyFaiss import KeyFaiss, DocumentKeyFaiss
 from FreeReq import IReqAgent, RequirementUI, IReqObserver, ReqNode, STATIC_FIELD_CONTENT
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -51,7 +52,9 @@ class EmbeddingIndexing(IReqObserver):
         self.index = document_key_faiss
 
     def on_req_reloaded(self):
+        print('Indexing......')
         self.__reindex_all()
+        print('Index all req complete.')
 
     def on_meta_data_changed(self, req_name: str):
         pass
@@ -109,12 +112,15 @@ def plugin_capacities() -> List[str]:
 # ----------------------------------------------------------------------------------------------------------------------
 
 req_agent = None
+emb_index = None
 
 
 def req_agent_prepared(req: IReqAgent):
     global req_agent
+    global emb_index
     req_agent = req
-    req_agent.add_observer()
+    emb_index = EmbeddingIndexing(req)
+    req_agent.add_observer(emb_index)
 
 
 def after_ui_created(req_ui: RequirementUI):

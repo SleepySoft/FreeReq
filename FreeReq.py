@@ -86,7 +86,7 @@ self_path = os.path.dirname(os.path.abspath(__file__))
 #   after_ui_created(req_ui: RequirementUI)
 
 try:
-    from plugin.plugin_manager import PluginManager
+    from extra.plugin_manager import PluginManager
 
     plugin_manager = PluginManager(os.path.join(self_path, 'plugin'))
 except Exception as e:
@@ -2126,6 +2126,7 @@ def main():
     req_agent.init()
 
     if plugin_manager is not None:
+        plugin_manager.reload_plugin()
         plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
 
     if not req_agent.open_req('FreeReq'):

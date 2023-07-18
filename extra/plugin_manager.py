@@ -128,8 +128,9 @@ class PluginManager:
 
     def execute_all_module_function(self, _function: str, *args, **kwargs) -> [object]:
         self.clear_error()
-        for _, plugin in self.__plugins:
-            self.__safe_execute(plugin, _function, *args, **kwargs)
+        for plugin in self.__plugins:
+            plugin: PluginManager.PluginData
+            self.__safe_execute(plugin.module_inst, _function, *args, **kwargs)
 
     def clear_error(self):
         self.__last_exception = None
