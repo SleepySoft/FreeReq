@@ -255,9 +255,9 @@ class ReqNode:
 
     def filter(self, func: Callable[[ReqNode], bool]) -> List[ReqNode]:
         result = []
+        if func(self):
+            result.append(self)
         for child in self.__children:
-            if func(child):
-                result.append(child)
             result.extend(child.filter(func))
         return result
 
@@ -364,20 +364,24 @@ class IReqAgent:
             self.__observer.remove(ob)
 
     def notify_req_reloaded(self):
+        print('=> Req reloaded.')
         for ob in self.__observer:
             ob.on_req_reloaded()
 
-    def notify_meta_data_changed(self, req_name: str):
+    def notify_meta_data_changed(self):
+        print('=> Meta data changed.')
         for ob in self.__observer:
-            ob.on_meta_data_changed(req_name)
+            ob.on_meta_data_changed(self.get_req_name())
 
-    def notify_node_data_changed(self, req_name: str, req_node: ReqNode):
+    def notify_node_data_changed(self, req_node: ReqNode):
+        print('=> Node data changed.')
         for ob in self.__observer:
-            ob.on_node_data_changed(req_name, req_node)
+            ob.on_node_data_changed(self.get_req_name(), req_node)
 
-    def notify_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: [ReqNode], operation: str):
+    def notify_node_structure_changed(self, parent_node: ReqNode, child_node: [ReqNode], operation: str):
+        print('=> Node structure changed: ' + operation)
         for ob in self.__observer:
-            ob.on_node_structure_changed(req_name, parent_node, child_node, operation)
+            ob.on_node_structure_changed(self.get_req_name(), parent_node, child_node, operation)
 
     # -------------------------------- Assistant -------------------------------
 
@@ -542,7 +546,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def set_req_meta(self, req_meta: dict) -> bool:
         self.__req_meta_dict = req_meta
-        self.notify_meta_data_changed(self.get_req_name())
+        self.notify_meta_data_changed()
         return self.__save_req_json()
 
     def get_req_root(self) -> ReqNode:
@@ -562,7 +566,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
             self.__save_req_json()
-            self.notify_node_structure_changed(self.get_req_name(), parent_node, insert_nodes, 'add')
+            self.notify_node_structure_changed(parent_node, insert_nodes, 'add')
 
     def remove_node(self, node_uuid: str):
         remove_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -574,7 +578,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node.remove_child(remove_node[0])
 
             self.__save_req_json()
-            self.notify_node_structure_changed(self.get_req_name(), parent_node, [remove_node], 'remove')
+            self.notify_node_structure_changed(parent_node, [remove_node], 'remove')
 
     def update_node(self, node: ReqNode):
         update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())
@@ -584,9 +588,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
         if update_node[0] is not node:
             # If they are not the same instance
             update_node[0].copy_data(node)
-
-            self.__save_req_json()
-            self.notify_node_data_changed(update_node[0])
+        self.__save_req_json()
+        self.notify_node_data_changed(update_node[0])
 
     def shift_node(self, node_uuid: str, shift_offset: int):
         shift_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -683,7 +686,6 @@ class ReqSingleJsonFileAgent(IReqAgent):
 class ReqModel(QAbstractItemModel):
     def __init__(self, req_data_agent: IReqAgent):
         super(ReqModel, self).__init__()
-
         self.__req_data_agent = req_data_agent
 
     # ------------------------------------- Method -------------------------------------
@@ -694,13 +696,11 @@ class ReqModel(QAbstractItemModel):
     def end_edit(self):
         self.layoutChanged.emit()
 
-    # def set_root_node(self, root_node: ReqNode):
-    #     self.__root_node = root_node
-    #
-    # def get_root_node(self) -> ReqNode:
-    #     return self.__root_node
-
     def index_of_node(self, node: ReqNode) -> QModelIndex:
+        if node is None or self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
+            return QModelIndex()
+        if node == self.__req_data_agent.get_req_root():
+            return self.createIndex(-1, 0, node)
         return self.createIndex(node.order(), 0, node) if node is not None else QModelIndex()
 
     @staticmethod
@@ -719,6 +719,14 @@ class ReqModel(QAbstractItemModel):
             return req_node.get_title()
 
         return None
+
+    # def setData(self, index, value, role=Qt.EditRole):
+    #     if role == Qt.EditRole:
+    #         node = index.internalPointer()
+    #         node.set_title(value)
+    #         self.dataChanged.emit(index, index)
+    #         return True
+    #     return False
 
     # def flags(self, index: QModelIndex):
     #     if not index.isValid():
@@ -1464,8 +1472,9 @@ class ReqEditorBoard(QWidget):
         req_node.set(STATIC_FIELD_ID, self.__line_id.text())
         req_node.set(STATIC_FIELD_TITLE, self.__line_title.text())
         req_node.set(STATIC_FIELD_CONTENT, self.__text_md_editor.toPlainText())
+        self.__req_data_agent.update_node(req_node)
         self.__req_model.end_edit()
-        self.__req_data_agent.inform_node_data_updated(req_node)
+        # self.__req_data_agent.inform_node_data_updated(req_node)
 
     def __reset_ui_content(self):
         for _, meta_ctrl in self.__meta_data_controls.items():
@@ -1980,7 +1989,7 @@ class RequirementUI(QWidget):
                 self.__req_model.endRemoveRows()
                 # self.__req_data_agent.inform_node_child_updated(node_parent)
 
-                self.__req_data_agent.notify_node_structure_changed('', node_parent, selected_node, 'remove')
+                # self.__req_data_agent.notify_node_structure_changed('', node_parent, selected_node, 'remove')
 
                 # self.__update_selected_index(None)
 

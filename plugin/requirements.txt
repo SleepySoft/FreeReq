@@ -1,2 +1,3 @@
 torch
 text2vec
+faiss-cpu
