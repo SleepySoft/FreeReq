@@ -381,7 +381,7 @@ class IReqAgent:
         for ob in self.__observer:
             ob.on_node_data_changed(self.get_req_name(), req_node)
 
-    def notify_node_structure_changed(self, parent_node: ReqNode, child_node: [ReqNode], operation: str):
+    def notify_node_structure_changed(self, parent_node: ReqNode, child_node: List[ReqNode], operation: str):
         print('=> Node structure changed: ' + operation)
         for ob in self.__observer:
             ob.on_node_structure_changed(self.get_req_name(), parent_node, child_node, operation)
@@ -569,7 +569,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
             self.__save_req_json()
-            self.notify_node_structure_changed(parent_node, insert_nodes, 'add')
+            self.notify_node_structure_changed(parent_node[0], insert_nodes, 'add')
 
     def remove_node(self, node_uuid: str):
         remove_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -581,7 +581,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node.remove_child(remove_node[0])
 
             self.__save_req_json()
-            self.notify_node_structure_changed(parent_node, [remove_node], 'remove')
+            self.notify_node_structure_changed(parent_node, remove_node, 'remove')
 
     def update_node(self, node: ReqNode):
         update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())

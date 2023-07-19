@@ -25,9 +25,11 @@ EMBEDDING_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 #   nghuyong/ernie-3.0-base-zh
 #   shibing624/text2vec-base-chinese
 #   GanymedeNil/text2vec-large-chinese
+# Common:
+#   shibing624/text2vec-base-multilingual
 # English:
 #
-EMBEDDING_MODEL_NAME = 'shibing624/text2vec-base-multilingual'
+EMBEDDING_MODEL_NAME = 'GanymedeNil/text2vec-large-chinese'
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -76,11 +78,13 @@ class EmbeddingIndexing(IReqObserver):
     def on_node_data_changed(self, req_name: str, req_node: ReqNode):
         self.__index_node(req_node, False)
 
-    def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: ReqNode, operation: str):
+    def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: List[ReqNode], operation: str):
         if operation == 'add':
-            self.__index_node(child_node, True)
+            for node in child_node:
+                self.__index_node(node, True)
         elif operation == 'remove':
-            self.__remove_node_index(child_node)
+            for node in child_node:
+                self.__remove_node_index(node)
         else:
             pass
 
