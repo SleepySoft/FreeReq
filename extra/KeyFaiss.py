@@ -36,8 +36,12 @@ class KeyFaiss:
         distance, indices = self.index.search(vector, k)
         distance_key = []
         for d, i in zip(distance[0], indices[0]):
-            if not np.isinf(d):
+            if np.isinf(d) or i < 0:
+                continue
+            if i in self.id_to_key.keys():
                 distance_key.append((d, self.id_to_key[i]))
+            else:
+                print('Warning: The index in search result is not in id to key mapping.')
         return distance_key
 
     def add_with_keys(self, data: Union[List[List[float]], np.array], keys: List[Any]):
@@ -121,7 +125,7 @@ class DocumentKeyFaiss:
         sorted_result = sorted(refactor_result.items(), key=lambda x: x[1])
         return [(v, k) for k, v in sorted_result]
 
-    def update_document(self, data: Union[List[float], List[List[float]]], key: Any):
+    def update_document(self, data: Union[List[List[float]], np.ndarray], key: Any):
         if key in self.ext_key_to_int_key.keys():
             self.__del_document(key)
         self.__add_document(data, key)
@@ -131,13 +135,7 @@ class DocumentKeyFaiss:
 
     # -----------------------------------------------------------------------------
 
-    def __add_document(self, data: Union[List[float], List[List[float]]], key: Any):
-        if not isinstance(data, np.ndarray):
-            return
-        if isinstance(data, list):
-            if not isinstance(data[0], list):
-                data = [data]
-
+    def __add_document(self, data: Union[List[List[float]], np.ndarray], key: Any):
         internal_keys = [str(uuid.uuid4().hex) for _ in data]
         self.index.add_with_keys(data, internal_keys)
 

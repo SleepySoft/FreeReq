@@ -8,11 +8,9 @@ from text2vec import SentenceModel
 from extra.KeyFaiss import KeyFaiss, DocumentKeyFaiss
 from FreeReq import IReqAgent, RequirementUI, IReqObserver, ReqNode, STATIC_FIELD_CONTENT
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 main_ui: RequirementUI = None
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -22,11 +20,14 @@ TOP_K = 5
 EMBEDDING_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # The embedding model name could be one of the following:
+# Chinese:
 #   ghuyong/ernie-3.0-nano-zh
 #   nghuyong/ernie-3.0-base-zh
 #   shibing624/text2vec-base-chinese
 #   GanymedeNil/text2vec-large-chinese
-EMBEDDING_MODEL_NAME = 'GanymedeNil/text2vec-large-chinese'
+# English:
+#
+EMBEDDING_MODEL_NAME = 'shibing624/text2vec-base-multilingual'
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -53,7 +54,8 @@ class EmbeddingIndexing(IReqObserver):
 
         self.embedding = SentenceModel(EMBEDDING_MODEL_NAME)
 
-        index = faiss.IndexFlatL2(self.embedding.encode('Getting embedding length.'))
+        embeddings = self.embedding.encode('Getting embedding length.')
+        index = faiss.IndexFlatL2(len(embeddings))
         key_faiss = KeyFaiss(index)
         document_key_faiss = DocumentKeyFaiss(key_faiss)
         self.index = document_key_faiss
@@ -85,11 +87,16 @@ class EmbeddingIndexing(IReqObserver):
     # ---------------------------------------------------------------
 
     def __index_node(self, node: ReqNode, recursive: bool):
-        node_text = node.get_title() + node.get(STATIC_FIELD_CONTENT)
+        title = node.get_title()
+        content = node.get(STATIC_FIELD_CONTENT)
+        node_text = (title if isinstance(title, str) else '') + \
+                    (content if isinstance(content, str) else '')
+
         if len(node_text.strip()) == 0:
             return
+
         paragraph = average_split_text(node_text, self.split_threshold, 0.2)
-        documents = [self.embedding.encode(p) for p in paragraph]
+        documents = self.embedding.encode(paragraph)
         self.index.update_document(documents, node.get_uuid())
         if recursive:
             for n in node.children():

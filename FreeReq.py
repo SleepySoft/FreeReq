@@ -80,9 +80,6 @@ finally:
 
 self_path = os.path.dirname(os.path.abspath(__file__))
 
-os.environ['HTTP_PROXY'] = 'http://10.190.10.145:80'
-os.environ['HTTPS_PROXY'] = 'http://10.190.10.145:80'
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
