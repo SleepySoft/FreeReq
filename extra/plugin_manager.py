@@ -102,6 +102,13 @@ class PluginManager:
         finally:
             pass
 
+    def call_module_function(self, module_name: str, function_name: str, *args, **kwargs) -> object:
+        for plugin in self.__plugins:
+            plugin: PluginManager.PluginData
+            if plugin.module_name == module_name:
+                return self.__safe_execute(plugin.module_inst, function_name, *args, **kwargs)
+        return None
+
     def execute_module_function(
             self, module: object or [object], _function: str, *args, **kwargs) -> object or [object]:
         """

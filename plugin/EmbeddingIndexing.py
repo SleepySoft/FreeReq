@@ -125,6 +125,15 @@ emb_index: EmbeddingIndexing = None
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def search_req_nodes(text: str) -> List[ReqNode]:
+    nodes = []
+    result = emb_index.search(text)
+    for distance, index in result:
+        filter_nodes = req_agent.get_req_root().filter(lambda x: x.get_uuid() == index)
+        nodes.extend(filter_nodes)
+    return nodes
+
+
 def on_embedding_search():
     text, ok = QInputDialog.getText(None, 'Search', 'Enter search text:')
     if ok:
@@ -145,7 +154,7 @@ def on_embedding_search():
 
 def plugin_prob() -> Dict[str, str]:
     return {
-        'name': 'Embedding Indexing',
+        'name': 'EmbeddingIndexing',
         'version': '1.0.0.0',
         'tags': 'embedding'
     }
