@@ -2161,6 +2161,10 @@ class RequirementUI(QWidget):
         self.__tree_requirements.scrollTo(index)
         self.__tree_requirements.setCurrentIndex(index)
 
+    def get_plugin(self) -> PluginManager:
+        # Workaround
+        return plugin_manager
+
     # --------------------------------------------------------
 
     @staticmethod
