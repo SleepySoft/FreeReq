@@ -1,4 +1,7 @@
 import sys
+import threading
+import time
+
 import torch
 from typing import Union, List, Dict
 from transformers import AutoModel, AutoTokenizer
@@ -30,13 +33,10 @@ PROMPT_TEMPLATE = """已知信息：
 # ----------------------------------------------------------------------------------------------------------------------
 
 class ChatWindow(QWidget):
-    send_message = pyqtSignal(str)
-
     def __init__(self):
         super().__init__()
         self.__init_ui()
         self.thread = ChatThread()
-        self.send_message.connect(self.thread.handle_input)
         self.thread.append_text.connect(self.append_text)
         self.thread.start()
 
@@ -62,11 +62,11 @@ class ChatWindow(QWidget):
     def send(self):
         text = self.text_input.text()
         if text:
-            self.send_message.emit(text)
+            self.thread.chat(text)
             self.text_input.clear()
 
     def append_text(self, text):
-        self.text_display.append(text)
+        self.text_display.insertPlainText(text)
 
     def closeEvent(self, event):
         self.thread.quit()
@@ -95,39 +95,66 @@ class ChatThread(QThread):
         self.model = None
         self.tokenizer = None
         self.history = []
+        self.pending_chat = ''
+        self.exit_flag = False
+        self.lock = threading.Lock()
 
-    def chat_init(self):
+    def chat(self, text: str):
+        with self.lock:
+            self.pending_chat = text
+
+    def run(self) -> None:
+        self.__check_init_llm()
+        while not self.exit_flag:
+            self.__handle_input()
+
+    # ------------------------------------------------
+
+    def __check_init_llm(self):
         model, tokenizer = setup_llm()
         if model is None or tokenizer is None:
             exit(-2)
         model = model.eval()
-
         self.model, self.tokenizer = model, tokenizer
 
-    def handle_input(self, text: str):
+    def __handle_input(self):
+        with self.lock:
+            text = self.pending_chat
+            self.pending_chat = ''
         text = text.strip()
+        if text == '':
+            time.sleep(0.1)
+            return
+
         if text != '':
             self.append_text.emit(text)
 
-            search_result = main_ui.get_plugin().call_module_function(EMBEDDING_PLUGIN_NAME, 'search_req_nodes', text)
+            search_result = main_ui.get_plugin().call_module_function(
+                EMBEDDING_PLUGIN_NAME, 'search_req_nodes', text, 6)
+            if search_result is None:
+                return
             prompts = ChatThread.generate_llm_prompts(question=text, search_result=search_result)
 
-            response, _ = self.model.chat(
-                self.tokenizer,
-                prompts,
-                history=self.history,
-                max_length=10000,
-                temperature=2.0
-            )
-            self.append_text.emit(str(response))
+            print(prompts)
 
-            # for i, (stream_resp, _) in enumerate(self.model.stream_chat(
-            #         self.tokenizer,
-            #         prompts,
-            #         history=self.history,
-            #         max_length=10000,
-            #         temperature=2.0)):
-            #     self.append_text.emit(stream_resp)
+            # response, _ = self.model.chat(
+            #     self.tokenizer,
+            #     prompts,
+            #     history=self.history,
+            #     max_length=10000,
+            #     temperature=2.0
+            # )
+            # self.append_text.emit(str(response))
+
+            prev_resp = ''
+            for i, (stream_resp, _) in enumerate(self.model.stream_chat(
+                    self.tokenizer,
+                    prompts,
+                    history=self.history,
+                    max_length=10000,
+                    temperature=2.0)):
+                self.append_text.emit(stream_resp[len(prev_resp):])
+                prev_resp = stream_resp
 
             torch.cuda.empty_cache()
 
@@ -146,7 +173,6 @@ def on_chat():
     global chat_window
     if chat_window is None:
         chat_window = ChatWindow()
-        chat_window.thread.chat_init()
     chat_window.show()
 
 
@@ -185,4 +211,3 @@ if __name__ == '__main__':
     chat_window = ChatWindow()
     chat_window.show()
     sys.exit(app.exec_())
-

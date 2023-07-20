@@ -62,9 +62,9 @@ class EmbeddingIndexing(IReqObserver):
         document_key_faiss = DocumentKeyFaiss(key_faiss)
         self.index = document_key_faiss
 
-    def search(self, text: str) -> List[Tuple[float, str]]:
+    def search(self, text: str, top_k: int = TOP_K) -> List[Tuple[float, str]]:
         search_embedding = self.embedding.encode(text)
-        result = self.index.search(search_embedding, TOP_K)
+        result = self.index.search(search_embedding, top_k)
         return result
 
     def on_req_reloaded(self):
@@ -125,9 +125,9 @@ emb_index: EmbeddingIndexing = None
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def search_req_nodes(text: str) -> List[ReqNode]:
+def search_req_nodes(text: str, top_k: int) -> List[ReqNode]:
     nodes = []
-    result = emb_index.search(text)
+    result = emb_index.search(text, top_k)
     for distance, index in result:
         filter_nodes = req_agent.get_req_root().filter(lambda x: x.get_uuid() == index)
         nodes.extend(filter_nodes)
