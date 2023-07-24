@@ -1846,7 +1846,7 @@ class RequirementUI(QWidget):
             if ok:
                 self.search_tree(text)
         elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
-            self.__edit_board.on_button_save_content()
+            self.edit_board.on_button_save_content()
         # elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
         #     self.jump_to_prev_search()
         # elif event.key() == Qt.Key_F3:
