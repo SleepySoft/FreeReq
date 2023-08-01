@@ -1071,6 +1071,15 @@ def convert_table_to_markdown(data):
     return markdown_text
 
 
+def html_has_table(html):
+    # 解析HTML数据
+    soup = BeautifulSoup(html, 'html.parser')
+    table = soup.find('table')
+
+    # 检查是否存在表格
+    return bool(table)
+
+
 KEEP_ATTR = ['rowspan', 'colspan']
 
 
@@ -1147,17 +1156,19 @@ class MarkdownEditor(QTextEdit):
                 # 取消
                 pass
         elif source.hasFormat('text/html'):
-            # Especially for word copied table data.
-            try:
-                html_text = pick_table_from_html(source.html())
-                self.insertPlainText(html_text)
-                return
-            except Exception as e:
-                print('Error: Try to parse paste table data to HTML fail.')
-                print(e)
-                QMessageBox.information(None, 'Error', 'Parse table to HTML error. Paste it as image.')
-            finally:
-                pass
+            html_text = source.html()
+            if html_has_table(html_text):
+                # Especially for word copied table data.
+                try:
+                    table_html = pick_table_from_html(html_text)
+                    self.insertPlainText(table_html)
+                    return
+                except Exception as e:
+                    print('Error: Try to parse paste table data to HTML fail.')
+                    print(e)
+                    QMessageBox.information(None, 'Error', 'Parse table to HTML error. Paste it as image.')
+                finally:
+                    pass
 
         if source.hasImage():
             image = source.imageData()
@@ -1528,7 +1539,7 @@ class ReqEditorBoard(QWidget):
         self.__group_meta_data.setTitle('Req UUID: ' + req_node.get_uuid())
         self.__line_title.setText(req_node.get_title())
         self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
-        self.__text_md_editor.setText(req_node.get(STATIC_FIELD_CONTENT, ''))
+        self.__text_md_editor.setPlainText(req_node.get(STATIC_FIELD_CONTENT, ''))
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
         self.__req_model.begin_edit()
@@ -1547,7 +1558,7 @@ class ReqEditorBoard(QWidget):
                 meta_ctrl.setText('')
         self.__line_id.setText('')
         self.__line_title.setText('')
-        self.__text_md_editor.setText('')
+        self.__text_md_editor.setPlainText('')
         self.__group_meta_data.setTitle('')
 
     def update_content_edited_status(self, edited: bool):
