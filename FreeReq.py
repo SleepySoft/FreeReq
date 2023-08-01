@@ -43,6 +43,7 @@ Resource comments:
 from __future__ import annotations
 
 import os
+import re
 import sys
 import csv
 import uuid
@@ -53,6 +54,7 @@ import traceback
 from io import StringIO
 from typing import Callable, List, Tuple, Union
 from functools import partial
+from bs4 import BeautifulSoup
 
 try:
     # Use try catch for running FreeReq without UI
@@ -79,7 +81,6 @@ finally:
     pass
 
 self_path = os.path.dirname(os.path.abspath(__file__))
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -1062,11 +1063,38 @@ def convert_table_to_markdown(data):
     # 格式化Markdown表格
     markdown_text = ''
     for i, row in enumerate(markdown_table):
-        markdown_text += '| ' + ' | '.join(row) + ' |\n'
+        formatted_row = [cell.replace('\n', '<br>') for cell in row]
+        markdown_text += '| ' + ' | '.join(formatted_row) + ' |\n'
         if i == 0:
             markdown_text += '| ' + ' | '.join(['---'] * num_cols) + ' |\n'
 
     return markdown_text
+
+
+KEEP_ATTR = ['rowspan', 'colspan']
+
+
+def pick_table_from_html(html):
+    # 解析HTML数据
+    soup = BeautifulSoup(html, 'html.parser')
+    table = soup.find('table')
+
+    # 移除表格中的样式
+    table.attrs = {}
+    for tag in table.find_all(True):
+        attrs_to_keep = {k: v for k, v in tag.attrs.items() if k in KEEP_ATTR}
+        tag.attrs = attrs_to_keep
+
+    # 删除所有以 <? 开头，以 ?> 结尾的标签
+    clean_html = re.sub(r'<\?.*?\?>', '', str(table))
+    # 在返回之前删除所有非标准的 Microsoft Office 标签
+    clean_html = re.sub(r'</?o:[^>]*>', '', clean_html)
+    # 在返回之前删除 <tr> 和 </tr> 之间标签之间的换行符
+    clean_html = re.sub(r'(?<=>)\s+(?=<)', '', clean_html)
+    # 删除多余的空格和换行符，并在 <tr> 标签前添加换行符
+    # compact_html = re.sub(r'>\s+<', '><', clean_html)
+    # formatted_html = re.sub(r'(<tr[^>]*>)', r'\n\1', compact_html)
+    return clean_html
 
 
 class MarkdownEditor(QTextEdit):
@@ -1076,20 +1104,23 @@ class MarkdownEditor(QTextEdit):
 
     def insertFromMimeData(self, source):
         if source.hasFormat('application/x-qt-windows-mime;value="XML Spreadsheet"'):
-            result = QMessageBox.question(
-                None,
-                'How to process paste table data',
-                'Do you want to parse paste table data to markdown?\nSelect No to paste table as an image.',
-                QMessageBox.Yes | QMessageBox.No
-            )
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle("FreeReq")
+            msgBox.setText("FreeReq发现你正在粘贴表格，请选择粘贴的方式。\n\n'"
+                           "'Markdown便于修改；\n但如果表格中有跨行或跨列的布局，建议粘贴为HTML或图片。")
+            msgBox.addButton("转换为Markdown", QMessageBox.AcceptRole)
+            msgBox.addButton("转换为HTML", QMessageBox.AcceptRole)
+            if source.hasImage():
+                msgBox.addButton("转换为图片", QMessageBox.AcceptRole)
+            msgBox.addButton("取消", QMessageBox.RejectRole)
+            ret = msgBox.exec_()
 
-            if result == QMessageBox.Yes:
+            if ret == 0:
                 # Complex table sheet may cause exception.
                 # If so, just paste it as image.
                 try:
                     # 粘贴的数据是表格类型
-                    data = source.text()
-                    markdown_text = convert_table_to_markdown(data)
+                    markdown_text = convert_table_to_markdown(source.text())
                     self.insertPlainText(markdown_text)
                     return
                 except Exception as e:
@@ -1098,7 +1129,34 @@ class MarkdownEditor(QTextEdit):
                     QMessageBox.information(None, 'Error', 'Parse table to markdown error. Paste it as image.')
                 finally:
                     pass
+            elif ret == 1:
+                try:
+                    html_text = pick_table_from_html(source.html())
+                    self.insertPlainText(html_text)
+                    return
+                except Exception as e:
+                    print('Error: Try to parse paste table data to HTML fail.')
+                    print(e)
+                    QMessageBox.information(None, 'Error', 'Parse table to HTML error. Paste it as image.')
+                finally:
+                    pass
+            elif ret == 2:
+                # 转换为图片
+                pass
             else:
+                # 取消
+                pass
+        elif source.hasFormat('text/html'):
+            # Especially for word copied table data.
+            try:
+                html_text = pick_table_from_html(source.html())
+                self.insertPlainText(html_text)
+                return
+            except Exception as e:
+                print('Error: Try to parse paste table data to HTML fail.')
+                print(e)
+                QMessageBox.information(None, 'Error', 'Parse table to HTML error. Paste it as image.')
+            finally:
                 pass
 
         if source.hasImage():
@@ -2205,9 +2263,9 @@ def main():
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
 
-    if plugin_manager is not None:
-        plugin_manager.reload_plugin()
-        plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
+    # if plugin_manager is not None:
+    #     plugin_manager.reload_plugin()
+    #     plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
 
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)
