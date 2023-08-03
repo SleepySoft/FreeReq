@@ -42,6 +42,7 @@ Resource comments:
 
 from __future__ import annotations
 
+import html
 import os
 import platform
 import re
@@ -1066,7 +1067,8 @@ def convert_table_to_markdown(data):
     # 格式化Markdown表格
     markdown_text = ''
     for i, row in enumerate(markdown_table):
-        formatted_row = [cell.replace('\n', '<br>') for cell in row]
+        # formatted_row = [cell.replace('\n', '<br>') for cell in row]
+        formatted_row = [html.escape(cell).replace('\n', '<br>') for cell in row]
         markdown_text += '| ' + ' | '.join(formatted_row) + ' |\n'
         if i == 0:
             markdown_text += '| ' + ' | '.join(['---'] * num_cols) + ' |\n'
