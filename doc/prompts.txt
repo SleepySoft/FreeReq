@@ -70,3 +70,15 @@ def on_text_content_edit(self):
 
 
 
+
+写一段python代码，将pyqt5的QWebEngineView及QTextEdit中的富文本或HTML页面发送到打印。
+需要展示打印预览页面，在打印预览页面中选择打印机并提供执行打印的按钮。
+
+
+
+
+写一个弹出框，提示用户：已打印到output.pdf，请在打开的pdf中进行另存或打印的操作。使用英文。
+
+
+
+

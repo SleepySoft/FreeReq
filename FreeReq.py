@@ -43,7 +43,9 @@ Resource comments:
 from __future__ import annotations
 
 import os
+import platform
 import re
+import subprocess
 import sys
 import csv
 import uuid
@@ -59,7 +61,8 @@ from bs4 import BeautifulSoup
 try:
     # Use try catch for running FreeReq without UI
 
-    from PyQt5.QtGui import QFont, QCursor
+    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice
+    from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
@@ -1227,6 +1230,27 @@ class MarkdownEditor(QTextEdit):
                 return '', ''
 
 
+def print_text_edit(text_edit: QTextEdit):
+    printer = QPrinter()
+    preview = QPrintPreviewDialog(printer)
+    preview.paintRequested.connect(lambda: text_edit.print_(printer))
+    preview.exec_()
+
+
+def print_web_view(web_view: QWebEngineView):
+    def handle_print_finished(filename, success):
+        if success:
+            if platform.system() == "Windows":
+                os.startfile(filename)
+            elif platform.system() == "Darwin":
+                subprocess.call(["open", filename])
+            else:
+                subprocess.call(["xdg-open", filename])
+
+    web_view.page().printToPdf("output.pdf")
+    web_view.page().pdfPrintingFinished.connect(handle_print_finished)
+
+
 class ReqEditorBoard(QWidget):
     def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel):
         super(ReqEditorBoard, self).__init__()
@@ -1272,6 +1296,8 @@ class ReqEditorBoard(QWidget):
 
         self.__button_req_refresh = QPushButton('Refresh')
         self.__button_re_assign_id = QPushButton('Re-assign ID')
+
+        self.__button_print_preview = QPushButton('Print')
         self.__button_save_content = QPushButton('Save Content')
 
         self.__init_ui()
@@ -1312,6 +1338,7 @@ class ReqEditorBoard(QWidget):
         self.layout_feature_area.addWidget(QLabel(''), 99)
         # self.layout_feature_area.addWidget(self.__check_editor)
         # self.layout_feature_area.addWidget(self.__check_viewer)
+        self.layout_feature_area.addWidget(self.__button_print_preview)
         self.layout_feature_area.addWidget(self.__button_save_content)
         self.layout_root.addLayout(self.layout_feature_area)
 
@@ -1355,6 +1382,8 @@ class ReqEditorBoard(QWidget):
         self.__button_decrease_font.clicked.connect(self.on_button_decrease_font)
 
         self.__button_re_assign_id.clicked.connect(self.on_button_re_assign_id)
+
+        self.__button_print_preview.clicked.connect(self.on_button_print_preview)
         self.__button_save_content.clicked.connect(self.on_button_save_content)
 
     def __layout_meta_area(self):
@@ -1449,6 +1478,20 @@ class ReqEditorBoard(QWidget):
         req_id = self.__req_data_agent.new_req_id(id_prefix)
         self.__line_id.setText(req_id)
         self.update_content_edited_status(True)
+
+    def on_button_print_preview(self):
+        if isinstance(self.__text_md_viewer, QTextEdit):
+            print_text_edit(self.__text_md_viewer)
+        elif isinstance(self.__text_md_viewer, QWebEngineView):
+            print_web_view(self.__text_md_viewer)
+
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle('Printed to PDF')
+            msgBox.setText('Printed to "output.pdf". \nPlease do extra operation (save as, print) to this opened PDF.')
+            msgBox.exec_()
+        else:
+            # Should not reach here
+            assert False
 
     def on_button_save_content(self):
         if self.__editing_node is not None:
