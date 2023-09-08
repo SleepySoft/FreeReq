@@ -88,3 +88,10 @@ def on_text_content_edit(self):
 在get的时候，如果目标不是dict或dict没有这个值，返回default。
 
 为这个类增加restore功能，清空dict并保存。
+
+
+使用pyqt5写一个为ScratchPaper的窗口，中心是一个多行的编辑框，支持常用的编辑快捷键。窗口可以自由调整大小，点击关闭按钮隐藏。
+该窗口初始化时载入scratch.txt并显示，一旦用户对文本框内容有修改，则触发保存。
+注意并非有修改即保存，而是置上标记，每2秒钟执行一次保存。
+
+
