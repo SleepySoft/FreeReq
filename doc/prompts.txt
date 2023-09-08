@@ -80,5 +80,11 @@ def on_text_content_edit(self):
 写一个弹出框，提示用户：已打印到output.pdf，请在打开的pdf中进行另存或打印的操作。使用英文。
 
 
+使用python写一个类叫做EasyConfig，构造函数参数为(config_file: str='config.json', key_splitter: str='.')作为参数。
+构造时自动载入对应json文件并将其保存在dict中。
+实现set(key: str, value: Any)和get(key: str, default: Any=None)接口。当调用set时，更新dict并将dict保存到文件中。
+使用key_splitter指定的分隔符分隔key，按分隔的key做为层级访问dict对应的值。
+在set的时候，如果某一个非最后层级的key对应的值不存在，则将其设为dict；如果一个非最后层级的key对应的值非dict，则返回False。
+在get的时候，如果目标不是dict或dict没有这个值，返回default。
 
-
+为这个类增加restore功能，清空dict并保存。

@@ -87,18 +87,20 @@ finally:
 self_path = os.path.dirname(os.path.abspath(__file__))
 
 # ----------------------------------------------------------------------------------------------------------------------
-
 # Plugin:
 #   req_agent_prepared(req: IReqAgent)
 #   after_ui_created(req_ui: RequirementUI)
 
 try:
+    from extra.easy_config import EasyConfig
     from extra.plugin_manager import PluginManager
 
+    easy_config = EasyConfig()
     plugin_manager = PluginManager(os.path.join(self_path, 'plugin'))
 except Exception as e:
     print(e)
-    print('No PluginManager')
+    print('No Extra Components')
+    easy_config = None
     plugin_manager = None
 finally:
     pass
@@ -157,6 +159,9 @@ class ReqNode:
 
     def get_title(self) -> str:
         return self.__data.get(STATIC_FIELD_TITLE)
+
+    def re_assign_uuid(self):
+        self.__data[STATIC_FIELD_UUID] = str(uuid.uuid4().hex)
 
     # ------------------------------------ Property ------------------------------------
 
@@ -532,7 +537,16 @@ class ReqSingleJsonFileAgent(IReqAgent):
             self.__req_file_name = req_name + '.req'
 
         ret = self.__load_req_json()
+        issues = self.__check_correct_req_data()
+
+        if len(issues) > 0:
+            print('---------------------- Issue Detected ----------------------')
+            for issue in issues:
+                print(issue)
+            print('------------------------------------------------------------')
+
         self.notify_req_reloaded()
+
         return ret
 
     def delete_req(self, req_name: str) -> bool:
@@ -569,7 +583,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         insert_nodes = [insert_nodes] if isinstance(insert_nodes, ReqNode) else insert_nodes
         parent_node = self.__req_node_root.filter(lambda x: x.get_uuid() == parent_uuid)
         if len(parent_node) != 1:
-            print('Cannot find parent node.')
+            print('Cannot find parent node or multiple node has the same uuid.')
         else:
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
@@ -687,6 +701,20 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
         id_prefixes = self.__req_meta_dict.get(STATIC_META_ID_PREFIX, [])
         self.__req_id_max = IReqAgent.calculate_max_req_id(id_prefixes, list(self.__req_id_node_index.keys()))
+
+    def __check_correct_req_data(self) -> List:
+        uuids = {}
+        issues = []
+
+        def node_checker(node: ReqNode):
+            node_uuid = node.get_uuid()
+            if node_uuid in uuids.keys():
+                issues.append(f'Detect UUID duplicate: ${node.get_title()}, ${uuids[node_uuid].get_title()}')
+                node.re_assign_uuid()
+            uuids[node.get_uuid()] = node
+
+        self.__req_node_root.for_each(node_checker)
+        return issues
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1891,7 +1919,7 @@ class RequirementUI(QWidget):
         self.__init_ui()
 
         if plugin_manager is not None:
-            plugin_manager.execute_all_module_function('after_ui_created', self)
+            plugin_manager.invoke_all('after_ui_created', self)
 
     def __init_ui(self):
         self.__layout_ui()
@@ -2319,13 +2347,16 @@ def main():
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
 
-    # if plugin_manager is not None:
-    #     plugin_manager.reload_plugin()
-    #     plugin_manager.execute_all_module_function('req_agent_prepared', req_agent)
+    if easy_config is not None and plugin_manager is not None:
+        plugins = easy_config.get('plugin', [])
+        for plugin in plugins:
+            plugin_manager.load_plugin(plugin)
+        plugin_manager.invoke_all('req_agent_prepared', req_agent)
 
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)
     print('Current path: ' + os.getcwd())
+
     w = RequirementUI(req_agent)
 
     w.show()
