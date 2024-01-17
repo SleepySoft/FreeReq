@@ -18,6 +18,12 @@ More requirement entry information can be added by editing the metadata. The edi
 
 # Update
 
+## 20240117
+
++ Add build (pack) script
+
++ Known issue: The pyinstaller pack missing QtWebEngine. So the web view is not available in exe.
+
 ## 20230711
 
 + Add CTRL+F to search whole tree and all content (F3 Find Next, SHIFT + F3 Find Previous)

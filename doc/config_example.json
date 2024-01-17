@@ -1,0 +1,10 @@
+{
+    "plugin": [
+        "ScratchPaper"
+    ],
+    "plugin can be one of these": [
+        "ScratchPaper",
+        "ChatReq",
+        "EmbeddingIndexing"
+    ]
+}
