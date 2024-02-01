@@ -1,10 +1,12 @@
 # FreeReq
+
 A free and open source requirement management tool.
 
 I need a light-weight, free, Caliber (a Borland software) like requirement management tool. But I didn't find one. So I wrote such a software.
 
 
 # Introduce
+
 FreeReq can organize requirement document as tree structure. A requirement entry can have its sub requirement entry.
 
 The name, ID, and content are the basic information of a requirement entry. 
@@ -59,6 +61,16 @@ Now we're using chatglm-6b-int4-qe which can be run on 12G vram (but OOM if the 
 + The editor can accept file dropping. You can select the following action.
 + The editor supports image and table pasting. You can select the following action.
 + Use QWebEngineView for markdown preview (optional) which is better looking than QTextView.
+
+
+# How to run
+
+You'd better using python to run FreeReq.py directly because after packing to exe the QtWebEngine is lost which causes the HTML rendering looks bad.
+
+You can use pip install -r requirements.txt to install all dependency. 
+
+Or just run "run.bat" to create virtual environment and install requirements automatically (Suggest).
+
 
 # Usage
 
