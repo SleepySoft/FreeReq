@@ -16,6 +16,35 @@ The name, ID, and content are the basic information of a requirement entry.
 More requirement entry information can be added by editing the metadata. The editor ui will automatically generate the editing controls.
 
 
+# Plugins
+
+FreeReq supports extensions. You can edit config.json to enable plugins.
+
+## ScratchPaper
+
+Click "Template" button to open scratch paper window. You can save preset text in the scratch paper. 
+The text will be saved automatically.
+
+
+## EmbeddingIndexing
+
+Based on KeyFaiss that using embedding to index requirement items. You can search content by nature language.
+
+Note that embedding models will affect search results. Based on different languages, you should choose the corresponding embedding model.
+
+Need faiss and text2vec library support.
+
+
+## ChatReq - Talk requirement with AI, the most amazing feature
+
+Based on EmbeddingIndexing. Using LLM to analysis search result to make it more readable.
+
+In theory, with the embedding searching result and correct prompts. We can use any LLM to implement this feature.
+The more powerful LLM, the better result.
+
+Now we're using chatglm-6b-int4-qe which can be run on 12G vram (but OOM if the context is too long). And hf library is required.
+
+
 # Update
 
 ## 20240117
