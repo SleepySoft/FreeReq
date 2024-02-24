@@ -21,7 +21,7 @@ LLM_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 #   THUDM/chatglm-6b-int4
 #   THUDM/chatglm-6b-int8
 #   THUDM/chatglm-6b
-LLM_MODEL = 'THUDM/chatglm-6b-int4-qe'
+LLM_MODEL = 'THUDM/chatglm2-6b-int4'
 
 PROMPT_TEMPLATE = """已知信息：
 {context} 
@@ -104,7 +104,9 @@ class ChatThread(QThread):
             self.pending_chat = text
 
     def run(self) -> None:
+        print('LLM init...')
         self.__check_init_llm()
+        print('LLM init completed.')
         while not self.exit_flag:
             self.__handle_input()
 
@@ -127,10 +129,10 @@ class ChatThread(QThread):
             return
 
         if text != '':
-            self.append_text.emit(text)
+            self.append_text.emit(text + '\n\n')
 
-            search_result = main_ui.get_plugin().call_module_function(
-                EMBEDDING_PLUGIN_NAME, 'search_req_nodes', text, 6)
+            search_result = main_ui.get_plugin().invoke_one(
+                EMBEDDING_PLUGIN_NAME, 'search_req_nodes', text, 5)
             if search_result is None:
                 return
             prompts = ChatThread.generate_llm_prompts(question=text, search_result=search_result)
@@ -155,12 +157,13 @@ class ChatThread(QThread):
                     temperature=2.0)):
                 self.append_text.emit(stream_resp[len(prev_resp):])
                 prev_resp = stream_resp
+            print('\n\n')
 
             torch.cuda.empty_cache()
 
     @staticmethod
     def generate_llm_prompts(question: str, search_result: List[ReqNode]) -> str:
-        context = '\n'.join([node.get_title() + '\n' + node.get(STATIC_FIELD_CONTENT) for node in search_result])
+        context = '\n'.join([str(node.get_title()) + '\n' + str(node.get(STATIC_FIELD_CONTENT)) for node in search_result])
         return PROMPT_TEMPLATE.replace('{question}', question).replace('{context}', context)
 
 
