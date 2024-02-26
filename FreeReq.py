@@ -58,7 +58,7 @@ from io import StringIO
 from typing import Callable, List, Tuple, Union
 from functools import partial
 from bs4 import BeautifulSoup
-from PyPDF2 import PdfFileMerger
+from PyPDF2 import PdfMerger
 
 try:
     # Use try catch for running FreeReq without UI
@@ -1326,63 +1326,57 @@ def print_web_view(web_view: QWebEngineView, file_name: str = 'export.pdf'):
     web_view.page().pdfPrintingFinished.connect(handle_print_finished)
 
 
-# class WebViewPrinter:
-#     def __init__(self, filename: str, markdowns: List[str], root_path: str = ''):
-#         self.filename = filename
-#         self.root_path = root_path
-#         self.markdowns = markdowns
-#         self.current_index = 0
-#         self.web_view = QWebEngineView()
-#         self.web_view.setHidden(True)  # Hide the web view
-#         self.web_view.loadFinished.connect(self.__handle_load_finished)
-#
-#     def print(self):
-#         self.__print_next()
-#
-#     def __print_next(self):
-#         if self.current_index < len(self.markdowns):
-#             md_text = self.markdowns[self.current_index]
-#             markdown_to_view(md_text, self.web_view, self.root_path)
-#         else:
-#             print("Print finished")
-#
-#     def __handle_load_finished(self, ok):
-#         if ok:  # The page was loaded successfully
-#             self.web_view.page().printToPdf(self.filename)
-#             self.current_index += 1
-#             self.__print_next()  # Start loading the next page
-
-
 class WebViewPrinter:
-    def __init__(self, filename: str, markdowns: List[str], root_path: str = ''):
+    def __init__(self, filename: str, markdowns: List[str], root_path: str = '', cb_on_finish_or_error=None):
         self.filename = filename
         self.root_path = root_path
         self.markdowns = markdowns
+        self.callback = cb_on_finish_or_error
         self.current_index = 0
         self.web_view = QWebEngineView()
         self.web_view.setHidden(True)  # Hide the web view
         self.web_view.loadFinished.connect(self.__handle_load_finished)
-        self.merger = PdfFileMerger()
+        self.web_view.page().pdfPrintingFinished.connect(self.__handle_print_finished)
+        self.temp_file_name = ''
+        self.merger = PdfMerger()
 
     def print(self):
         self.__print_next()
 
     def __print_next(self):
+        print('> Print Next')
         if self.current_index < len(self.markdowns):
             md_text = self.markdowns[self.current_index]
             markdown_to_view(md_text, self.web_view, self.root_path)
+            print(f'Printing ({self.current_index}/{len(self.markdowns)})......')
         else:
             self.merger.write(self.filename)
             self.merger.close()
             print("Print finished")
 
+            if self.callback is not None:
+                self.callback('finished')
+
     def __handle_load_finished(self, ok):
+        print('> Load finished')
         if ok:  # The page was loaded successfully
-            temp_filename = f'temp_{self.current_index}.pdf'
-            self.web_view.page().printToPdf(temp_filename)
-            self.merger.append(temp_filename)
+            self.temp_file_name = f'temp_{self.current_index}.pdf'
+            print(f'Print to file: {self.temp_file_name}')
+            self.web_view.page().printToPdf(self.temp_file_name)
+        else:
+            print('Load fail and ignore.')
+
+    def __handle_print_finished(self, ok: bool):
+        print('> Print finished')
+        print('\r\n')
+        if ok:
+            self.merger.append(self.temp_file_name)
             self.current_index += 1
             self.__print_next()  # Start loading the next page
+        else:
+            print('Fail.')
+            if self.callback is not None:
+                self.callback('fail')
 
 
 def __collect_req_content_r(req_node: ReqNode, markdowns: List[str], recursive: bool):
@@ -1407,12 +1401,25 @@ def collect_req_content(req_nodes: ReqNode or List[ReqNode], recursive: bool = T
     return markdowns
 
 
+printing_web_view: WebViewPrinter = None
+
+
 def print_req_nodes(req_nodes: ReqNode or List[ReqNode], filename: str,
                     recursive: bool = True, root_path: str = ''):
+    global printing_web_view
+    if printing_web_view is not None:
+        print('** Printing is on progress. **')
+        return
+
     markdowns = collect_req_content(req_nodes, recursive)
     try:
-        printer = WebViewPrinter(filename, markdowns, root_path)
-        printer.print()
+        def on_print_done(result):
+            # print(f'Print finished: {result}')
+            global printing_web_view
+            printing_web_view = None
+
+        printing_web_view = WebViewPrinter(filename, markdowns, root_path, on_print_done)
+        printing_web_view.print()
     except Exception as e:
         print(e)
         print(traceback.format_exc())
