@@ -1327,6 +1327,8 @@ def print_web_view(web_view: QWebEngineView, file_name: str = 'export.pdf'):
 
 
 class WebViewPrinter:
+    TEMP_PATH = 'temp-pdf'
+
     def __init__(self, filename: str, markdowns: List[str], root_path: str = '', cb_on_finish_or_error=None):
         self.filename = filename
         self.root_path = root_path
@@ -1341,6 +1343,7 @@ class WebViewPrinter:
         self.merger = PdfMerger()
 
     def print(self):
+        self.__ensure_temp_path()
         self.__print_next()
 
     def __print_next(self):
@@ -1360,7 +1363,7 @@ class WebViewPrinter:
     def __handle_load_finished(self, ok):
         print('> Load finished')
         if ok:  # The page was loaded successfully
-            self.temp_file_name = f'temp_{self.current_index}.pdf'
+            self.temp_file_name = os.path.join(WebViewPrinter.TEMP_PATH, f'temp_{self.current_index}.pdf')
             print(f'Print to file: {self.temp_file_name}')
             self.web_view.page().printToPdf(self.temp_file_name)
         else:
@@ -1377,6 +1380,10 @@ class WebViewPrinter:
             print('Fail.')
             if self.callback is not None:
                 self.callback('fail')
+
+    def __ensure_temp_path(self):
+        if not os.path.exists(WebViewPrinter.TEMP_PATH):
+            os.makedirs(WebViewPrinter.TEMP_PATH)
 
 
 def __collect_req_content_r(req_node: ReqNode, markdowns: List[str], recursive: bool):
@@ -1405,18 +1412,27 @@ printing_web_view: WebViewPrinter = None
 
 
 def print_req_nodes(req_nodes: ReqNode or List[ReqNode], filename: str,
-                    recursive: bool = True, root_path: str = ''):
+                    recursive: bool = True, root_path: str = '',
+                    dense: bool = False, on_finished=None):
     global printing_web_view
     if printing_web_view is not None:
         print('** Printing is on progress. **')
         return
 
     markdowns = collect_req_content(req_nodes, recursive)
+
+    if dense:
+        markdowns = ['\n\n'.join(markdowns)]
+
     try:
         def on_print_done(result):
-            # print(f'Print finished: {result}')
+            print(f'Print finished: {result}')
+
             global printing_web_view
             printing_web_view = None
+
+            if on_finished is not None:
+                on_finished(result)
 
         printing_web_view = WebViewPrinter(filename, markdowns, root_path, on_print_done)
         printing_web_view.print()
@@ -2143,7 +2159,8 @@ class RequirementUI(QWidget):
             menu.addSeparator()
             menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)
             menu.addSeparator()
-            menu.addAction('Print Tree', self.on_requirement_tree_menu_print_tree)
+            menu.addAction('Print Tree (Dense)', partial(self.on_requirement_tree_menu_print_tree, True))
+            menu.addAction('Print Tree (Sparse)', partial(self.on_requirement_tree_menu_print_tree, False))
 
         else:
             # self.__update_selected_index(None)
@@ -2312,16 +2329,24 @@ class RequirementUI(QWidget):
 
                 # self.__update_selected_index(None)
 
-    def on_requirement_tree_menu_print_tree(self):
+    def on_requirement_tree_menu_print_tree(self, dense: bool):
         if self.__selected_node is not None:
             selected_node = self.__selected_node
             file_name = (selected_node.get_title() + '.pdf') if selected_node is not None else 'export.pdf'
 
-            print_req_nodes(selected_node, file_name, recursive=True, root_path=self.__req_data_agent.get_req_path())
+            def handle_print_finished(result):
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle('Print to PDF')
+                msgBox.setText(f'Printed to [{file_name}] Done.')
+                msgBox.exec_()
+
+            print_req_nodes(selected_node, file_name, recursive=True,
+                            root_path=self.__req_data_agent.get_req_path(),
+                            dense=dense, on_finished=handle_print_finished)
 
             msgBox = QMessageBox()
-            msgBox.setWindowTitle('Printed to PDF')
-            msgBox.setText(f'Printed to {file_name}. \nPlease do extra operation (save as, print) to this opened PDF.')
+            msgBox.setWindowTitle('Print to PDF')
+            msgBox.setText(f'Async printing to {file_name}. \nPlease wait for printing finished.')
             msgBox.exec_()
 
     def on_requirement_tree_menu_rename_req(self):
