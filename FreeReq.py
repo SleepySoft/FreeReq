@@ -1260,14 +1260,16 @@ class MarkdownEditor(QTextEdit):
                 return '', ''
 
 
-def print_text_edit(text_edit: QTextEdit):
+def print_text_edit(text_edit: QTextEdit, file_name: str = 'export.pdf'):
     printer = QPrinter()
     preview = QPrintPreviewDialog(printer)
+    printer.setOutputFormat(QPrinter.PdfFormat)
+    printer.setOutputFileName(file_name)
     preview.paintRequested.connect(lambda: text_edit.print_(printer))
     preview.exec_()
 
 
-def print_web_view(web_view: QWebEngineView):
+def print_web_view(web_view: QWebEngineView, file_name: str = 'export.pdf'):
     def handle_print_finished(filename, success):
         if success:
             if platform.system() == "Windows":
@@ -1277,7 +1279,7 @@ def print_web_view(web_view: QWebEngineView):
             else:
                 subprocess.call(["xdg-open", filename])
 
-    web_view.page().printToPdf("output.pdf")
+    web_view.page().printToPdf(file_name)
     web_view.page().pdfPrintingFinished.connect(handle_print_finished)
 
 
@@ -1510,14 +1512,16 @@ class ReqEditorBoard(QWidget):
         self.update_content_edited_status(True)
 
     def on_button_print_preview(self):
+        file_name = (self.__editing_node.get_title() + '.pdf') if \
+            self.__editing_node is not None else 'export.pdf'
         if isinstance(self.__text_md_viewer, QTextEdit):
-            print_text_edit(self.__text_md_viewer)
+            print_text_edit(self.__text_md_viewer, file_name)
         elif isinstance(self.__text_md_viewer, QWebEngineView):
-            print_web_view(self.__text_md_viewer)
+            print_web_view(self.__text_md_viewer, file_name)
 
             msgBox = QMessageBox()
             msgBox.setWindowTitle('Printed to PDF')
-            msgBox.setText('Printed to "output.pdf". \nPlease do extra operation (save as, print) to this opened PDF.')
+            msgBox.setText(f'Printed to {file_name}. \nPlease do extra operation (save as, print) to this opened PDF.')
             msgBox.exec_()
         else:
             # Should not reach here
