@@ -8,3 +8,4 @@ transformers~=4.30.2
 text2vec~=1.2.1
 pyinstaller~=4.4
 beautifulsoup4~=4.9.3
+PyPDF2

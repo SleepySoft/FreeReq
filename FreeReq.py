@@ -58,6 +58,7 @@ from io import StringIO
 from typing import Callable, List, Tuple, Union
 from functools import partial
 from bs4 import BeautifulSoup
+from PyPDF2 import PdfFileMerger
 
 try:
     # Use try catch for running FreeReq without UI
@@ -1260,6 +1261,48 @@ class MarkdownEditor(QTextEdit):
                 return '', ''
 
 
+def render_markdown(md_text: str) -> str:
+    """
+    https://zhuanlan.zhihu.com/p/34549578
+    :param md_text:
+    :return:
+    """
+
+    # https://github.com/trentm/python-markdown2/blob/master/lib/markdown2.py
+    extras = ['strike', 'underline', 'tg-spoiler', 'smarty-pants', 'break-on-newline',
+              'code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
+              'cuddled-lists', 'header ids', 'nofollow']
+
+    ret = markdown2.markdown(md_text, extras=extras)
+    return HTML_TEMPLATE.format(css=MARK_DOWN_CSS_TABLE, content=ret)
+
+
+def html_to_view(html_text: str, view: QWebEngineView or QTextEdit, root_path: str = ''):
+    html_text = html_text.replace('strike>', 'del>')
+
+    try:
+        if isinstance(view, QWebEngineView):
+            req_root_path_url = f'file:///{root_path}'.replace('\\', '/') + '/'
+            # I can't believe that it can be solved in this simple way.
+            # I've talked with NewBing for a whole afternoon but it totally useless.
+            # Reference: https://stackoverflow.com/questions/74191037/why-qwebengineview-doesnt-show-my-image
+            view.setHtml(html_text, baseUrl=QUrl(req_root_path_url))
+        elif isinstance(view, QTextEdit):
+            view.setHtml(html_text)
+        else:
+            raise ValueError('Neither a QWebEngineView nor a QTextView.')
+    except Exception as e:
+        print(e)
+        print(traceback.format_exc())
+    finally:
+        pass
+
+
+def markdown_to_view(md_text: str, view: QWebEngineView or QTextEdit, root_path: str = ''):
+    html_text = render_markdown(md_text)
+    html_to_view(html_text, view, root_path)
+
+
 def print_text_edit(text_edit: QTextEdit, file_name: str = 'export.pdf'):
     printer = QPrinter()
     preview = QPrintPreviewDialog(printer)
@@ -1281,6 +1324,101 @@ def print_web_view(web_view: QWebEngineView, file_name: str = 'export.pdf'):
 
     web_view.page().printToPdf(file_name)
     web_view.page().pdfPrintingFinished.connect(handle_print_finished)
+
+
+# class WebViewPrinter:
+#     def __init__(self, filename: str, markdowns: List[str], root_path: str = ''):
+#         self.filename = filename
+#         self.root_path = root_path
+#         self.markdowns = markdowns
+#         self.current_index = 0
+#         self.web_view = QWebEngineView()
+#         self.web_view.setHidden(True)  # Hide the web view
+#         self.web_view.loadFinished.connect(self.__handle_load_finished)
+#
+#     def print(self):
+#         self.__print_next()
+#
+#     def __print_next(self):
+#         if self.current_index < len(self.markdowns):
+#             md_text = self.markdowns[self.current_index]
+#             markdown_to_view(md_text, self.web_view, self.root_path)
+#         else:
+#             print("Print finished")
+#
+#     def __handle_load_finished(self, ok):
+#         if ok:  # The page was loaded successfully
+#             self.web_view.page().printToPdf(self.filename)
+#             self.current_index += 1
+#             self.__print_next()  # Start loading the next page
+
+
+class WebViewPrinter:
+    def __init__(self, filename: str, markdowns: List[str], root_path: str = ''):
+        self.filename = filename
+        self.root_path = root_path
+        self.markdowns = markdowns
+        self.current_index = 0
+        self.web_view = QWebEngineView()
+        self.web_view.setHidden(True)  # Hide the web view
+        self.web_view.loadFinished.connect(self.__handle_load_finished)
+        self.merger = PdfFileMerger()
+
+    def print(self):
+        self.__print_next()
+
+    def __print_next(self):
+        if self.current_index < len(self.markdowns):
+            md_text = self.markdowns[self.current_index]
+            markdown_to_view(md_text, self.web_view, self.root_path)
+        else:
+            self.merger.write(self.filename)
+            self.merger.close()
+            print("Print finished")
+
+    def __handle_load_finished(self, ok):
+        if ok:  # The page was loaded successfully
+            temp_filename = f'temp_{self.current_index}.pdf'
+            self.web_view.page().printToPdf(temp_filename)
+            self.merger.append(temp_filename)
+            self.current_index += 1
+            self.__print_next()  # Start loading the next page
+
+
+def __collect_req_content_r(req_node: ReqNode, markdowns: List[str], recursive: bool):
+    title = req_node.get_title()
+    contents = req_node.get(STATIC_FIELD_CONTENT)
+    page_contents = f"# {title}\n\n{contents}"
+    markdowns.append(page_contents)
+
+    if recursive:
+        for sub_req_node in req_node.children():
+            __collect_req_content_r(sub_req_node, markdowns, True)
+
+
+def collect_req_content(req_nodes: ReqNode or List[ReqNode], recursive: bool = True):
+    if isinstance(req_nodes, ReqNode):
+        req_nodes = [req_nodes]
+    else:
+        req_nodes = list(req_nodes)
+    markdowns = []
+    for req_node in req_nodes:
+        __collect_req_content_r(req_node, markdowns, recursive)
+    return markdowns
+
+
+def print_req_nodes(req_nodes: ReqNode or List[ReqNode], filename: str,
+                    recursive: bool = True, root_path: str = ''):
+    markdowns = collect_req_content(req_nodes, recursive)
+    try:
+        printer = WebViewPrinter(filename, markdowns, root_path)
+        printer.print()
+    except Exception as e:
+        print(e)
+        print(traceback.format_exc())
+        print('** Note: Recursive print only support QWebEngineView **')
+    finally:
+        pass
 
 
 class ReqEditorBoard(QWidget):
@@ -1535,26 +1673,7 @@ class ReqEditorBoard(QWidget):
 
     def on_text_content_edit(self):
         md_text = self.__text_md_editor.toPlainText()
-        html_text = self.render_markdown(md_text)
-        html_text = html_text.replace('strike>', 'del>')
-        # self.__text_md_viewer.setMarkdown(text)
-
-        try:
-            if isinstance(self.__text_md_viewer, QWebEngineView):
-                req_root_path = self.__req_data_agent.get_req_path()
-                req_root_path_url = ('file:///' + req_root_path).replace('\\', '/') + '/'
-
-                # I can't believe that it can be solved in this simple way.
-                # I've talked with NewBing for a whole afternoon but it totally useless.
-                # Reference: https://stackoverflow.com/questions/74191037/why-qwebengineview-doesnt-show-my-image
-                self.__text_md_viewer.setHtml(html_text, baseUrl=QUrl(req_root_path_url))
-            else:
-                raise ValueError('Not a QWebEngineView. It should be QTextView.')
-        except Exception as e:
-            self.__text_md_viewer.setHtml(html_text)
-        finally:
-            pass
-
+        markdown_to_view(md_text, self.__text_md_viewer, self.__req_data_agent.get_req_path())
         self.on_content_changed()
 
     def on_content_changed(self, *args):
@@ -1641,24 +1760,6 @@ class ReqEditorBoard(QWidget):
     def update_content_edited_status(self, edited: bool):
         self.__content_edited = edited
         self.__button_save_content.setText('* Save Content' if edited else 'Save Content')
-
-    # ---------------------------------------------------------------------------
-
-    @staticmethod
-    def render_markdown(md_text: str) -> str:
-        """
-        https://zhuanlan.zhihu.com/p/34549578
-        :param md_text:
-        :return:
-        """
-
-        # https://github.com/trentm/python-markdown2/blob/master/lib/markdown2.py
-        extras = ['strike', 'underline', 'tg-spoiler', 'smarty-pants', 'break-on-newline',
-                  'code-friendly', 'fenced-code-blocks', 'footnotes', 'tables', 'code-color', 'pyshell', 'nofollow',
-                  'cuddled-lists', 'header ids', 'nofollow']
-
-        ret = markdown2.markdown(md_text, extras=extras)
-        return HTML_TEMPLATE.format(css=MARK_DOWN_CSS_TABLE, content=ret)
 
     # ----------------------------------------------------------------------------------
 
@@ -2034,6 +2135,8 @@ class RequirementUI(QWidget):
             menu.addAction('Cut item', self.on_requirement_tree_menu_cut_item)
             menu.addSeparator()
             menu.addAction('Delete item (Caution!!!)', self.on_requirement_tree_menu_delete_item)
+            menu.addSeparator()
+            menu.addAction('Print Tree', self.on_requirement_tree_menu_print_tree)
 
         else:
             # self.__update_selected_index(None)
@@ -2201,6 +2304,18 @@ class RequirementUI(QWidget):
                 # self.__req_data_agent.notify_node_structure_changed('', node_parent, selected_node, 'remove')
 
                 # self.__update_selected_index(None)
+
+    def on_requirement_tree_menu_print_tree(self):
+        if self.__selected_node is not None:
+            selected_node = self.__selected_node
+            file_name = (selected_node.get_title() + '.pdf') if selected_node is not None else 'export.pdf'
+
+            print_req_nodes(selected_node, file_name, recursive=True, root_path=self.__req_data_agent.get_req_path())
+
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle('Printed to PDF')
+            msgBox.setText(f'Printed to {file_name}. \nPlease do extra operation (save as, print) to this opened PDF.')
+            msgBox.exec_()
 
     def on_requirement_tree_menu_rename_req(self):
         req_name, is_ok = QInputDialog.getText(
