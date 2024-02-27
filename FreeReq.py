@@ -1353,12 +1353,17 @@ class WebViewPrinter:
             markdown_to_view(md_text, self.web_view, self.root_path)
             print(f'Printing ({self.current_index}/{len(self.markdowns)})......')
         else:
-            self.merger.write(self.filename)
-            self.merger.close()
-            print("Print finished")
-
-            if self.callback is not None:
-                self.callback('finished')
+            try:
+                self.merger.write(self.filename)
+                self.merger.close()
+                result = 'finished'
+            except Exception as e:
+                print(e)
+                result = 'fail'
+            finally:
+                if self.callback is not None:
+                    self.callback(result)
+                print("Print finished")
 
     def __handle_load_finished(self, ok):
         print('> Load finished')
@@ -1386,15 +1391,23 @@ class WebViewPrinter:
             os.makedirs(WebViewPrinter.TEMP_PATH)
 
 
-def __collect_req_content_r(req_node: ReqNode, markdowns: List[str], recursive: bool):
-    title = req_node.get_title()
+def __collect_req_content_r(req_node: ReqNode, markdowns: List[str], node_stack: List[ReqNode], recursive: bool):
     contents = req_node.get(STATIC_FIELD_CONTENT)
-    page_contents = f"# {title}\n\n{contents}"
-    markdowns.append(page_contents)
+    if contents.strip() != '':
+        # The content empty node is just a path. Does not print it.
+
+        # Use path as main title
+        # title = req_node.get_title()
+        title = ' >> '.join([node.get_title() for node in node_stack])
+
+        page_contents = f"\n\n# {title}\n\n{contents}"
+        markdowns.append(page_contents)
 
     if recursive:
         for sub_req_node in req_node.children():
-            __collect_req_content_r(sub_req_node, markdowns, True)
+            node_stack.append(sub_req_node)
+            __collect_req_content_r(sub_req_node, markdowns, node_stack, True)
+            node_stack.pop()
 
 
 def collect_req_content(req_nodes: ReqNode or List[ReqNode], recursive: bool = True):
@@ -1403,8 +1416,11 @@ def collect_req_content(req_nodes: ReqNode or List[ReqNode], recursive: bool = T
     else:
         req_nodes = list(req_nodes)
     markdowns = []
+    node_stack = []
     for req_node in req_nodes:
-        __collect_req_content_r(req_node, markdowns, recursive)
+        node_stack.append(req_node)
+        __collect_req_content_r(req_node, markdowns, node_stack, recursive)
+        node_stack.pop()
     return markdowns
 
 
