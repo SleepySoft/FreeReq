@@ -62,6 +62,12 @@ Now we're using chatglm-6b-int4-qe which can be run on 12G vram (but OOM if the 
 + The editor supports image and table pasting. You can select the following action.
 + Use QWebEngineView for markdown preview (optional) which is better looking than QTextView.
 
+## 20240227
+
++ Debug and update the ChatReq plugin using Chat-GLM2
++ Add print tree feature. Note that this feature depends on QWebEngineView
++ Add MarkdownStyle selector plugin.
+
 
 # How to run
 
