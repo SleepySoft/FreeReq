@@ -95,3 +95,40 @@ def on_text_content_edit(self):
 注意并非有修改即保存，而是置上标记，每2秒钟执行一次保存。
 
 
+
+
+这里有段代码：
+
+class MarkdownStyle:
+    def __init__(self):
+        self.style_selector = QComboBox()
+
+    def scan_style_files(self):
+        pass
+
+    def on_style_selector_changed(self):
+        pass
+
+我希望这个combobox只能选择，不能编辑。
+将选择变化的事件连接到on_style_selector_changed上。
+能不能添加一个函数响应用户点击下拉框？在那里调用scan_style_files并更新combobox。
+
+
+
+
+
+实现scan_style_files，扫描本文件同目录下的MarkdownStyle文件夹，列出其中所有的css文件，并更新到combobox上。
+在on_style_selector_changed中得到选择的内容，并且打开对应的文件，读取里面的内容。另外这个文件夹可能不存在，要做好异常管理。
+
+
+
+
+
+
+
+
+
+
+
+
+

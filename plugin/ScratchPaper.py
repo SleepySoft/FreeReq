@@ -98,6 +98,6 @@ def req_agent_prepared(req: IReqAgent):
 def after_ui_created(req_ui: RequirementUI):
     global main_ui
     main_ui = req_ui
-    template_button = QPushButton('Template')
+    template_button = QPushButton('ScratchPaper')
     main_ui.edit_board.layout_plugin_area.addWidget(template_button)
     template_button.clicked.connect(on_template_button_click)

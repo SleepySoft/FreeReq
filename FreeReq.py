@@ -43,6 +43,7 @@ Resource comments:
 from __future__ import annotations
 
 import html
+import importlib
 import os
 import platform
 import re
@@ -757,24 +758,6 @@ class ReqModel(QAbstractItemModel):
 
         return None
 
-    # def setData(self, index, value, role=Qt.EditRole):
-    #     if role == Qt.EditRole:
-    #         node = index.internalPointer()
-    #         node.set_title(value)
-    #         self.dataChanged.emit(index, index)
-    #         return True
-    #     return False
-
-    # def flags(self, index: QModelIndex):
-    #     if not index.isValid():
-    #         return Qt.NoItemFlags
-    #     return super().flags(index)
-
-    # def headerData(self, p_int, orientation: Qt_Orientation, role=None):
-    #     if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-    #         return self.__root_node.data().get(STATIC_FIELD_TITLE, 'N/A')
-    #     return None
-
     def index(self, row, column, parent: QModelIndex = None, *args, **kwargs):
         if self.__req_data_agent is None or self.__req_data_agent.get_req_root() is None:
             return QModelIndex()
@@ -855,16 +838,6 @@ class ReqModel(QAbstractItemModel):
             parent_node: ReqNode = parent.internalPointer()
 
         self.insert_node_children(parent_node, [ReqNode() for _ in range(count)], row)
-
-        # if row < 0:
-        #     row = parent_node.child_count()
-        #
-        # self.begin_edit()
-        # self.beginInsertRows(parent, row, row + count - 1)
-        # if parent_node is not None:
-        #     parent_node.insert_children([ReqNode() for _ in range(count)], row)
-        # self.endInsertRows()
-        # self.end_edit()
 
         return True
 
@@ -1070,6 +1043,7 @@ table tr th {
 }
 """
 
+
 HTML_TEMPLATE = """
 <html>
 <head>
@@ -1082,7 +1056,7 @@ HTML_TEMPLATE = """
     {content}
 </body>
 </html>
-        """
+"""
 
 
 def convert_table_to_markdown(data):
@@ -1480,18 +1454,18 @@ class ReqEditorBoard(QWidget):
         self.layout_feature_area = QHBoxLayout()
         self.layout_plugin_area = QHBoxLayout()
 
-        self.__text_md_editor = MarkdownEditor()
+        self.text_md_editor = MarkdownEditor()
 
         try:
-            self.__text_md_viewer = QWebEngineView()
+            self.text_md_viewer = QWebEngineView()
         except Exception as e:
             print(e)
             print(traceback.format_exc())
             print('Try to use QtWebEngineWidgets fail. Just use QTextEdit to render HTML.')
 
-            self.__text_md_viewer = QTextEdit()
-            self.__text_md_viewer.setReadOnly(True)
-            self.__text_md_viewer.setAcceptRichText(False)
+            self.text_md_viewer = QTextEdit()
+            self.text_md_viewer.setReadOnly(True)
+            self.text_md_viewer.setAcceptRichText(False)
         finally:
             pass
 
@@ -1545,8 +1519,6 @@ class ReqEditorBoard(QWidget):
         self.layout_feature_area.addWidget(self.__button_increase_font)
         self.layout_feature_area.addLayout(self.layout_plugin_area)
         self.layout_feature_area.addWidget(QLabel(''), 99)
-        # self.layout_feature_area.addWidget(self.__check_editor)
-        # self.layout_feature_area.addWidget(self.__check_viewer)
         self.layout_feature_area.addWidget(self.__button_print_preview)
         self.layout_feature_area.addWidget(self.__button_save_content)
         self.layout_root.addLayout(self.layout_feature_area)
@@ -1554,38 +1526,25 @@ class ReqEditorBoard(QWidget):
         # bottom
 
         splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(self.__text_md_editor)
-        splitter.addWidget(self.__text_md_viewer)
+        splitter.addWidget(self.text_md_editor)
+        splitter.addWidget(self.text_md_viewer)
         splitter.setSizes([200, 200])
         self.layout_root.addWidget(splitter, 9)
 
-        # edit_area = QHBoxLayout()
-        # self.layout_root.addLayout(edit_area, 9)
-
-        # edit_area.addWidget(self.__text_md_editor, 5)
-        # edit_area.addWidget(self.__text_md_viewer, 5)
-
     def __config_ui(self):
-        # self.__check_editor.setChecked(True)
-        # self.__check_viewer.setChecked(True)
-
         self.__line_id.setReadOnly(True)
 
         self.__button_increase_font.setMaximumSize(30, 30)
         self.__button_decrease_font.setMaximumSize(30, 30)
 
-        editor_font = self.__text_md_editor.font()
+        editor_font = self.text_md_editor.font()
         editor_font.setPointSizeF(10)
-        self.__text_md_editor.setFont(editor_font)
-        # self.__text_md_viewer.setFont(editor_font)
+        self.text_md_editor.setFont(editor_font)
 
-        self.__text_md_editor.setAcceptRichText(False)
-
-        # self.__check_editor.clicked.connect(self.on_check_editor)
-        # self.__check_viewer.clicked.connect(self.on_check_viewer)
+        self.text_md_editor.setAcceptRichText(False)
 
         self.__line_title.textChanged.connect(self.on_content_changed)
-        self.__text_md_editor.textChanged.connect(self.on_text_content_edit)
+        self.text_md_editor.textChanged.connect(self.on_text_content_edit)
 
         self.__button_increase_font.clicked.connect(self.on_button_increase_font)
         self.__button_decrease_font.clicked.connect(self.on_button_decrease_font)
@@ -1647,24 +1606,18 @@ class ReqEditorBoard(QWidget):
             self.__layout_dynamic.addWidget(_input, count // config_per_row, (count % config_per_row) * 2 + 1)
             count += 1
 
-    # def on_check_editor(self):
-    #     self.__text_md_editor.setVisible(self.__check_editor.isChecked())
-    #
-    # def on_check_viewer(self):
-    #     self.__text_md_viewer.setVisible(self.__check_viewer.isChecked())
-
     def on_button_increase_font(self):
-        editor_font = self.__text_md_editor.font()
+        editor_font = self.text_md_editor.font()
         font_size = editor_font.pointSizeF()
         editor_font.setPointSizeF(font_size * 1.05)
-        self.__text_md_editor.setFont(editor_font)
+        self.text_md_editor.setFont(editor_font)
         # self.__text_md_viewer.setFont(editor_font)
 
     def on_button_decrease_font(self):
-        editor_font = self.__text_md_editor.font()
+        editor_font = self.text_md_editor.font()
         font_size = editor_font.pointSizeF()
         editor_font.setPointSizeF(font_size / 1.05)
-        self.__text_md_editor.setFont(editor_font)
+        self.text_md_editor.setFont(editor_font)
         # self.__text_md_viewer.setFont(editor_font)
 
     def on_button_re_assign_id(self):
@@ -1691,10 +1644,10 @@ class ReqEditorBoard(QWidget):
     def on_button_print_preview(self):
         file_name = (self.__editing_node.get_title() + '.pdf') if \
             self.__editing_node is not None else 'export.pdf'
-        if isinstance(self.__text_md_viewer, QTextEdit):
-            print_text_edit(self.__text_md_viewer, file_name)
-        elif isinstance(self.__text_md_viewer, QWebEngineView):
-            print_web_view(self.__text_md_viewer, file_name)
+        if isinstance(self.text_md_viewer, QTextEdit):
+            print_text_edit(self.text_md_viewer, file_name)
+        elif isinstance(self.text_md_viewer, QWebEngineView):
+            print_web_view(self.text_md_viewer, file_name)
 
             msgBox = QMessageBox()
             msgBox.setWindowTitle('Printed to PDF')
@@ -1711,12 +1664,15 @@ class ReqEditorBoard(QWidget):
         self.update_content_edited_status(False)
 
     def on_text_content_edit(self):
-        md_text = self.__text_md_editor.toPlainText()
-        markdown_to_view(md_text, self.__text_md_viewer, self.__req_data_agent.get_req_path())
+        self.render_markdown()
         self.on_content_changed()
 
     def on_content_changed(self, *args):
         self.update_content_edited_status(True)
+
+    def render_markdown(self):
+        md_text = self.text_md_editor.toPlainText()
+        markdown_to_view(md_text, self.text_md_viewer, self.__req_data_agent.get_req_path())
 
     # ---------------------------------------------------------------------------
 
@@ -1774,13 +1730,13 @@ class ReqEditorBoard(QWidget):
         self.__group_meta_data.setTitle('Req UUID: ' + req_node.get_uuid())
         self.__line_title.setText(req_node.get_title())
         self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
-        self.__text_md_editor.setPlainText(req_node.get(STATIC_FIELD_CONTENT, ''))
+        self.text_md_editor.setPlainText(req_node.get(STATIC_FIELD_CONTENT, ''))
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
         self.__req_model.begin_edit()
         req_node.set(STATIC_FIELD_ID, self.__line_id.text())
         req_node.set(STATIC_FIELD_TITLE, self.__line_title.text())
-        req_node.set(STATIC_FIELD_CONTENT, self.__text_md_editor.toPlainText())
+        req_node.set(STATIC_FIELD_CONTENT, self.text_md_editor.toPlainText())
         self.__req_data_agent.update_node(req_node)
         self.__req_model.end_edit()
         # self.__req_data_agent.inform_node_data_updated(req_node)
@@ -1793,7 +1749,7 @@ class ReqEditorBoard(QWidget):
                 meta_ctrl.setText('')
         self.__line_id.setText('')
         self.__line_title.setText('')
-        self.__text_md_editor.setPlainText('')
+        self.text_md_editor.setPlainText('')
         self.__group_meta_data.setTitle('')
 
     def update_content_edited_status(self, edited: bool):
@@ -1934,10 +1890,6 @@ class ReqMetaBoard(QWidget):
     def reload_meta_data(self):
         self.__meta_to_ui()
 
-    # def set_data_agent(self, req_data_agent: IReqAgent):
-    #     self.__req_data_agent = req_data_agent
-    #     self.reload_meta_data()
-
     # ----------------------------------------------------------------------
 
     def __meta_to_ui(self):
@@ -1952,9 +1904,6 @@ class ReqMetaBoard(QWidget):
                 id_prefix = []
 
             id_prefix_text = ', '.join(id_prefix)
-
-            # meta_data_text = json.dumps(meta_data, indent=4)
-            # meta_data_text = meta_data_text.strip('{}')
 
             meta_data_lines = []
             for meta_name, meta_selection in meta_data.items():
@@ -2060,6 +2009,8 @@ class RequirementUI(QWidget):
         self.meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
         self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
 
+        self.module = sys.modules[__name__]
+
         self.__init_ui()
 
         if plugin_manager is not None:
@@ -2072,24 +2023,11 @@ class RequirementUI(QWidget):
     def __layout_ui(self):
         self.setLayout(self.layout_root)
 
-        # left_area = QVBoxLayout()
-        # root_layout.addLayout(left_area)
-        # root_layout.addWidget(self.__edit_tab, 99)
-        # root_layout.addWidget(self.__edit_board, 99)
-
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.__tree_requirements)
         splitter.addWidget(self.edit_tab)
 
         self.layout_root.addWidget(splitter)
-
-        # ------------------------- Left area ------------------------
-
-        # line = QHBoxLayout()
-        # line.addWidget(self.__combo_req_select)
-        # line.addWidget(self.__button_req_refresh)
-        # left_area.addLayout(line)
-        # left_area.addWidget(self.__tree_requirements)
 
         # ------------------------ Right area ------------------------
 
@@ -2133,31 +2071,11 @@ class RequirementUI(QWidget):
                 self.search_tree(text)
         elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
             self.edit_board.on_button_save_content()
-        # elif event.key() == Qt.Key_F3 and event.modifiers() == Qt.ShiftModifier:
-        #     self.jump_to_prev_search()
-        # elif event.key() == Qt.Key_F3:
-        #     self.jump_to_next_search()
-
-    # def on_button_req_refresh(self):
-    #     pass
-
-    # def on_requirement_tree_click(self, index: QModelIndex):
-    #     pass
-    # self.__update_selected_index(index)
-    # if index.isValid():
-    #     req_node: ReqNode = index.internalPointer()
-    #     self.__selected_node = req_node
-    #     self.__selected_index = index
-    #     self.__edit_board.edit_req(req_node)
 
     def on_requirement_tree_menu(self, pos: QPoint):
         menu = QMenu()
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
         if sel_index is not None and sel_index.isValid():
-            # self.__update_selected_index(sel_index)
-            # self.__selected_index = sel_index
-            # self.__selected_node = self.__req_model.get_node_from_index(sel_index)
-
             menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
             menu.addSeparator()
             menu.addAction('Insert sibling up', self.on_requirement_tree_menu_add_sibling_up)
@@ -2179,8 +2097,6 @@ class RequirementUI(QWidget):
             menu.addAction('Print Tree (Sparse)', partial(self.on_requirement_tree_menu_print_tree, False))
 
         else:
-            # self.__update_selected_index(None)
-
             menu.addAction('Add New Top Item', self.on_requirement_tree_menu_add_top_item)
             if len(self.__cut_items) > 0:
                 menu.addAction('Paste as Top Item', partial(self.on_requirement_tree_menu_paste_item, 'top'))
@@ -2208,55 +2124,21 @@ class RequirementUI(QWidget):
     def on_requirement_tree_menu_add_top_item(self):
         self.__req_model.insertRow(-1)
 
-        # req_root = self.__req_data_agent.get_req_root()
-        # if req_root is not None:
-        #     new_node = ReqNode('New Top Item')
-        #     self.__req_model.begin_edit()
-        #     req_root.append_child(new_node)
-        #     self.__req_model.end_edit()
-        #     self.__req_data_agent.inform_node_data_updated(req_root)
-
     def on_requirement_tree_menu_append_child(self):
         if self.__tree_item_selected():
-            # selected_node = self.__selected_node
             self.__req_model.insertRow(-1, self.__selected_index)
-            # new_node = ReqNode('New Item')
-            # parent_node = self.__req_model.parent(self.__selected_index)
-            # append_pos = self.__selected_node.child_count()
-            # self.__req_model.beginInsertRows(parent_node, append_pos, append_pos)
-            # self.__selected_node.append_child(new_node)
-            # self.__req_model.endInsertRows()
-            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():
-            # new_node = ReqNode('New Item')
-            # parent_node = self.__req_model.parent(self.__selected_index)
-
-            # selected_node = self.__selected_node
             insert_pos = self.__selected_node.order()
             parent_index = self.__req_model.parent(self.__selected_index)
             self.__req_model.insertRow(insert_pos, parent_index)
 
-            # self.__req_model.beginInsertRows(parent_node, insert_pos - 1, insert_pos)
-            # self.__selected_node.insert_sibling_left(new_node)
-            # self.__req_model.endInsertRows()
-            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
-
     def on_requirement_tree_menu_add_sibling_down(self):
         if self.__tree_item_selected():
-            # new_node = ReqNode('New Item')
-            # parent_node = self.__req_model.parent(self.__selected_index)
-
-            # selected_node = self.__selected_node
             insert_pos = self.__selected_node.order() + 1
             parent_index = self.__req_model.parent(self.__selected_index)
             self.__req_model.insertRow(insert_pos, parent_index)
-
-            # self.__req_model.beginInsertRows(parent_node, insert_pos, insert_pos)
-            # self.__selected_node.insert_sibling_right(new_node)
-            # self.__req_model.endInsertRows()
-            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_shift_item_up(self):
         if self.__tree_item_selected():
@@ -2264,39 +2146,11 @@ class RequirementUI(QWidget):
             self.__req_data_agent.shift_node(self.__selected_node.get_uuid(), -1)
             self.__req_model.end_edit()
 
-            # # selected_node = self.__selected_node
-            # node_order = self.__selected_node.order()
-            # sibling_list = self.__selected_node.sibling()
-            # # parent_index = self.__req_model.parent(self.__selected_index)
-            # if node_order > 0:
-            #     # self.__req_model.beginMoveRows(parent_index, node_order - 1, node_order,
-            #     #                                parent_index, node_order)
-            #     self.__req_model.begin_edit()
-            #     sibling_list[node_order - 1], sibling_list[node_order] = \
-            #         sibling_list[node_order], sibling_list[node_order - 1]
-            #     self.__req_model.end_edit()
-            #     # self.__req_model.endMoveRows()
-            # # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
-
     def on_requirement_tree_menu_shift_item_down(self):
         if self.__tree_item_selected():
-            # selected_node = self.__selected_node
-            # node_order = self.__selected_node.order()
-            # sibling_list = self.__selected_node.sibling()
-            # parent_index = self.__req_model.parent(self.__selected_index)
-            # if node_order + 1 < len(sibling_list):
-            # sibling_list[node_order + 1], sibling_list[node_order] = \
-            #     sibling_list[node_order], sibling_list[node_order + 1]
-
-            # self.__req_model.beginMoveRows(parent_index, node_order, node_order + 1,
-            #                                parent_index, node_order)
-
             self.__req_model.begin_edit()
             self.__req_data_agent.shift_node(self.__selected_node.get_uuid(), 1)
             self.__req_model.end_edit()
-
-            # self.__req_model.endMoveRows()
-            # self.__req_data_agent.inform_node_child_updated(selected_node.parent())
 
     def on_requirement_tree_menu_cut_item(self):
         if self.__tree_item_selected():
@@ -2337,13 +2191,7 @@ class RequirementUI(QWidget):
                 self.__req_model.beginRemoveRows(
                     self.__req_model.parent(self.__selected_index), node_order, node_order + 1)
                 self.__req_data_agent.remove_node(selected_node.get_uuid())
-                # node_parent.remove_child(selected_node)
                 self.__req_model.endRemoveRows()
-                # self.__req_data_agent.inform_node_child_updated(node_parent)
-
-                # self.__req_data_agent.notify_node_structure_changed('', node_parent, selected_node, 'remove')
-
-                # self.__update_selected_index(None)
 
     def on_requirement_tree_menu_print_tree(self, dense: bool):
         if self.__selected_node is not None:
@@ -2395,11 +2243,6 @@ class RequirementUI(QWidget):
             self.edit_board.edit_req(None)
             self.meta_board.reload_meta_data()
 
-            # req_root = self.__req_data_agent.get_req_root()
-            # self.__req_model.begin_edit()
-            # self.__root_node.append_child(req_root)
-            # self.__req_model.end_edit()
-
     def on_requirement_tree_menu_open_local_file(self):
         file_path, is_ok = QFileDialog.getOpenFileName(
             self, 'Select File', '', 'Requirement File (*.req);;All files (*.*)')
@@ -2417,19 +2260,6 @@ class RequirementUI(QWidget):
             print('Change current path to: ' + req_path)
             os.chdir(req_path)
 
-            # req_agent = ReqSingleJsonFileAgent()
-            # req_agent.init()
-            # req_agent.open_req(file_path)
-            # req_model = ReqModel(req_agent)
-            #
-            # self.__req_data_agent = req_agent
-            # self.__req_model = req_model
-
-            # self.__update_req_tree()
-
-    # def __update_req_tree(self):
-    #     self.__tree_requirements.setModel(self.__req_model)
-
     def search_tree(self, text: str):
         root_node = self.__req_data_agent.get_req_root()
         filter_nodes = root_node.filter(partial(RequirementUI.__find_node_any_data, text))
@@ -2440,23 +2270,6 @@ class RequirementUI(QWidget):
         for node in filter_nodes:
             default_index_window.append_index(node.get_title(), node.get_uuid())
         default_index_window.show_right_bottom()
-
-        # self.__filter_index = -1
-        # self.jump_to_next_search()
-
-    # def jump_to_prev_search(self):
-    #     self.__filter_index -= 1
-    #     if self.__filter_index < 0:
-    #         self.__filter_index = len(self.__filter_nodes) - 1
-    #     if self.__filter_index >= 0:
-    #         self.jump_to_node(self.__filter_nodes[self.__filter_index])
-    #
-    # def jump_to_next_search(self):
-    #     self.__filter_index += 1
-    #     if self.__filter_index >= len(self.__filter_nodes):
-    #         self.__filter_index = -1
-    #     if self.__filter_index >= 0:
-    #         self.jump_to_node(self.__filter_nodes[self.__filter_index])
 
     def jump_by_id(self, node_id: str):
         root_node = self.__req_data_agent.get_req_root()
@@ -2498,7 +2311,6 @@ class RequirementUI(QWidget):
             self.__selected_node = None
             self.__selected_index = None
             self.edit_board.edit_req(None)
-        # print('Select Node:　' + str(self.__selected_node))
 
     def __on_meta_data_updated(self):
         self.edit_board.on_meta_data_updated()
@@ -2509,8 +2321,6 @@ class RequirementUI(QWidget):
 def main():
     app = QApplication(sys.argv)
 
-    # install_local_url_handler()
-
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
 
@@ -2518,6 +2328,8 @@ def main():
         plugins = easy_config.get('plugin', [])
         for plugin in plugins:
             plugin_manager.load_plugin(plugin)
+        for plugin in plugin_manager.plugins.keys():
+            print(f'Loaded plugin: {plugin}')
         plugin_manager.invoke_all('req_agent_prepared', req_agent)
 
     if not req_agent.open_req('FreeReq'):
