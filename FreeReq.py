@@ -88,6 +88,22 @@ finally:
 
 self_path = os.path.dirname(os.path.abspath(__file__))
 
+
+def is_web_engine_view(view) -> bool:
+    try:
+        return isinstance(view, QWebEngineView)
+    except NameError:
+        return False
+
+
+def has_web_engine_view() -> bool:
+    try:
+        from PyQt5.QtWebEngineWidgets import QWebEngineView
+        return True
+    except ImportError:
+        return False
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Plugin:
 #   req_agent_prepared(req: IReqAgent)
@@ -1282,7 +1298,7 @@ def html_to_view(html_text: str, view: QWebEngineView or QTextEdit, root_path: s
     html_text = html_text.replace('strike>', 'del>')
 
     try:
-        if isinstance(view, QWebEngineView):
+        if is_web_engine_view(view):
             req_root_path_url = f'file:///{root_path}'.replace('\\', '/') + '/'
             # I can't believe that it can be solved in this simple way.
             # I've talked with NewBing for a whole afternoon but it totally useless.
@@ -1673,7 +1689,7 @@ class ReqEditorBoard(QWidget):
             self.__editing_node is not None else 'export.pdf'
         if isinstance(self.text_md_viewer, QTextEdit):
             print_text_edit(self.text_md_viewer, file_name)
-        elif isinstance(self.text_md_viewer, QWebEngineView):
+        elif is_web_engine_view(self.text_md_viewer):
             print_web_view(self.text_md_viewer, file_name)
 
             msgBox = QMessageBox()
