@@ -1,9 +1,11 @@
 {
     "plugin": [
-        "ScratchPaper"
-    ],
-    "plugin can be one of these": [
         "ScratchPaper",
+        "MarkdownStyle"
+    ],
+    "plugin can be one of these, move to 'plugin' above to enable it.": [
+        "ScratchPaper",
+        "MarkdownStyle",
         "ChatReq",
         "EmbeddingIndexing"
     ]

@@ -91,7 +91,7 @@ def format_app_package_name():
     _os_machine = platform.machine()
     return name_format.format(os_name=_os_name,
                               os_machine=_os_machine,
-                              version=1.0,
+                              version=1.2,
                               datetime=datetime.datetime.now().strftime('%Y%m%d'))
 
 
