@@ -1,11 +1,13 @@
-import sys
+import os
 from typing import Dict, List, Tuple
 
-from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt, QTimer, QSettings
 from PyQt5.QtWidgets import QPushButton, QApplication, QMainWindow, QTextEdit
 from FreeReq import IReqAgent, RequirementUI
 
+
+self_path = os.path.dirname(os.path.abspath(__file__))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -20,11 +22,13 @@ class ScratchPaper(QMainWindow):
         super().__init__()
         self.timer = QTimer(self)
         self.textEdit = QTextEdit(self)
+        self.settings = QSettings("SleepySoft", "FreeReq")
         self.text_changed = False
         self.init_ui()
 
     def init_ui(self):
         self.setWindowTitle('Scratch Paper')
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
         self.setCentralWidget(self.textEdit)
         self.textEdit.textChanged.connect(self.on_text_changed)
@@ -35,7 +39,7 @@ class ScratchPaper(QMainWindow):
 
         # Load the file content when initializing
         try:
-            with open('scratch.txt', 'r') as f:
+            with open(self.__scratch_paper_path(), 'r', encoding='utf-8') as f:
                 self.textEdit.setText(f.read())
         except Exception as e:
             print(e)
@@ -51,14 +55,23 @@ class ScratchPaper(QMainWindow):
 
     def auto_save(self):
         if self.text_changed:
-            with open('scratch.txt', 'w') as f:
+            with open(self.__scratch_paper_path(), 'w', encoding='utf-8') as f:
                 f.write(self.textEdit.toPlainText())
             self.text_changed = False
 
     def closeEvent(self, event):
-        # Override the closeEvent method to hide the window instead of closing it
+        # Save the window size
+        self.settings.setValue("windowSize", self.size())
         event.ignore()
         self.hide()
+
+    def showEvent(self, event):
+        # Restore the window size
+        if self.settings.contains("windowSize"):
+            self.resize(self.settings.value("windowSize"))
+
+    def __scratch_paper_path(self):
+        return os.path.join(self_path, 'scratch.txt')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
