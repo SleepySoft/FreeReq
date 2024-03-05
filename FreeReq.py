@@ -64,7 +64,7 @@ from PyPDF2 import PdfMerger
 try:
     # Use try catch for running FreeReq without UI
 
-    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice
+    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
@@ -1088,6 +1088,14 @@ def html_has_table(html):
     return bool(table)
 
 
+def is_image(file_path):
+    # 获取文件的扩展名
+    extension = os.path.splitext(file_path)[1].lower()
+
+    # 判断扩展名是否是Markdown支持的图片格式
+    return extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+
+
 KEEP_ATTR = ['rowspan', 'colspan']
 
 
@@ -1186,7 +1194,7 @@ class MarkdownEditor(QTextEdit):
                     new_file_path += '.png'
                 image.save(new_file_path, "PNG")
                 markdown_text = f"![{file_name}]({new_file_path})"
-                self.insertPlainText(markdown_text)
+                self.__insert_text_to_cursor(markdown_text)
         else:
             super(MarkdownEditor, self).insertFromMimeData(source)
 
@@ -1195,6 +1203,13 @@ class MarkdownEditor(QTextEdit):
             event.acceptProposedAction()
 
     def dropEvent(self, event):
+        # 获取鼠标在QTextEdit中的位置
+        mouse_pos = event.pos()
+        # 将鼠标位置转换为光标位置
+        cursor = self.cursorForPosition(mouse_pos)
+        # 设置QTextEdit的光标位置
+        self.setTextCursor(cursor)
+
         if event.mimeData().hasUrls():
             url = event.mimeData().urls()[0]
             file_path = url.toLocalFile()
@@ -1209,17 +1224,29 @@ class MarkdownEditor(QTextEdit):
             msgBox.exec_()
 
             if msgBox.clickedButton() == copyButton:
+                if not os.path.exists(self.attachment_folder):
+                    os.makedirs(self.attachment_folder)
                 new_file_path = os.path.join(self.attachment_folder, file_name)
                 if os.path.exists(new_file_path):
                     new_file_path, file_name = self.__require_file_name(self.attachment_folder)
                 if new_file_path != '':
                     shutil.copy(file_path, new_file_path)
-                    markdown_text = f"[{file_name}]({new_file_path})"
+                    markdown_text = f"{'!' if is_image(file_path) else ''}[{file_name}]({new_file_path})"
             elif msgBox.clickedButton() == linkButton:
                 markdown_text = f"[{file_name}]({file_path})"
 
             if markdown_text != '':
-                self.insertPlainText(markdown_text)
+                self.__insert_text_to_cursor(markdown_text)
+        self.setFocus()
+        super(MarkdownEditor, self).dropEvent(event)
+
+    def __insert_text_to_cursor(self, text: str):
+        # 获取当前的文本光标
+        cursor = self.textCursor()
+        # 插入文本
+        cursor.insertText(text)
+        # 设置新的光标位置
+        self.setTextCursor(cursor)
 
     def __require_file_name(self, folder: str) -> Tuple[str, str]:
         if not os.path.exists(folder):
