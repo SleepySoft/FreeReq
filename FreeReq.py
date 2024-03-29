@@ -166,8 +166,15 @@ class ReqNode:
     def data(self) -> dict:
         return self.__data
 
-    def copy_data(self, node: ReqNode):
-        self.__data = node.data()
+    def clone(self):
+        return ReqNode().copy_data(self)
+
+    def equals(self, compare_node: ReqNode):
+        return self..
+
+    def copy_data(self, ref_node: ReqNode):
+        self.__data = ref_node.data()
+        return self
 
     def get_uuid(self) -> str:
         return self.__data.get(STATIC_FIELD_UUID, '')
@@ -628,6 +635,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
         if update_node[0] is not node:
             # If they are not the same instance
             update_node[0].copy_data(node)
+        else:
+            print("Warning: You'd better using a node copy to update target node.")
         self.__save_req_json()
         self.notify_node_data_changed(update_node[0])
 
