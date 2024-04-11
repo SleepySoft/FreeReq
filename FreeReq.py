@@ -290,6 +290,7 @@ class ReqNode:
             if k not in self.__data.keys():
                 print(f'Warning: Static fields missing ${k}')
         if STATIC_FIELD_UUID not in self.__data.keys():
+            # Because of old issue, the uuid is missing. Fix it on load phase.
             print('Fix UUID missing issue.')
             self.__data[STATIC_FIELD_UUID] = str(uuid.uuid4().hex)
 
@@ -625,7 +626,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         insert_nodes = [insert_nodes] if isinstance(insert_nodes, ReqNode) else insert_nodes
         parent_node = self.__req_node_root.filter(lambda x: x.get_uuid() == parent_uuid)
         if len(parent_node) != 1:
-            print('Cannot find parent node or multiple node has the same uuid.')
+            print('Warning: Cannot find parent node or multiple node has the same uuid.')
         else:
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
@@ -646,8 +647,11 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def update_node(self, node: ReqNode):
         update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())
-        if len(update_node) != 1:
-            print('Cannot find update node.')
+        if len(update_node) == 0:
+            print('Warning: Cannot find update node.')
+            return
+        if len(update_node) > 1:
+            print('Warning: Find multiple nodes, the uuid may have issue.')
             return
         if update_node[0] is not node:
             # If they are not the same instance
