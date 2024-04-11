@@ -42,19 +42,18 @@ Resource comments:
 
 from __future__ import annotations
 
-import html
-import importlib
 import os
-import platform
 import re
-import subprocess
+import html
 import sys
 import csv
 import uuid
 import json
 import shutil
+import platform
 import markdown2
 import traceback
+import subprocess
 from io import StringIO
 from typing import Callable, List, Tuple, Union
 from functools import partial
@@ -167,14 +166,24 @@ class ReqNode:
         return self.__data
 
     def clone(self):
-        return ReqNode().copy_data(self)
-
-    def equals(self, compare_node: ReqNode):
-        return self..
+        new_node = ReqNode()
+        new_node.__data = self.__data.copy()
+        new_node.__parent = self.__parent
+        new_node.__sibling = self.__sibling.copy()
+        new_node.__children = self.__children.copy()
+        return new_node
 
     def copy_data(self, ref_node: ReqNode):
-        self.__data = ref_node.data()
-        return self
+        ref_data = ref_node.__data.copy()
+        ref_data[STATIC_FIELD_UUID] = self.__data[STATIC_FIELD_UUID]
+        self.__data = ref_data
+
+    def data_equals(self, compare_node: ReqNode):
+        data1 = self.__data.copy()
+        data2 = compare_node.__data.copy()
+        data1.pop(STATIC_FIELD_UUID, None)
+        data2.pop(STATIC_FIELD_UUID, None)
+        return data1 == data2
 
     def get_uuid(self) -> str:
         return self.__data.get(STATIC_FIELD_UUID, '')
@@ -276,8 +285,16 @@ class ReqNode:
 
     def from_dict(self, dic: dict):
         self.__data = dic
+
+        for k in STATIC_FIELDS:
+            if k not in self.__data.keys():
+                print(f'Warning: Static fields missing ${k}')
+        if STATIC_FIELD_UUID not in self.__data.keys():
+            print('Fix UUID missing issue.')
+            self.__data[STATIC_FIELD_UUID] = str(uuid.uuid4().hex)
+
         self.__children = []
-        if STATIC_FIELD_CHILD in dic.keys():
+        if STATIC_FIELD_CHILD in self.__data.keys():
             for sub_dict in dic[STATIC_FIELD_CHILD]:
                 node = ReqNode()
                 node.from_dict(sub_dict)
@@ -1811,11 +1828,12 @@ class ReqEditorBoard(QWidget):
     # ----------------------------------------------------------------------------------
 
     def edit_req(self, req_node: ReqNode):
-        self.__editing_node = req_node
         if req_node is not None:
-            self.__meta_data_to_ui(req_node)
-            self.__req_node_data_to_ui(req_node)
+            self.__editing_node = req_node.clone()
+            self.__meta_data_to_ui(self.__editing_node)
+            self.__req_node_data_to_ui(self.__editing_node)
         else:
+            self.__editing_node = None
             self.__reset_ui_content()
         self.update_content_edited_status(False)
 
