@@ -1,4 +1,3 @@
-import asyncio
 import sys
 import time
 import threading
@@ -131,5 +130,17 @@ class LocalChatGLM3(ChatLLM):
         self.messages.clear()
 
     def __chat_thread(self, kwargs):
+        print('Generate thread starts.')
         self.model.generate(kwargs)
         self.chat_thread = None
+        print('Generate thread finished.')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def main():
+    chat = LocalChatGLM3('')
+
+
+if __name__ == '__main__':
+    main()
