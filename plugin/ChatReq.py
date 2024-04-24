@@ -5,7 +5,17 @@ import gradio as gr
 
 import torch
 from typing import Union, List, Dict
-from transformers import AutoModel, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModel,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
+    StoppingCriteria,
+    StoppingCriteriaList,
+    TextIteratorStreamer
+)
 
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -170,62 +180,90 @@ class ChatThread(QThread):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def reformat_text(text):
-    lines = text.split("\n")
-    lines = [line for line in lines if line != ""]
-    count = 0
-    for i, line in enumerate(lines):
-        if "```" in line:
-            count += 1
-            items = line.split('`')
-            if count % 2 == 1:
-                lines[i] = f'<pre><code class="language-{items[-1]}">'
-            else:
-                lines[i] = f'<br></code></pre>'
-        else:
-            if i > 0:
+class WebChat:
+    class StopOnTokens(StoppingCriteria):
+        def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+            stop_ids = [0, 2]
+            for stop_id in stop_ids:
+                if input_ids[0][-1] == stop_id:
+                    return True
+            return False
+
+    def __init__(self):
+        self.tokenizer = None
+        self.threading = None
+
+    def build_web_chat(self):
+        with gr.Blocks() as demo:
+            gr.HTML("""<h1 align="center">ChatReq - by Sleepy</h1>""")
+            chatbot = gr.Chatbot()
+
+            with gr.Row():
+                with gr.Column(scale=4):
+                    with gr.Column(scale=12):
+                        user_input = gr.Textbox(show_label=False, placeholder="Input...", lines=10, container=False)
+                    with gr.Row():  # 将这两个按钮放在同一行
+                        with gr.Column(scale=9):
+                            submitBtn = gr.Button("Submit")
+                        with gr.Column(scale=1):
+                            emptyBtn = gr.Button("Clear History")
+
+            def user(query, history):
+                return "", history + [[WebChat.reformat_text(query), ""]]
+
+            submitBtn.click(user, [user_input, chatbot], [user_input, chatbot], queue=False).\
+                then(self.req_chat, chatbot, chatbot)
+            emptyBtn.click(lambda: None, None, chatbot, queue=False)
+
+        demo.queue()
+        demo.launch(server_name="127.0.0.1", server_port=20000, inbrowser=True, share=False)
+
+    def req_chat(self, history):
+        stop = WebChat.StopOnTokens()
+        messages = []
+        for idx, (user_msg, model_msg) in enumerate(history):
+            if idx == len(history) - 1 and not model_msg:
+                messages.append({"role": "user", "content": user_msg})
+                break
+            if user_msg:
+                messages.append({"role": "user", "content": user_msg})
+            if model_msg:
+                messages.append({"role": "assistant", "content": model_msg})
+
+    def chat_thread(self):
+        pass
+
+    @staticmethod
+    def reformat_text(text):
+        lines = text.split("\n")
+        lines = [line for line in lines if line != ""]
+        count = 0
+        for i, line in enumerate(lines):
+            if "```" in line:
+                count += 1
+                items = line.split('`')
                 if count % 2 == 1:
-                    line = line.replace("`", "\\`")
-                    line = line.replace("<", "&lt;")
-                    line = line.replace(">", "&gt;")
-                    line = line.replace(" ", "&nbsp;")
-                    line = line.replace("*", "&ast;")
-                    line = line.replace("_", "&lowbar;")
-                    line = line.replace("-", "&#45;")
-                    line = line.replace(".", "&#46;")
-                    line = line.replace("!", "&#33;")
-                    line = line.replace("(", "&#40;")
-                    line = line.replace(")", "&#41;")
-                    line = line.replace("$", "&#36;")
-                lines[i] = "<br>" + line
-    text = "".join(lines)
-    return text
-
-
-def build_web_chat():
-    with gr.Blocks() as demo:
-        gr.HTML("""<h1 align="center">ChatReq - by Sleepy</h1>""")
-        chatbot = gr.Chatbot()
-
-        with gr.Row():
-            with gr.Column(scale=4):
-                with gr.Column(scale=12):
-                    user_input = gr.Textbox(show_label=False, placeholder="Input...", lines=10, container=False)
-                with gr.Row():  # 将这两个按钮放在同一行
-                    with gr.Column(scale=9):
-                        submitBtn = gr.Button("Submit")
-                    with gr.Column(scale=1):
-                        emptyBtn = gr.Button("Clear History")
-
-        def user(query, history):
-            return "", history + [[reformat_text(query), ""]]
-
-        submitBtn.click(user, [user_input, chatbot], [user_input, chatbot], queue=False)
-        # .then(predict, [chatbot, max_length, top_p, temperature], chatbot)
-        emptyBtn.click(lambda: None, None, chatbot, queue=False)
-
-    demo.queue()
-    demo.launch(server_name="127.0.0.1", server_port=20000, inbrowser=True, share=False)
+                    lines[i] = f'<pre><code class="language-{items[-1]}">'
+                else:
+                    lines[i] = f'<br></code></pre>'
+            else:
+                if i > 0:
+                    if count % 2 == 1:
+                        line = line.replace("`", "\\`")
+                        line = line.replace("<", "&lt;")
+                        line = line.replace(">", "&gt;")
+                        line = line.replace(" ", "&nbsp;")
+                        line = line.replace("*", "&ast;")
+                        line = line.replace("_", "&lowbar;")
+                        line = line.replace("-", "&#45;")
+                        line = line.replace(".", "&#46;")
+                        line = line.replace("!", "&#33;")
+                        line = line.replace("(", "&#40;")
+                        line = line.replace(")", "&#41;")
+                        line = line.replace("$", "&#36;")
+                    lines[i] = "<br>" + line
+        text = "".join(lines)
+        return text
 
 
 # ----------------------------------------------------------------------------------------------------------------------
