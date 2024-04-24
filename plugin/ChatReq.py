@@ -1,6 +1,7 @@
 import sys
-import threading
 import time
+import threading
+import gradio as gr
 
 import torch
 from typing import Union, List, Dict
@@ -169,6 +170,66 @@ class ChatThread(QThread):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def reformat_text(text):
+    lines = text.split("\n")
+    lines = [line for line in lines if line != ""]
+    count = 0
+    for i, line in enumerate(lines):
+        if "```" in line:
+            count += 1
+            items = line.split('`')
+            if count % 2 == 1:
+                lines[i] = f'<pre><code class="language-{items[-1]}">'
+            else:
+                lines[i] = f'<br></code></pre>'
+        else:
+            if i > 0:
+                if count % 2 == 1:
+                    line = line.replace("`", "\\`")
+                    line = line.replace("<", "&lt;")
+                    line = line.replace(">", "&gt;")
+                    line = line.replace(" ", "&nbsp;")
+                    line = line.replace("*", "&ast;")
+                    line = line.replace("_", "&lowbar;")
+                    line = line.replace("-", "&#45;")
+                    line = line.replace(".", "&#46;")
+                    line = line.replace("!", "&#33;")
+                    line = line.replace("(", "&#40;")
+                    line = line.replace(")", "&#41;")
+                    line = line.replace("$", "&#36;")
+                lines[i] = "<br>" + line
+    text = "".join(lines)
+    return text
+
+
+def build_web_chat():
+    with gr.Blocks() as demo:
+        gr.HTML("""<h1 align="center">ChatReq - by Sleepy</h1>""")
+        chatbot = gr.Chatbot()
+
+        with gr.Row():
+            with gr.Column(scale=4):
+                with gr.Column(scale=12):
+                    user_input = gr.Textbox(show_label=False, placeholder="Input...", lines=10, container=False)
+                with gr.Row():  # 将这两个按钮放在同一行
+                    with gr.Column(scale=9):
+                        submitBtn = gr.Button("Submit")
+                    with gr.Column(scale=1):
+                        emptyBtn = gr.Button("Clear History")
+
+        def user(query, history):
+            return "", history + [[reformat_text(query), ""]]
+
+        submitBtn.click(user, [user_input, chatbot], [user_input, chatbot], queue=False)
+        # .then(predict, [chatbot, max_length, top_p, temperature], chatbot)
+        emptyBtn.click(lambda: None, None, chatbot, queue=False)
+
+    demo.queue()
+    demo.launch(server_name="127.0.0.1", server_port=20000, inbrowser=True, share=False)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 chat_window: ChatWindow = None
 
 
@@ -210,7 +271,8 @@ def after_ui_created(req_ui: RequirementUI):
 # ----------------------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    chat_window = ChatWindow()
-    chat_window.show()
-    sys.exit(app.exec_())
+    build_web_chat()
+    # app = QApplication(sys.argv)
+    # chat_window = ChatWindow()
+    # chat_window.show()
+    # sys.exit(app.exec_())

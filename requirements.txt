@@ -3,9 +3,6 @@ pyqt5~=5.15.9
 markdown2~=2.4.3
 PyQtWebEngine
 numpy~=1.21.5
-torch~=1.13.1
-transformers~=4.30.2
-text2vec~=1.2.1
 pyinstaller~=4.4
 beautifulsoup4~=4.9.3
 PyPDF2
