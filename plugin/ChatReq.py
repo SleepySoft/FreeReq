@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import time
 import threading
@@ -176,6 +177,55 @@ class ChatThread(QThread):
     def generate_llm_prompts(question: str, search_result: List[ReqNode]) -> str:
         context = '\n'.join([str(node.get_title()) + '\n' + str(node.get(STATIC_FIELD_CONTENT)) for node in search_result])
         return PROMPT_TEMPLATE.replace('{question}', question).replace('{context}', context)
+
+
+class ChatLLM:
+    def __init__(self, model_url: str, on_device: str):
+        self.model_url = model_url
+        self.on_device = on_device
+        self.llm_ready = False
+        self.init_thread = None
+        self.lock = threading.Lock()
+
+    def init_llm(self) -> bool:
+        return False
+
+    def async_init_llm(self):
+        with self.lock:
+            if self.init_thread is None or not self.init_thread.is_alive():
+                self.init_thread = threading.Thread(target=self.__init_wrapper)
+                self.init_thread.start()
+
+    def chat(self, text: str):
+        pass
+
+    def clear_history(self):
+        pass
+
+    def __init_wrapper(self):
+        if not self.llm_ready:
+            self.init_llm()
+        with self.lock:
+            self.init_thread = None
+
+
+class LocalChatLLM(ChatLLM):
+    def __init__(self, model_url: str, on_device: str):
+        super(LocalChatLLM, self).__init__(model_url, on_device)
+        self.model = None
+        self.tokenizer = None
+
+    def init_llm(self) -> bool:
+        try:
+            device = torch.device(self.on_device)
+            self.model = AutoModel.from_pretrained(self.model_url, trust_remote_code=True).half().to(device)
+            tokenizer = AutoTokenizer.from_pretrained(self.model_url, trust_remote_code=True)
+            return True
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            pass
 
 
 # ----------------------------------------------------------------------------------------------------------------------
