@@ -37,7 +37,7 @@ class WebChat:
 
             user_input_text = gr.State('')
             submit_btn.click(echo_user_input, user_input, [user_input, user_input_text], queue=False).\
-                then(self.__handle_web_chat, [user_input_text, max_length, top_p, temperature], queue=False)
+                then(self.__handle_web_chat, [user_input_text, max_length, top_p, temperature], chat_bot)
             empty_btn.click(self.__handle_clear, None, chat_bot, queue=False)
 
         demo.queue()
@@ -53,6 +53,8 @@ class WebChat:
         if self.chatllm is not None:
             for response in self.chatllm.chat(text):
                 yield WebChat.reformat_text(response)
+        else:
+            return
 
     @staticmethod
     def reformat_text(text):
