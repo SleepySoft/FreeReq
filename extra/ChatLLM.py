@@ -1,6 +1,7 @@
 import sys
 import time
 import threading
+from typing import Iterable
 import gradio as gr
 
 import torch
@@ -20,8 +21,45 @@ from transformers import (
 DEFAULT_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
+# ======================================================================================================================
+
+def parse_text(text):
+    """copy from https://github.com/GaiZhenbiao/ChuanhuChatGPT/"""
+    lines = text.split("\n")
+    lines = [line for line in lines if line != ""]
+    count = 0
+    for i, line in enumerate(lines):
+        if "```" in line:
+            count += 1
+            items = line.split('`')
+            if count % 2 == 1:
+                lines[i] = f'<pre><code class="language-{items[-1]}">'
+            else:
+                lines[i] = f'<br></code></pre>'
+        else:
+            if i > 0:
+                if count % 2 == 1:
+                    line = line.replace("`", "\\`")
+                    line = line.replace("<", "&lt;")
+                    line = line.replace(">", "&gt;")
+                    line = line.replace(" ", "&nbsp;")
+                    line = line.replace("*", "&ast;")
+                    line = line.replace("_", "&lowbar;")
+                    line = line.replace("-", "&#45;")
+                    line = line.replace(".", "&#46;")
+                    line = line.replace("!", "&#33;")
+                    line = line.replace("(", "&#40;")
+                    line = line.replace(")", "&#41;")
+                    line = line.replace("$", "&#36;")
+                lines[i] = "<br>"+line
+    text = "".join(lines)
+    return text
+
+
+# ======================================================================================================================
+
 class ChatLLM:
-    def __init__(self, model_url: str, on_device: str):
+    def __init__(self, model_url: str, on_device: str, max_len: int = 8192):
         self.model_url = model_url
         self.on_device = on_device
         self.llm_ready = False
@@ -31,10 +69,10 @@ class ChatLLM:
     def do_init_llm(self) -> bool:
         pass
 
-    def chat(self, text: str):
+    def chat(self, text: str) -> Iterable[str]:
         pass
 
-    def clear_history(self):
+    def clear_history(self) -> bool:
         pass
 
     def try_init_llm(self) -> bool:
@@ -61,6 +99,8 @@ class ChatLLM:
             self.init_thread = None
 
 
+# ======================================================================================================================
+
 class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
         stop_ids = [0, 2]
@@ -69,6 +109,8 @@ class StopOnTokens(StoppingCriteria):
                 return True
         return False
 
+
+# ======================================================================================================================
 
 class LocalChatGLM3(ChatLLM):
     def __init__(self, model_url: str, on_device: str = DEFAULT_DEVICE):
@@ -83,7 +125,8 @@ class LocalChatGLM3(ChatLLM):
         if self.llm_ready:
             return True
         device = torch.device(self.on_device)
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_url, trust_remote_code=True).half().to(device)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_url, trust_remote_code=True).half().to(device).eval()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_url, trust_remote_code=True)
         return True
 
@@ -96,7 +139,7 @@ class LocalChatGLM3(ChatLLM):
         stop = StopOnTokens()
         self.history.append([text, ''])
         self.messages.append({"role": "user", "content": text})
-        self.messages.append({"role": "assistant", "content": text})
+        self.messages.append({"role": "assistant", "content": ""})
 
         model_inputs = self.tokenizer.apply_chat_template(
             self.messages, add_generation_prompt=True, tokenize=True, return_tensors="pt").\
@@ -123,17 +166,51 @@ class LocalChatGLM3(ChatLLM):
                 self.messages[-1]["content"] += new_token
                 yield self.history
 
-    def clear_history(self):
+    def clear_history(self) -> bool:
         if self.chat_thread is not None:
-            return
+            return False
         self.history.clear()
         self.messages.clear()
+        return True
 
     def __chat_thread(self, kwargs):
         print('Generate thread starts.')
         self.model.generate(kwargs)
         self.chat_thread = None
         print('Generate thread finished.')
+
+
+class LocalChatGLM2(ChatLLM):
+    def __init__(self, model_url: str = '"THUDM/chatglm2-6b"', on_device: str = DEFAULT_DEVICE):
+        super(LocalChatGLM2, self).__init__(model_url, on_device)
+        self.model = None
+        self.tokenizer = None
+        self.history = []
+        self.history2 = []      # 这两个History一样吗？
+        self.past_key_values = None
+
+    def do_init_llm(self) -> bool:
+        device = torch.device(self.on_device)
+        self.model = AutoModel.from_pretrained(self.model_url, trust_remote_code=True).half().to(device).eval()
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_url, trust_remote_code=True)
+        return True
+
+    def chat(self, text: str):
+        if not self.llm_ready:
+            return
+        self.history.append((text, ''))
+
+        for response, self.history2, self.past_key_values in self.model.stream_chat(
+                self.tokenizer, text, self.history2, past_key_values=self.past_key_values,
+                return_past_key_values=True, max_length=8196, top_p=0.8, temperature=0.8):
+            self.history[-1] = (parse_text(text), parse_text(response))
+            yield self.history
+
+    def clear_history(self) -> bool:
+        self.history = []
+        self.history2 = []
+        self.past_key_values = None
+        return True
 
 
 # ----------------------------------------------------------------------------------------------------------------------

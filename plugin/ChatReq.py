@@ -179,8 +179,6 @@ class ChatThread(QThread):
         return PROMPT_TEMPLATE.replace('{question}', question).replace('{context}', context)
 
 
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 class WebChat:
