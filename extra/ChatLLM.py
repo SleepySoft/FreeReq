@@ -1,11 +1,7 @@
-import sys
-import time
 import threading
 from typing import Iterable
-import gradio as gr
 
 import torch
-from typing import Union, List, Dict
 from transformers import (
     AutoModelForCausalLM,
     AutoModel,
@@ -59,7 +55,7 @@ def parse_text(text):
 # ======================================================================================================================
 
 class ChatLLM:
-    def __init__(self, model_url: str, on_device: str, max_len: int = 8192):
+    def __init__(self, model_url: str, on_device: str):
         self.model_url = model_url
         self.on_device = on_device
         self.llm_ready = False
@@ -70,6 +66,7 @@ class ChatLLM:
         pass
 
     def chat(self, text: str) -> Iterable[str]:
+        """This function should return the new full replay. Not a new Token."""
         pass
 
     def clear_history(self) -> bool:
@@ -97,7 +94,9 @@ class ChatLLM:
 
     def __init_wrapper(self):
         if not self.llm_ready:
+            print(f'Loading LLM: {self.model_url}')
             self.try_init_llm()
+            print(f'Loading LLM: {self.model_url} - Done')
         with self.lock:
             self.init_thread = None
 
@@ -127,9 +126,10 @@ class LocalChatGLM3(ChatLLM):
     def do_init_llm(self) -> bool:
         if self.llm_ready:
             return True
-        device = torch.device(self.on_device)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_url, trust_remote_code=True).half().to(device).eval()
+        # device = torch.device(self.on_device)
+        self.model = AutoModelForCausalLM.from_pretrained(self.model_url, trust_remote_code=True, device_map='auto')
+        # self.model = AutoModelForCausalLM.from_pretrained(
+        #   self.model_url, trust_remote_code=True, device_map='auto').half().to(device).eval()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_url, trust_remote_code=True)
         return True
 
@@ -167,7 +167,7 @@ class LocalChatGLM3(ChatLLM):
             if new_token != '':
                 self.history[-1][-1] += new_token
                 self.messages[-1]["content"] += new_token
-                yield self.history
+                yield self.messages[-1]["content"]
 
     def clear_history(self) -> bool:
         if self.chat_thread is not None:
@@ -176,9 +176,9 @@ class LocalChatGLM3(ChatLLM):
         self.messages.clear()
         return True
 
-    def __chat_thread(self, kwargs):
+    def __chat_thread(self, **kwargs):
         print('Generate thread starts.')
-        self.model.generate(kwargs)
+        self.model.generate(**kwargs)
         self.chat_thread = None
         print('Generate thread finished.')
 
@@ -207,7 +207,7 @@ class LocalChatGLM2(ChatLLM):
                 self.tokenizer, text, self.history2, past_key_values=self.past_key_values,
                 return_past_key_values=True, max_length=8196, top_p=0.8, temperature=0.8):
             self.history[-1] = (parse_text(text), parse_text(response))
-            yield self.history
+            yield response
 
     def clear_history(self) -> bool:
         self.history = []

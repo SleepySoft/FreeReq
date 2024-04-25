@@ -1,11 +1,11 @@
 import traceback
 
-from extra.ChatLLM import LocalChatGLM3
+from extra.ChatLLM import LocalChatGLM2
 from extra.WebChat import WebChat
 
 
 def main():
-    llm = LocalChatGLM3('/home/sleepy/Public/Model/HFModule/chatglm3-6b')
+    llm = LocalChatGLM2('/home/sleepy/Public/Model/HFModule/chatglm2-6b')
     llm.async_init_llm()
     web_chat = WebChat(llm)
     web_chat.setup_web_chat()

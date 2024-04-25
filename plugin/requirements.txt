@@ -4,3 +4,4 @@ faiss-cpu
 torch~=1.13.1
 text2vec~=1.2.1
 transformers~=4.30.2
+gradio
