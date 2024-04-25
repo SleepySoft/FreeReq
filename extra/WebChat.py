@@ -1,5 +1,5 @@
 import gradio as gr
-from typing import Iterable, Union
+from typing import Iterable, Union, List
 from extra.ChatLLM import ChatLLM
 
 
@@ -32,12 +32,11 @@ class WebChat:
                     top_p = gr.Slider(0, 1, value=0.8, step=0.01, label="Top P", interactive=True)
                     temperature = gr.Slider(0.01, 1, value=0.6, step=0.01, label="Temperature", interactive=True)
 
-            def echo_user_input(text: str):
-                return "", WebChat.reformat_text(text)
+            def clear_user_input_and_echo(text: str, conversation):
+                return '', conversation + [(WebChat.reformat_text(text), '')]
 
-            user_input_text = gr.State('')
-            submit_btn.click(echo_user_input, user_input, [user_input, user_input_text], queue=False).\
-                then(self.__handle_web_chat, [user_input_text, max_length, top_p, temperature], chat_bot)
+            submit_btn.click(clear_user_input_and_echo, [user_input, chat_bot], [user_input, chat_bot], queue=False).\
+                then(self.__handle_web_chat, [chat_bot, max_length, top_p, temperature], chat_bot)
             empty_btn.click(self.__handle_clear, None, chat_bot, queue=False)
 
         demo.queue()
@@ -49,12 +48,15 @@ class WebChat:
         # Return None to empty the chatbot
         return None
 
-    def __handle_web_chat(self, text: str, max_length: int, top_p: float, temperature: float) -> Iterable[str]:
+    def __handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float) -> Iterable[str]:
         if self.chatllm is not None:
-            for response in self.chatllm.chat(text):
-                yield WebChat.reformat_text(response)
+            new_user_input = conversation[-1][-1]
+            for new_token in self.chatllm.chat(new_user_input):
+                if new_token != '':
+                    conversation[-1][1] += new_token
+                    yield conversation
         else:
-            return
+            yield conversation
 
     @staticmethod
     def reformat_text(text):
