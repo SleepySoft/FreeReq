@@ -50,11 +50,15 @@ class WebChat:
 
     def __handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float) -> Iterable[str]:
         if self.chatllm is not None:
-            new_user_input = conversation[-1][-1]
-            for new_token in self.chatllm.chat(new_user_input):
-                if new_token != '':
-                    conversation[-1][1] += new_token
-                    yield conversation
+            if self.chatllm.llm_ready:
+                new_user_input = conversation[-1][-1]
+                for new_token in self.chatllm.chat(new_user_input):
+                    if new_token != '':
+                        conversation[-1][1] += new_token
+                        yield conversation
+            else:
+                conversation[-1][-1] = 'LLM is not ready.'
+                yield conversation
         else:
             yield conversation
 

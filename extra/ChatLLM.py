@@ -81,7 +81,10 @@ class ChatLLM:
                 self.llm_ready = True
             return self.llm_ready
         except Exception as e:
+            print('-' * 75)
+            print('LLM init fail:')
             print(e)
+            print('-' * 75)
             return False
         finally:
             pass
