@@ -12,6 +12,9 @@ class WebChat:
         self.header_bar = header_bar
         self.gradio_kwargs = {**DEFAULT_GRADIO_KWARGS, **gradio_kwargs}
 
+    def get_web_url(self) -> str:
+        return "http://%s:%s" % (self.gradio_kwargs['server_name'], self.gradio_kwargs['server_port'])
+
     def setup_web_chat(self):
         with gr.Blocks() as demo:
             gr.HTML(self.header_bar)

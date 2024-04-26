@@ -89,6 +89,15 @@ class ChatLLM:
         finally:
             pass
 
+    def set_chat_hook(self, hook):
+        """
+        Set up chat hooks to process user input before submitting it to LLM.
+        Hook function accepts user input and return a processed text for LLM.
+        :param hook: Hook function
+        :return: None
+        """
+        self.chat_hook = hook
+
     def update_chat_parameters(self, **update_param):
         """
         Parameters reference to DEFAULT_CHAT_PARAMETER
