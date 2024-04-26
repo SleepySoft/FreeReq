@@ -247,6 +247,63 @@ class LocalChatGLM2(ChatLLM):
         return True
 
 
+class OnlineChatOpenAI(ChatLLM):
+    START_MESSAGE = [
+            {
+                "role": "system",
+                "content": "Follow the user's instructions carefully. Respond using markdown.",
+            }
+        ]
+
+    def __init__(self, model_url: str, model_selection: str, api_key: str = 'EMPTY'):
+        super(OnlineChatOpenAI, self).__init__(model_url, '')
+        self.model_selection = model_selection
+        self.api_key = api_key
+        self.client = None
+        self.messages = list(OnlineChatOpenAI.START_MESSAGE)
+
+    def chat_style(self) -> int:
+        return ChatLLM.CHAT_STYLE_PER_TOKEN
+
+    def do_init_llm(self) -> bool:
+        # openai library is optional.
+        from openai import OpenAI
+        self.client = OpenAI(api_key=self.api_key)
+        self.llm_ready = True
+        return True
+
+    def do_chat(self, text: str) -> Iterable[str]:
+        self.messages.append({
+            "role": "user",
+            "content": text
+        })
+        response = self.client.chat.completions.create(
+            model=self.model_selection,
+            messages=self.messages,
+            stream=True,
+            max_tokens=self.chat_parameters.get('max_length', 256),
+            temperature=self.chat_parameters.get('temperature', 0.8),
+            presence_penalty=self.chat_parameters.get('presence_penalty', 1.1),
+            top_p=self.chat_parameters.get('top_p', 0.8)
+        )
+
+        self.messages.append({
+            "role": "system",
+            "content": ""
+        })
+        if response:
+            for chunk in response:
+                delta_content = chunk.choices[0].delta.content
+                self.messages[-1]['content'] += delta_content
+                yield delta_content
+        else:
+            yield f"Error: {response.status_code}"
+
+    def clear_history(self) -> bool:
+        self.messages = list(OnlineChatOpenAI.START_MESSAGE)
+        return True
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 def main():
