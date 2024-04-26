@@ -36,7 +36,7 @@ class WebChat:
                 return '', conversation + [(WebChat.reformat_text(text), '')]
 
             submit_btn.click(clear_user_input_and_echo, [user_input, chat_bot], [user_input, chat_bot], queue=False).\
-                then(self.__handle_web_chat, [chat_bot, max_length, top_p, temperature], chat_bot)
+                then(self.__safe_handle_web_chat, [chat_bot, max_length, top_p, temperature], chat_bot)
             empty_btn.click(self.__handle_clear, None, chat_bot, queue=False)
 
         demo.queue()
@@ -48,17 +48,34 @@ class WebChat:
         # Return None to empty the chatbot
         return None
 
-    def __handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float) -> Iterable[str]:
-        if self.chatllm is not None:
-            if self.chatllm.llm_ready:
-                new_user_input = conversation[-1][0]
-                # yield from self.chatllm.chat(new_user_input)
-                for new_reply in self.chatllm.chat(new_user_input):
-                    conversation[-1][1] = new_reply
-                    yield conversation
-            else:
-                conversation[-1][-1] = 'LLM is not ready.'
+    def __safe_handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float):
+        try:
+            yield from self.__handle_web_chat(conversation, max_length, top_p, temperature)
+        except Exception as e:
+            conversation[-1][-1] = f'Error: {str(e)}'
+            yield conversation
+        finally:
+            pass
+
+    def __handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float):
+        if self.chatllm is None:
+            yield conversation
+            return
+        if not self.chatllm.llm_ready:
+            conversation[-1][-1] = 'LLM is not ready.'
+            yield conversation
+            return
+        new_user_input = conversation[-1][0]
+        if self.chatllm.chat_style() in ChatLLM.CHAT_STYLE_SENTENCE:
+            for new_reply in self.chatllm.chat(new_user_input):
+                conversation[-1][1] = new_reply
                 yield conversation
+        elif self.chatllm.chat_style() == ChatLLM.CHAT_STYLE_PER_TOKEN:
+            for new_reply in self.chatllm.chat(new_user_input):
+                conversation[-1][1] += new_reply
+                yield conversation
+        elif self.chatllm.chat_style() == ChatLLM.CHAT_STYLE_FULL_REPLY:
+            conversation[-1][1] = self.chatllm.chat(new_user_input)
         else:
             yield conversation
 

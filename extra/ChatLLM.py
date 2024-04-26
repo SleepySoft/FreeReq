@@ -55,12 +55,20 @@ def parse_text(text):
 # ======================================================================================================================
 
 class ChatLLM:
+    CHAT_STYLE_NONE = 0                 # Empty
+    CHAT_STYLE_SENTENCE = 1             # Reply to a continuously growing string
+    CHAT_STYLE_PER_TOKEN = 2            # Reply a token each time
+    CHAT_STYLE_FULL_REPLY = 3           # Block and return all replies at once
+
     def __init__(self, model_url: str, on_device: str):
         self.model_url = model_url
         self.on_device = on_device
         self.llm_ready = False
         self.init_thread = None
         self.lock = threading.Lock()
+
+    def chat_style(self) -> int:
+        return CHAT_STYLE_NONE
 
     def do_init_llm(self) -> bool:
         pass
@@ -122,6 +130,9 @@ class LocalChatGLM3(ChatLLM):
         self.model = None
         self.tokenizer = None
         self.chat_thread = None
+
+    def chat_style(self) -> int:
+        return CHAT_STYLE_SENTENCE
 
     def do_init_llm(self) -> bool:
         if self.llm_ready:
@@ -191,6 +202,9 @@ class LocalChatGLM2(ChatLLM):
         self.history = []
         self.history2 = []      # 这两个History一样吗？
         self.past_key_values = None
+
+    def chat_style(self) -> int:
+        return CHAT_STYLE_SENTENCE
 
     def do_init_llm(self) -> bool:
         device = torch.device(self.on_device)
