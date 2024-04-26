@@ -2,7 +2,7 @@ bs4~=0.0.1
 pyqt5~=5.15.9
 markdown2~=2.4.3
 PyQtWebEngine
-numpy~=1.21.5
+numpy
 pyinstaller~=4.4
 beautifulsoup4~=4.9.3
 PyPDF2

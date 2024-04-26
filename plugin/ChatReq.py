@@ -37,7 +37,7 @@ LLM_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 #   THUDM/chatglm-6b-int4
 #   THUDM/chatglm-6b-int8
 #   THUDM/chatglm-6b
-LLM_MODEL = 'THUDM/chatglm2-6b-int4'
+LLM_MODEL = '/home/sleepy/Public/Model/HFModule/chatglm3-6b'
 
 PROMPT_TEMPLATE = """已知信息：
 {context} 
@@ -47,7 +47,7 @@ PROMPT_TEMPLATE = """已知信息：
 
 
 main_ui = None
-llm = LocalChatGLM3('THUDM/chatglm3-6b')
+llm = LocalChatGLM3(LLM_MODEL)
 web_chat = WebChat(llm)
 
 
@@ -71,7 +71,7 @@ def chat_hook(text: str) -> str:
 
 def setup_web_chat(blocking: bool = False):
     llm.async_init_llm()
-    llm.set_chat_hook(chat_hook())
+    llm.set_chat_hook(chat_hook)
 
     if blocking:
         web_chat.setup_web_chat()
