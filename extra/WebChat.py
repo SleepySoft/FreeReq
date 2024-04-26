@@ -2,7 +2,6 @@ import gradio as gr
 from typing import Iterable, Union, List
 from extra.ChatLLM import ChatLLM
 
-
 DEFAULT_HEADER_BAR = """<h1 align="center">ChatReq - by Sleepy</h1>"""
 DEFAULT_GRADIO_KWARGS = {'server_name': "127.0.0.1", 'server_port': 20000, 'inbrowser': True, 'share': False}
 
@@ -30,13 +29,13 @@ class WebChat:
                 with gr.Column(scale=1):
                     max_length = gr.Slider(0, 32768, value=8192, step=1.0, label="Maximum length", interactive=True)
                     top_p = gr.Slider(0, 1, value=0.8, step=0.01, label="Top P", interactive=True)
-                    temperature = gr.Slider(0.01, 1, value=0.6, step=0.01, label="Temperature", interactive=True)
+                    temperature = gr.Slider(0.01, 1, value=0.8, step=0.01, label="Temperature", interactive=True)
 
             def clear_user_input_and_echo(text: str, conversation):
                 return '', conversation + [(WebChat.reformat_text(text), '')]
 
-            submit_btn.click(clear_user_input_and_echo, [user_input, chat_bot], [user_input, chat_bot], queue=False).\
-                then(self.__safe_handle_web_chat, [chat_bot, max_length, top_p, temperature], chat_bot)
+            submit_btn.click(clear_user_input_and_echo, [user_input, chat_bot], [user_input, chat_bot], queue=False). \
+                then(self.__handle_web_chat, [chat_bot, max_length, top_p, temperature], chat_bot)
             empty_btn.click(self.__handle_clear, None, chat_bot, queue=False)
 
         demo.queue()
@@ -48,14 +47,14 @@ class WebChat:
         # Return None to empty the chatbot
         return None
 
-    def __safe_handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float):
-        try:
-            yield from self.__handle_web_chat(conversation, max_length, top_p, temperature)
-        except Exception as e:
-            conversation[-1][-1] = f'Error: {str(e)}'
-            yield conversation
-        finally:
-            pass
+    # def __safe_handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float):
+    #     try:
+    #         yield from self.__handle_web_chat(conversation, max_length, top_p, temperature)
+    #     except Exception as e:
+    #         conversation[-1][-1] = f'Error: {str(e)}'
+    #         yield conversation
+    #     finally:
+    #         pass
 
     def __handle_web_chat(self, conversation, max_length: int, top_p: float, temperature: float):
         if self.chatllm is None:
@@ -65,6 +64,10 @@ class WebChat:
             conversation[-1][-1] = 'LLM is not ready.'
             yield conversation
             return
+        self.chatllm.update_chat_parameters(
+            top_p=top_p,
+            max_length=max_length,
+            temperature=temperature)
         new_user_input = conversation[-1][0]
         if self.chatllm.chat_style() in ChatLLM.CHAT_STYLE_SENTENCE:
             for new_reply in self.chatllm.chat(new_user_input):
