@@ -72,7 +72,7 @@ class WebChat:
             max_length=max_length,
             temperature=temperature)
         new_user_input = conversation[-1][0]
-        if self.chatllm.chat_style() in ChatLLM.CHAT_STYLE_SENTENCE:
+        if self.chatllm.chat_style() == ChatLLM.CHAT_STYLE_SENTENCE:
             for new_reply in self.chatllm.chat(new_user_input):
                 conversation[-1][1] = new_reply
                 yield conversation

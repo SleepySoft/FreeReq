@@ -257,6 +257,10 @@ class LocalChatGLM2(ChatLLM):
 
 
 class OnlineChatOpenAI(ChatLLM):
+    """
+    Set model_url to None to use original OpenAI API
+    """
+
     START_MESSAGE = [
             {
                 "role": "system",
@@ -277,7 +281,10 @@ class OnlineChatOpenAI(ChatLLM):
     def do_init_llm(self) -> bool:
         # openai library is optional.
         from openai import OpenAI
-        self.client = OpenAI(api_key=self.api_key)
+        if self.model_url is None:
+            self.client = OpenAI(api_key=self.api_key)
+        else:
+            self.client = OpenAI(api_key=self.api_key, base_url=self.model_url)
         self.llm_ready = True
         return True
 
