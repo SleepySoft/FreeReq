@@ -46,6 +46,7 @@ import hashlib
 import os
 import re
 import html
+import base64
 import sys
 import csv
 import uuid
@@ -1371,6 +1372,42 @@ def markdown_to_view(md_text: str, view: QWebEngineView or QTextEdit, root_path:
     html_to_view(html_text, view, root_path)
 
 
+def image_to_base64(image_path):
+    with open(image_path, 'rb') as f:
+        return base64.b64encode(f.read()).decode()
+
+
+def embed_html_images(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    for img in soup.find_all('img'):
+        if img.has_attr('src'):
+            image_path = img['src']
+            base64_image = image_to_base64(image_path)
+            img['src'] = f'data:image/png;base64,{base64_image}'
+
+    return str(soup)
+
+
+def save_view_html(view, file_name, img_embedding: bool):
+    def __save_html(file: str, img_emb: bool, text: str):
+        if img_emb:
+            text = embed_html_images(text)
+        with open(file, 'wt', encoding='utf-8') as f:
+            f.write(text)
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle('Save as HTML')
+        msgBox.setText(f'Saved to {file}.')
+        msgBox.exec_()
+
+    if isinstance(view, QTextEdit):
+        __save_html(file_name, img_embedding, view.toHtml())
+    elif is_web_engine_view(view):
+        view.page().toHtml(partial(__save_html, file_name, img_embedding))
+    else:
+        print('Warning: Unsupported view type.')
+
+
 def print_text_edit(text_edit: QTextEdit, file_name: str = 'export.pdf'):
     printer = QPrinter()
     preview = QPrintPreviewDialog(printer)
@@ -1757,19 +1794,7 @@ class ReqEditorBoard(QWidget):
     def on_button_save_preview(self):
         file_name = (self.__editing_node.get_title() + '.html') if \
             self.__editing_node is not None else 'export.html'
-
-        def __save_html(file: str, text: str):
-            with open(file, 'wt', encoding='utf-8') as f:
-                f.write(text)
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle('Save as HTML')
-            msgBox.setText(f'Saved to {file}.')
-            msgBox.exec_()
-
-        if isinstance(self.text_md_viewer, QTextEdit):
-            __save_html(file_name, self.text_md_viewer.toHtml())
-        elif is_web_engine_view(self.text_md_viewer):
-            self.text_md_viewer.page().toHtml(partial(__save_html, file_name))
+        save_view_html(self.text_md_viewer, file_name, True)
 
     def on_button_save_content(self):
         if self.__editing_node is not None:
