@@ -42,6 +42,7 @@ Resource comments:
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import html
@@ -546,6 +547,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
         self.__req_id_node_index = {}
         self.__collected_information = {}
 
+        self.req_hash = None
+
     def init(self) -> bool:
         return True
 
@@ -741,6 +744,24 @@ class ReqSingleJsonFileAgent(IReqAgent):
         finally:
             pass
         return True
+
+    def __hash_req(self):
+        sha256_hash = hashlib.sha256()
+        with open(self.__req_file_name, "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
+
+    def __check_req_hash(self) -> bool:
+        current_req_hash = self.__hash_req()
+        return current_req_hash == self.req_hash
+
+    def __update_req_hash(self):
+        current_req_hash = self.__hash_req()
+        self.req_hash = current_req_hash
+
+    def __check_req_hash_thread(self):
+        pass
 
     def __indexing(self):
         self.__collected_information = IReqAgent.collect_node_information(self.__req_node_root)
@@ -1553,7 +1574,8 @@ class ReqEditorBoard(QWidget):
         self.__button_req_refresh = QPushButton('Refresh')
         self.__button_re_assign_id = QPushButton('Re-assign ID')
 
-        self.__button_print_preview = QPushButton('Print')
+        self.__button_print_preview = QPushButton('Print to PDF')
+        self.__button_save_preview = QPushButton('Save as HTML')
         self.__button_save_content = QPushButton('Save Content')
 
         self.__init_ui()
@@ -1593,6 +1615,7 @@ class ReqEditorBoard(QWidget):
         self.layout_feature_area.addLayout(self.layout_plugin_area)
         self.layout_feature_area.addWidget(QLabel(''), 99)
         self.layout_feature_area.addWidget(self.__button_print_preview)
+        self.layout_feature_area.addWidget(self.__button_save_preview)
         self.layout_feature_area.addWidget(self.__button_save_content)
         self.layout_root.addLayout(self.layout_feature_area)
 
@@ -1625,6 +1648,7 @@ class ReqEditorBoard(QWidget):
         self.__button_re_assign_id.clicked.connect(self.on_button_re_assign_id)
 
         self.__button_print_preview.clicked.connect(self.on_button_print_preview)
+        self.__button_save_preview.clicked.connect(self.on_button_save_preview)
         self.__button_save_content.clicked.connect(self.on_button_save_content)
 
     def __layout_meta_area(self):
@@ -1729,6 +1753,23 @@ class ReqEditorBoard(QWidget):
         else:
             # Should not reach here
             assert False
+
+    def on_button_save_preview(self):
+        file_name = (self.__editing_node.get_title() + '.html') if \
+            self.__editing_node is not None else 'export.html'
+
+        def __save_html(file: str, text: str):
+            with open(file, 'wt', encoding='utf-8') as f:
+                f.write(text)
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle('Save as HTML')
+            msgBox.setText(f'Saved to {file}.')
+            msgBox.exec_()
+
+        if isinstance(self.text_md_viewer, QTextEdit):
+            __save_html(file_name, self.text_md_viewer.toHtml())
+        elif is_web_engine_view(self.text_md_viewer):
+            self.text_md_viewer.page().toHtml(partial(__save_html, file_name))
 
     def on_button_save_content(self):
         if self.__editing_node is not None:
@@ -2120,7 +2161,7 @@ class RequirementUI(QWidget):
 
         try:
             # QTreeView style From: https://doc.qt.io/qt-6/stylesheet-examples.html
-            with open(os.path.join(self_path, 'res', 'tree_style.qss'), 'rt') as f:
+            with open(os.path.join(self_path, 'res', 'tree_style.qss'), 'rt', encoding='utf-8') as f:
                 tree_style = f.read()
                 tree_style_abs_path = tree_style.replace('res/', os.path.join(self_path, 'res', ''))
                 tree_style_abs_path = tree_style_abs_path.replace('\\', '/')
