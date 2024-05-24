@@ -738,7 +738,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def __do_save(self) -> bool:
         result = self.__save_req_json()
         if result:
-            self.notify_req_saved(self.__req_path)
+            self.notify_req_saved(self.__req_file_name)
         return result
 
     def __save_req_json(self) -> bool:
