@@ -40,7 +40,7 @@ class ScratchPaper(QMainWindow):
         # Load the file content when initializing
         try:
             with open(self.__scratch_paper_path(), 'r', encoding='utf-8') as f:
-                self.textEdit.setText(f.read())
+                self.textEdit.setPlainText(f.read())
         except Exception as e:
             print(e)
         finally:
