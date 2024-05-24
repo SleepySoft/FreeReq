@@ -70,7 +70,7 @@ try:
     from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
-        QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
+    QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
@@ -605,7 +605,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         self.__req_meta_dict = {}
         self.__req_data_dict = {}
         self.__req_node_root = ReqNode(req_name)
-        self.notify_req_loaded(self.__req_file_name)
+        self.notify_req_loaded(self.req_full_path())
         return True
 
     def open_req(self, req_name: str) -> bool:
@@ -640,11 +640,12 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def get_req_name(self) -> str:
         return self.__req_node_root.get_title() if self.__req_node_root is not None else ''
 
-    def get_req_path(self):
-        req_path = os.path.dirname(self.__req_file_name)
-        if req_path == '':
-            req_path = self_path
-        return req_path
+    def get_req_path(self) -> str:
+        return self.__req_path
+        # req_path = os.path.dirname(self.__req_file_name)
+        # if req_path == '':
+        #     req_path = self_path
+        # return req_path
 
     def get_req_meta(self) -> dict:
         return self.__req_meta_dict
@@ -786,7 +787,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __load_req_json(self) -> bool:
         try:
-            with open(self.__req_file_name, 'rt', encoding='utf-8') as f:
+            with open(self.req_full_path(), 'rt', encoding='utf-8') as f:
                 json_dict = json.load(f)
                 self.__req_meta_dict = json_dict.get('req_meta', {})
                 self.__req_data_dict = json_dict.get('req_data', {})
@@ -812,7 +813,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             }
 
             json_text = json.dumps(json_dict, indent=4, ensure_ascii=False)
-            with open(self.__req_file_name, 'wt', encoding='utf-8') as f:
+            with open(self.req_full_path(), 'wt', encoding='utf-8') as f:
                 f.write(json_text)
         except Exception as e:
             print(str(e))
@@ -824,7 +825,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __hash_req(self):
         sha256_hash = hashlib.sha256()
-        with open(self.__req_file_name, "rb") as f:
+        with open(self.req_full_path(), "rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
@@ -2294,7 +2295,7 @@ class RequirementUI(QWidget, IReqObserver):
         self.watcher.removePath(req_uri)
 
     def on_req_exception(self, exception_name: str, **kwargs):
-        if exception_name == 'exception':
+        if exception_name == 'conflict':
             QMessageBox.information(self, 'Conflict detected',
                                     'The req file has been changed outside.\n'
                                     f'Avoiding data lost, editing req file is renamed to {kwargs.get("backup_file")}\n'
@@ -2302,11 +2303,13 @@ class RequirementUI(QWidget, IReqObserver):
 
     # --------------------- File observer path ---------------------
 
-    def on_editing_file_changed(self):
-        if not self.__req_data_agent.check_req_consistency():
-            QMessageBox.information(self, 'File changed outside',
-                                    'The req file has been changed outside.\n'
-                                    'Please backup your current editing content and re-open this file.')
+    def on_editing_file_changed(self, file_path: str):
+        def check_req_consistency(file: str):
+            if not self.__req_data_agent.check_req_consistency():
+                QMessageBox.information(self, 'File changed outside',
+                                        'The req file has been changed outside.\n'
+                                        'Please backup your current editing content and re-open this file.')
+        QTimer.singleShot(1000, lambda: check_req_consistency(file_path))
 
     # -------------------------- UI Events --------------------------
 
