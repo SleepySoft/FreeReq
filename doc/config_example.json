@@ -1,9 +1,11 @@
 {
     "plugin": [
+        "ReqHistory",
         "ScratchPaper",
         "MarkdownStyle"
     ],
     "plugin can be one of these, move to 'plugin' above to enable it.": [
+        "ReqHistory",
         "ScratchPaper",
         "MarkdownStyle",
         "ChatReq",

@@ -331,6 +331,9 @@ class IReqObserver:
     def __init__(self):
         pass
 
+    def on_req_saved(self, req_uri: str):
+        pass
+
     def on_req_reloaded(self):
         pass
 
@@ -420,6 +423,11 @@ class IReqAgent:
     def remove_observer(self, ob: IReqObserver):
         if ob in self.__observer:
             self.__observer.remove(ob)
+
+    def notify_req_saved(self, req_uri: str):
+        print('=> Req saved.')
+        for ob in self.__observer:
+            ob.on_req_saved(req_uri)
 
     def notify_req_reloaded(self):
         print('=> Req reloaded.')
@@ -616,7 +624,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def set_req_meta(self, req_meta: dict) -> bool:
         self.__req_meta_dict = req_meta
         self.notify_meta_data_changed()
-        return self.__save_req_json()
+        return self.__do_save()
 
     def get_req_root(self) -> ReqNode:
         return self.__req_node_root
@@ -634,7 +642,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         else:
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
-            self.__save_req_json()
+            self.__do_save()
             self.notify_node_structure_changed(parent_node[0], insert_nodes, 'add')
 
     def remove_node(self, node_uuid: str):
@@ -646,7 +654,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         if parent_node is not None:
             parent_node.remove_child(remove_node[0])
 
-            self.__save_req_json()
+            self.__do_save()
             self.notify_node_structure_changed(parent_node, remove_node, 'remove')
 
     def update_node(self, node: ReqNode):
@@ -662,7 +670,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             update_node[0].copy_data(node)
         else:
             print("Warning: You'd better using a node copy to update target node.")
-        self.__save_req_json()
+        self.__do_save()
         self.notify_node_data_changed(update_node[0])
 
     def shift_node(self, node_uuid: str, shift_offset: int):
@@ -703,10 +711,10 @@ class ReqSingleJsonFileAgent(IReqAgent):
     # -------------------------------------------------------------------------------
 
     def __on_node_data_updated(self):
-        self.__save_req_json()
+        self.__do_save()
 
     def __on_node_child_updated(self):
-        self.__save_req_json()
+        self.__do_save()
 
     def __load_req_json(self) -> bool:
         try:
@@ -726,6 +734,12 @@ class ReqSingleJsonFileAgent(IReqAgent):
         finally:
             pass
         return True
+
+    def __do_save(self) -> bool:
+        result = self.__save_req_json()
+        if result:
+            self.notify_req_saved(self.__req_path)
+        return result
 
     def __save_req_json(self) -> bool:
         try:
