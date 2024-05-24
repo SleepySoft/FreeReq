@@ -293,7 +293,7 @@ class ReqNode:
 
         for k in STATIC_FIELDS:
             if k not in self.__data.keys():
-                print(f'Warning: Static fields missing ${k}')
+                print(f'Warning: Static fields missing {k}')
         if STATIC_FIELD_UUID not in self.__data.keys():
             # Because of old issue, the uuid is missing. Fix it on load phase.
             print('Fix UUID missing issue.')
@@ -747,6 +747,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def __do_load(self, req_file) -> bool:
         self.__do_close()
         self.__req_file_name = req_file
+        self.__update_req_hash()
 
         ret = self.__load_req_json()
         issues = self.__check_correct_req_data()
@@ -1692,7 +1693,7 @@ class ReqEditorBoard(QWidget):
     def __init_ui(self):
         self.__layout_ui()
         self.__config_ui()
-        self.__layout_meta_area()
+        # self.__layout_meta_area()
 
     def __layout_ui(self):
         self.setLayout(self.layout_root)
@@ -1811,6 +1812,9 @@ class ReqEditorBoard(QWidget):
             self.__layout_dynamic.addWidget(_label, count // config_per_row, (count % config_per_row) * 2 + 0)
             self.__layout_dynamic.addWidget(_input, count // config_per_row, (count % config_per_row) * 2 + 1)
             count += 1
+
+    def re_layout_meta_area(self):
+        self.__layout_meta_area()
 
     def on_button_increase_font(self):
         editor_font = self.text_md_editor.font()
@@ -2035,7 +2039,6 @@ class ReqMetaBoard(QWidget):
         self.layout_root = QVBoxLayout()
 
         self.__init_ui()
-        self.reload_meta_data()
 
     def __init_ui(self):
         self.__layout_ui()
@@ -2284,6 +2287,8 @@ class RequirementUI(QWidget, IReqObserver):
 
     def on_req_loaded(self, req_uri: str):
         self.watcher.addPath(req_uri)
+        # self.meta_board.reload_meta_data()
+        self.edit_board.re_layout_meta_area()
 
     def on_req_closed(self, req_uri: str):
         self.watcher.removePath(req_uri)
@@ -2573,11 +2578,11 @@ def main():
             print(f'Loaded plugin: {plugin}')
         plugin_manager.invoke_all('req_agent_prepared', req_agent)
 
+    w = RequirementUI(req_agent)
+
     if not req_agent.open_req('FreeReq'):
         req_agent.new_req('FreeReq', True)
     print('Current path: ' + os.getcwd())
-
-    w = RequirementUI(req_agent)
 
     w.show()
     sys.exit(app.exec_())
