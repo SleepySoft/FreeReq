@@ -42,6 +42,7 @@ Resource comments:
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import os
 import re
@@ -49,6 +50,7 @@ import html
 import base64
 import sys
 import csv
+import time
 import uuid
 import json
 import shutil
@@ -67,7 +69,8 @@ try:
 
     from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
-    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
+    from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
+        QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
@@ -334,7 +337,13 @@ class IReqObserver:
     def on_req_saved(self, req_uri: str):
         pass
 
-    def on_req_reloaded(self):
+    def on_req_loaded(self, req_uri: str):
+        pass
+
+    def on_req_closed(self, req_uri: str):
+        pass
+
+    def on_req_exception(self, exception_name: str, **kwargs):
         pass
 
     def on_meta_data_changed(self, req_name: str):
@@ -375,6 +384,9 @@ class IReqAgent:
 
     def delete_req(self, req_name: str) -> bool:
         raise NotImplementedError('Not implemented: delete_req')
+
+    def check_req_consistency(self) -> bool:
+        raise NotImplementedError('Not implemented: check_req_consistency')
 
     # -------------------- Override: After select_op_req() --------------------
 
@@ -429,10 +441,20 @@ class IReqAgent:
         for ob in self.__observer:
             ob.on_req_saved(req_uri)
 
-    def notify_req_reloaded(self):
-        print('=> Req reloaded.')
+    def notify_req_loaded(self, req_uri: str):
+        print('=> Req loaded.')
         for ob in self.__observer:
-            ob.on_req_reloaded()
+            ob.on_req_loaded(req_uri)
+
+    def notify_req_closed(self, req_uri: str):
+        print('=> Req closed.')
+        for ob in self.__observer:
+            ob.on_req_closed(req_uri)
+
+    def notify_req_exception(self, exception_name: str, **kwargs):
+        print('=> Req exception.')
+        for ob in self.__observer:
+            ob.on_req_exception(exception_name, **kwargs)
 
     def notify_meta_data_changed(self):
         print('=> Meta data changed.')
@@ -561,6 +583,9 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def init(self) -> bool:
         return True
 
+    def req_full_path(self) -> str:
+        return os.path.join(self.__req_path, self.__req_file_name)
+
     # ----------------------- Req management -----------------------
 
     def list_req(self) -> [str]:
@@ -580,32 +605,35 @@ class ReqSingleJsonFileAgent(IReqAgent):
         self.__req_meta_dict = {}
         self.__req_data_dict = {}
         self.__req_node_root = ReqNode(req_name)
-        self.notify_req_reloaded()
+        self.notify_req_loaded(self.__req_file_name)
         return True
 
     def open_req(self, req_name: str) -> bool:
         # if req_name not in self.list_req():
         #     return False
         if req_name.lower().endswith('.req'):
-            self.__req_file_name = req_name
+            req_file = req_name
         else:
-            self.__req_file_name = req_name + '.req'
+            req_file = req_name + '.req'
 
-        ret = self.__load_req_json()
-        issues = self.__check_correct_req_data()
+        # ret = self.__load_req_json()
+        # issues = self.__check_correct_req_data()
+        #
+        # if len(issues) > 0:
+        #     print('---------------------- Issue Detected ----------------------')
+        #     for issue in issues:
+        #         print(issue)
+        #     print('------------------------------------------------------------')
+        #
+        # self.notify_req_loaded(self.req_full_path())
 
-        if len(issues) > 0:
-            print('---------------------- Issue Detected ----------------------')
-            for issue in issues:
-                print(issue)
-            print('------------------------------------------------------------')
-
-        self.notify_req_reloaded()
-
-        return ret
+        return self.__do_load(req_file)
 
     def delete_req(self, req_name: str) -> bool:
         return False
+
+    def check_req_consistency(self) -> bool:
+        return self.__check_req_hash()
 
     # --------------------- After select_op_req() ---------------------
 
@@ -716,6 +744,45 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def __on_node_child_updated(self):
         self.__do_save()
 
+    def __do_load(self, req_file) -> bool:
+        self.__do_close()
+        self.__req_file_name = req_file
+
+        ret = self.__load_req_json()
+        issues = self.__check_correct_req_data()
+
+        if len(issues) > 0:
+            print('---------------------- Issue Detected ----------------------')
+            for issue in issues:
+                print(issue)
+            print('------------------------------------------------------------')
+
+        self.notify_req_loaded(self.req_full_path())
+
+        return ret
+
+    def __do_close(self):
+        if self.__req_file_name != '':
+            editing_file = self.req_full_path()
+            self.__req_file_name = ''
+            self.__req_meta_dict = {}
+            self.__req_data_dict = {}
+            self.__req_node_root = ReqNode('None')
+            self.notify_req_closed(editing_file)
+
+    def __do_save(self) -> bool:
+        if not self.check_req_consistency():
+            timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S_%f')[:-3]
+            backup_file_name = self.__req_file_name + f'.{timestamp}.conflict'
+            print(f'Warning: Detect file changed outside. Save as a conflict file: {backup_file_name}')
+            self.notify_req_exception('conflict', oringle_file=self.__req_file_name, backup_file=backup_file_name)
+            self.__req_file_name = backup_file_name
+        result = self.__save_req_json()
+        if result:
+            self.__update_req_hash()
+            self.notify_req_saved(self.req_full_path())
+        return result
+
     def __load_req_json(self) -> bool:
         try:
             with open(self.__req_file_name, 'rt', encoding='utf-8') as f:
@@ -734,12 +801,6 @@ class ReqSingleJsonFileAgent(IReqAgent):
         finally:
             pass
         return True
-
-    def __do_save(self) -> bool:
-        result = self.__save_req_json()
-        if result:
-            self.notify_req_saved(self.__req_file_name)
-        return result
 
     def __save_req_json(self) -> bool:
         try:
@@ -774,9 +835,6 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def __update_req_hash(self):
         current_req_hash = self.__hash_req()
         self.req_hash = current_req_hash
-
-    def __check_req_hash_thread(self):
-        pass
 
     def __indexing(self):
         self.__collected_information = IReqAgent.collect_node_information(self.__req_node_root)
@@ -2138,12 +2196,16 @@ class IndexListUI(QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class RequirementUI(QWidget):
+class RequirementUI(QWidget, IReqObserver):
     def __init__(self, req_data_agent: IReqAgent):
-        super(RequirementUI, self).__init__()
+        super().__init__()
 
         self.__req_data_agent = req_data_agent
+        self.__req_data_agent.add_observer(self)
         self.__req_model = ReqModel(self.__req_data_agent)
+
+        self.watcher = QFileSystemWatcher()
+        self.watcher.fileChanged.connect(self.on_editing_file_changed)
 
         self.__cut_items = []
         # self.__filter_index = -1
@@ -2217,6 +2279,31 @@ class RequirementUI(QWidget):
         # self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
         self.__tree_requirements.selectionModel().selectionChanged.connect(self.on_requirement_tree_selection_changed)
+
+    # ---------------------- Agent observer -----------------------
+
+    def on_req_loaded(self, req_uri: str):
+        self.watcher.addPath(req_uri)
+
+    def on_req_closed(self, req_uri: str):
+        self.watcher.removePath(req_uri)
+
+    def on_req_exception(self, exception_name: str, **kwargs):
+        if exception_name == 'exception':
+            QMessageBox.information(self, 'Conflict detected',
+                                    'The req file has been changed outside.\n'
+                                    f'Avoiding data lost, editing req file is renamed to {kwargs.get("backup_file")}\n'
+                                    'Please close this file and merge them by manual.')
+
+    # --------------------- File observer path ---------------------
+
+    def on_editing_file_changed(self):
+        if not self.__req_data_agent.check_req_consistency():
+            QMessageBox.information(self, 'File changed outside',
+                                    'The req file has been changed outside.\n'
+                                    'Please backup your current editing content and re-open this file.')
+
+    # -------------------------- UI Events --------------------------
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:

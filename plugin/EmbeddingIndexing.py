@@ -67,7 +67,7 @@ class EmbeddingIndexing(IReqObserver):
         result = self.index.search(search_embedding, top_k)
         return result
 
-    def on_req_reloaded(self):
+    def on_req_loaded(self):
         print('Indexing......')
         self.__reindex_all()
         print('Index all req complete.')
