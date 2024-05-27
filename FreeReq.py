@@ -2287,6 +2287,12 @@ class RequirementUI(QWidget, IReqObserver):
     # ---------------------- Agent observer -----------------------
 
     def on_req_loaded(self, req_uri: str):
+        # Change the current path to the requirement file path.
+        # So the relative markdown file link will be correct.
+        req_path = self.__req_data_agent.get_req_path()
+        print('Change current path to: ' + req_path)
+        os.chdir(req_path)
+
         self.watcher.addPath(req_uri)
         # self.meta_board.reload_meta_data()
         self.edit_board.re_layout_meta_area()
@@ -2502,12 +2508,6 @@ class RequirementUI(QWidget, IReqObserver):
 
             self.edit_board.edit_req(None)
             self.meta_board.reload_meta_data()
-
-            # Change the current path to the requirement file path.
-            # So the relative markdown file link will be correct.
-            req_path = self.__req_data_agent.get_req_path()
-            print('Change current path to: ' + req_path)
-            os.chdir(req_path)
 
     def search_tree(self, text: str):
         root_node = self.__req_data_agent.get_req_root()
