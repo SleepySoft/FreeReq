@@ -2,12 +2,14 @@
     "plugin": [
         "ReqHistory",
         "ScratchPaper",
-        "MarkdownStyle"
+        "MarkdownStyle",
+        "ResourceManager"
     ],
     "plugin can be one of these, move to 'plugin' above to enable it.": [
         "ReqHistory",
         "ScratchPaper",
         "MarkdownStyle",
+        "ResourceManager",
         "ChatReq",
         "EmbeddingIndexing"
     ]

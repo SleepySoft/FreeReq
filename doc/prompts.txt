@@ -123,11 +123,31 @@ class MarkdownStyle:
 
 
 
+写一个python函数，从markdown文本中寻找引用的资源，并返回它的路径或url。
 
 
 
+帮我完成这个函数：
+    def refresh_resource_table(self):
+        req_resource = self.search_req_resource()
+        attachment_resource = self.search_attachment_file()
+其中req_resource是一个dict，key是requirement文档的uuid，value是这个req内容中包含中包含的资源列表，
+而attachment_resource则是attachment目录中的文件。
 
+将这些内容更新到一个QTableWidget控件中，这个控件有三列：UUID，Resource，Status。
+其中：
+    UUID列为req_resource的key
+    Resource为req_resource的value的一项。如果一个文档有多个resource，则显示多列，它们的UUID列值相同。资源名同时是一个链接，用户点击后调用系统命令打开该文件（可执行文件除外）。
+    Status列的规则是：
+        """
+        如果资源出在在文档中，同时在attachment_resource中，则显示'OK'；
+        如果资源出现在文档中，但不在attachment_resource中，则显示'Invalid'；
+        如果资源出现attachment_resource中，但没在文档中引用，则显示'No Reference'。
+        """
 
+同时给出主界面的初始化函数，要求包含上面的QTableWidget，并且下下有两个按钮，一个为'Refresh'，另一个名为'Auto Clear'。
+点击'Refresh'按钮，调用self.refresh_resource_table()刷新界面
+点击'Auto Clear'按钮，用英文提示用户“本操作会删除所有未被引用的资源文件，是否确认”，并在提示中列出所有将删除的文件。用户确认，则将没在文档中引用的文件删除。并刷新列表。
 
 
 
