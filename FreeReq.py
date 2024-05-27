@@ -611,10 +611,19 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def open_req(self, req_name: str) -> bool:
         # if req_name not in self.list_req():
         #     return False
+
         if req_name.lower().endswith('.req'):
             req_file = req_name
         else:
             req_file = req_name + '.req'
+
+        path_part = os.path.dirname(req_file)
+        file_part = os.path.basename(req_file)
+
+        if path_part != '':
+            self.__req_path = path_part
+
+        self.__do_close()
 
         # ret = self.__load_req_json()
         # issues = self.__check_correct_req_data()
@@ -627,7 +636,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         #
         # self.notify_req_loaded(self.req_full_path())
 
-        return self.__do_load(req_file)
+        return self.__do_load(file_part)
 
     def delete_req(self, req_name: str) -> bool:
         return False
@@ -746,7 +755,6 @@ class ReqSingleJsonFileAgent(IReqAgent):
         self.__do_save()
 
     def __do_load(self, req_file) -> bool:
-        self.__do_close()
         self.__req_file_name = req_file
         self.__update_req_hash()
 
