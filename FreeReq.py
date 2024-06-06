@@ -72,9 +72,9 @@ try:
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
     QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
-        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-        QAbstractItemView
+    QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+    QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
+    QAbstractItemView, QScrollArea
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -382,6 +382,9 @@ class IReqAgent:
     def open_req(self, req_name: str) -> bool:
         raise NotImplementedError('Not implemented: open_req')
 
+    def save_req(self) -> bool:
+        raise NotImplementedError('Not implemented: save_req')
+
     def delete_req(self, req_name: str) -> bool:
         raise NotImplementedError('Not implemented: delete_req')
 
@@ -638,6 +641,9 @@ class ReqSingleJsonFileAgent(IReqAgent):
         # self.notify_req_loaded(self.req_full_path())
 
         return self.__do_load(file_part)
+
+    def save_req(self) -> bool:
+        return self.__do_save()
 
     def delete_req(self, req_name: str) -> bool:
         return False
@@ -2341,6 +2347,14 @@ class RequirementUI(QWidget, IReqObserver):
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
         if sel_index is not None and sel_index.isValid():
             menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
+
+            # Add submenu
+            id_prefixes = self.__req_data_agent.get_req_meta().get(STATIC_META_ID_PREFIX, [])
+            if len(id_prefixes) > 0:
+                sub_menu = menu.addMenu("Batch Assign Req ID")
+                for id_prefix in id_prefixes:
+                    sub_menu.addAction(id_prefix, partial(self.on_menu_assign_id_for_tree, id_prefix))
+
             menu.addSeparator()
             menu.addAction('Insert sibling up', self.on_requirement_tree_menu_add_sibling_up)
             menu.addAction('Insert sibling down', self.on_requirement_tree_menu_add_sibling_down)
@@ -2391,6 +2405,42 @@ class RequirementUI(QWidget, IReqObserver):
     def on_requirement_tree_menu_append_child(self):
         if self.__tree_item_selected():
             self.__req_model.insertRow(-1, self.__selected_index)
+
+    def on_menu_assign_id_for_tree(self, id_prefix: str):
+
+        def assign_req_id_if_empty(node: ReqNode, context: dict):
+            if node.get(STATIC_FIELD_ID, '').strip() == '':
+                req_id = self.__req_data_agent.new_req_id(id_prefix)
+                node.set(STATIC_FIELD_ID, req_id)
+                context[node.get_uuid()] = req_id
+
+        reply = QMessageBox.question(self, "Assign Req ID",
+                                     "This operation will automatically assign Req ID to this item and its children.\n"
+                                     "Note that existing IDs will not be affected.\n"
+                                     f"Will assign Req ID with prefix [{id_prefix}]. \n\n"
+                                     "Do you confirm?",
+                                     QMessageBox.Yes | QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            if self.__tree_item_selected():
+                result = self.__req_data_agent.req_map(self.__selected_node, assign_req_id_if_empty)
+
+                msg_box = QMessageBox()
+                msg_box.setWindowTitle('Assign Req ID Report')
+
+                if len(result) > 0:
+                    self.__req_data_agent.save_req()
+                    update_list = [f'{k} - {v}' for k, v in result.items()]
+
+                    edit = QTextEdit()
+                    edit.setReadOnly(True)
+                    edit.setLineWrapMode(QTextEdit.NoWrap)
+                    edit.setMinimumSize(800, 600)
+                    edit.setText('Assign report: \n\n' + '\n'.join(update_list))
+                    msg_box.layout().addWidget(edit, 0, 0, 1, msg_box.layout().columnCount())
+                else:
+                    msg_box.setText('All Req ID has been assigned. No update.')
+                msg_box.exec_()
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():

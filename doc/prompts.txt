@@ -152,3 +152,43 @@ class MarkdownStyle:
 
 
 
+请补全TODO处的代码，用以根据下面参考代码中的id_prefixes添加子菜单。当子菜单被点击时，调用响应函数，并将id_prefix传入该函数。
+在该函数中需要弹出确认窗口（英文）：”该操作会为该项及其子项自动分配Req ID，已存在ID的项目不受影响。\n是否确认？“
+
+"""
+    def on_requirement_tree_menu(self, pos: QPoint):
+        menu = QMenu()
+        sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
+        if sel_index is not None and sel_index.isValid():
+            menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
+            # TODO: Add submenu
+            menu.addAction('Batch Assign Req ID', self.on_requirement_tree_menu_assign_req_id)
+            menu.addSeparator()
+"""
+
+参考代码：
+
+"""
+    def on_button_re_assign_id(self):
+        id_prefixes = self.__req_data_agent.get_req_meta().get(STATIC_META_ID_PREFIX, [])
+
+        if len(id_prefixes) == 0:
+            QMessageBox.information(self, 'No ID Define', 'Please define the ID prefix in mete data first.')
+            return
+
+        if len(id_prefixes) == 1:
+            self.on_menu_assign_id(id_prefixes[0])
+            self.update_content_edited_status(True)
+        else:
+            menu = QMenu()
+            for id_prefix in id_prefixes:
+                menu.addAction(id_prefix, partial(self.on_menu_assign_id, id_prefix))
+            menu.exec(QCursor.pos())
+
+    def on_menu_assign_id(self, id_prefix: str):
+        req_id = self.__req_data_agent.new_req_id(id_prefix)
+        self.__line_id.setText(req_id)
+        self.update_content_edited_status(True)
+"""
+
+
