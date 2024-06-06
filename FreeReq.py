@@ -530,6 +530,7 @@ class IReqAgent:
         if req_id != '':
             if req_id in ctx['req_id_instance_table'].keys():
                 ctx['req_id_conflict'] = True
+                print(f'Warning: Duplicated Req ID detected: {req_id}')
             ctx['req_id_instance_table'][req_id] = node
 
     @staticmethod
@@ -549,7 +550,7 @@ class IReqAgent:
                 if req_id.startswith(prefix):
                     try:
                         id_num = int(req_id[len(prefix):])
-                        if req_id not in req_id_max.keys():
+                        if prefix not in req_id_max.keys():
                             req_id_max[prefix] = id_num
                         else:
                             req_id_max[prefix] = max(id_num, req_id_max[prefix])
