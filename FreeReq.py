@@ -134,8 +134,11 @@ STATIC_FIELD_UUID = 'uuid'
 STATIC_FIELD_TITLE = 'title'
 STATIC_FIELD_CHILD = 'child'
 STATIC_FIELD_CONTENT = 'content'
+STATIC_FIELD_LAST_EDITOR = 'last_editor'
+STATIC_FIELD_LAST_CHANGE_TIME = 'last_change_time'
 
-STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD, STATIC_FIELD_CONTENT]
+STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_FIELD_CHILD,
+                 STATIC_FIELD_CONTENT, STATIC_FIELD_LAST_EDITOR, STATIC_FIELD_LAST_CHANGE_TIME]
 
 STATIC_META_ID_PREFIX = 'meta_group'
 
@@ -1958,15 +1961,45 @@ class ReqEditorBoard(QWidget):
             req_node.set(meta_name, meta_content)
 
     def __req_node_data_to_ui(self, req_node: ReqNode):
-        self.__group_meta_data.setTitle('Req UUID: ' + req_node.get_uuid())
+        self.__req_node_data_to_ui_title(req_node)
         self.__line_title.setText(req_node.get_title())
         self.__line_id.setText(req_node.get(STATIC_FIELD_ID, ''))
         self.text_md_editor.setPlainText(req_node.get(STATIC_FIELD_CONTENT, ''))
+
+    def __req_node_data_to_ui_title(self, req_node: ReqNode):
+        _uuid = req_node.get_uuid()
+        last_editor = req_node.get(STATIC_FIELD_LAST_EDITOR, '')
+        last_update = req_node.get(STATIC_FIELD_LAST_CHANGE_TIME, '')
+
+        addition = []
+        if last_editor:
+            addition.append(last_editor)
+        if last_update:
+            addition.append(last_update)
+        addition_text = ', '.join(addition)
+
+        title = f"Req UUID: {_uuid}"
+        if addition_text:
+            title += ' | ' + addition_text
+
+        self.__group_meta_data.setTitle(title)
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
         self.__req_model.begin_edit()
         req_node.set(STATIC_FIELD_ID, self.__line_id.text())
         req_node.set(STATIC_FIELD_TITLE, self.__line_title.text())
+
+        # 20240625 : Add last edit information
+
+        current_user = self.get_current_user()
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        req_node.set(STATIC_FIELD_LAST_EDITOR, current_user)
+        req_node.set(STATIC_FIELD_LAST_CHANGE_TIME, current_time)
+
+        # Update UI directly
+        self.__req_node_data_to_ui_title(req_node)
+
         req_node.set(STATIC_FIELD_CONTENT, self.text_md_editor.toPlainText())
         self.__req_data_agent.update_node(req_node)
         self.__req_model.end_edit()
@@ -2008,6 +2041,14 @@ class ReqEditorBoard(QWidget):
 
     def on_meta_data_updated(self):
         self.__layout_meta_area()
+
+    def get_current_user(self) -> str:
+        try:
+            username = os.getlogin()
+            return username
+        except OSError as e:
+            print("Failed to get the current username:", e)
+            return 'Unknown'
 
 
 # ----------------------------------------------------------------------------------------------------------------------
