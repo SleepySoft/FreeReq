@@ -86,12 +86,12 @@
                         "child": []
                     },
                     {
-                        "id": "",
+                        "id": "WHY00021",
                         "uuid": "b971fffbdf2c4a2fb016b72157fb1437",
                         "title": "Usability Design",
                         "child": [
                             {
-                                "id": "",
+                                "id": "WHY00022",
                                 "uuid": "6fb61fb7f295441d976740f6d679cbf4",
                                 "title": "Print ",
                                 "child": [],
@@ -117,13 +117,13 @@
                 ]
             },
             {
-                "id": "",
+                "id": "WHAT00011",
                 "uuid": "d482e027840e4fcc860d8cc26e44e83c",
                 "title": "Stakeholder Requirements (WHAT)",
                 "content": "",
                 "child": [
                     {
-                        "id": "",
+                        "id": "WHAT00012",
                         "uuid": "2308d25d87054d0fbc16908986e19a83",
                         "title": "Document Structure",
                         "content": "# CN\n\n文档以树形组织，可以在树的任意节点中编辑文档。\n\n文档包含以下固定信息：\n\n+ UUID - 文档唯一标识\n\n+ Req ID - 文档的需求ID\n\n+ Title - 文档标题，做为树的节点名\n\n+ Content - 文档内容，以Markdown格式编辑\n\n+ Last Editor - 最后一个编辑者，程序应自动读取系统用户名\n\n+ Last Updater Time - 最后的编辑时间，程序应自动填入保存时间\n\n\n此外，用户还可以自定义字段，界面根据用户配置动态生成这些字段对应的控件。\n\n这些字段统称为Meta Data，详见“Meta Data”一章。\n\n\n# EN\n\nDocuments are organized in a tree, and can be edited in any node of the tree.\n\nDocuments contain the following fixed information:\n\n+ UUID - document unique identifier\n\n+ Req ID - document requirement ID, such as: WHYxxx, WHATxxx, HOWxxx\n\n+ Title - document title, as the node name of the tree\n\n+ Content - document content, edited in Markdown format\n\n+ Last Editor - the last editor, the program should automatically read the system user name\n\n+ Last Updater Time - the last editing time, the program should automatically fill in the save time\n\nIn addition, users can also customize fields, and the interface dynamically generates controls corresponding to these fields based on user configuration.\n\nThese fields are collectively referred to as Meta Data, see the \"Meta Data\" chapter for details.\n\n",
@@ -150,7 +150,7 @@
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHAT00013",
                                 "uuid": "8cccf216b6664c639d9695f80e94efdc",
                                 "title": "Meta Data",
                                 "content": "# CN\n\nMeta Data为文档除正文外的附属信息，用以更好地标记和管理文档。\n\n“文档固定信息”中的一部分内容其实就属于Meta Data。除了固定信息外，用户可以自定义Meta Data字段。\n\n程序中提供的示例字段如下：\n\n```\n\"Owner\": [], \"Version\": [], \"Status\": [\"Draft\", \"Submitted\", \"Reviewing\", \"Reserved\", \"Approved\", \"Deferred\", \"Rejected\"], \"Priority\": [\"Must / Vital\", \"Should / Necessary\", \"Could / Nice to Have\", \"To Be Defined\"], \"Implementation\": [\"Not Implemented\", \"Planing\", \"Designing\", \"Implementing\", \"Verifying\", \"Full Implemented\", \"Partial Implemented\"] \n```\n\n其格式类似Python Dict。Key为Meta Data的标题。Value如果为空列表，则可由用户自由填写；否则限制用户选择列表中的内容。\n\n程序会根据Meta Data的配置自动生成编辑界面，并自动将对应的控件数据写入文档中。\n\n\n示例Meta Data各字段的含义如下：\n\n+ Owner：该条需求的负责人\n\n+ Version：需求版本号\n\n+ Status：需求的状态\n\n+ Priority：需求的优先级\n\n+ Implementation：需求的实现状态\n\n这些示例参考了曾经用过的系统，如果不需要，可以将其删除。\n\n\n# EN\n\nMeta Data is the additional information of a document, which is used to better mark and manage the document.\n\n \"Document Fixed Information\" actually belongs to Meta Data. Except the fixed information, users can customize Meta Data fields.\n\nThe sample fields provided in the program are as follows:\n\n```\n\"Owner\": [], \"Version\": [], \"Status\": [\"Draft\", \"Submitted\", \"Reviewing\", \"Reserved\", \"Approved\", \"Deferred\", \"Rejected\"], \"Priority\": [\"Must / Vital\", \"Should / Necessary\", \"Could / Nice to Have\", \"To Be Defined\"], \"Implementation\": [\"Not Implemented\", \"Planing\", \"Designing\", \"Implementing\", \"Verifying\", \"Full Implemented\", \"Partial Implemented\"]\n```\n\nIts format is similar to Python Dict. Key is the title of Meta Data. If Value is an empty list, it can be freely edit by the user; otherwise, the user is restricted to select one of the content in the list.\n\nThe program will automatically generate an editing UI based on the configuration of Meta Data and automatically write the corresponding control data into the document.\n\nThe meanings of each field in the example Meta Data are as follows:\n\n+ Owner: the person in charge of this requirement\n\n+ Version: the version of the requirement\n\n+ Status: the status of the requirement\n\n+ Priority: the priority of the requirement\n\n+ Implementation: the implementation status of the requirement\n\nThese examples refer to the systems that I have been used before. If they are not needed, they can be deleted.\n\n",
@@ -166,7 +166,7 @@
                         ]
                     },
                     {
-                        "id": "",
+                        "id": "WHAT00014",
                         "uuid": "91a652735c994c868080c8cf6f0f049e",
                         "title": "Storage",
                         "content": "# CN\n\n程序可以支持多种需求文档存储方式，最基本的存储方式是保存成本地的JSON文件。\n\n\n# EN\n\nFreeReq can support a variety of demand document storage methods. The most basic storage method is to save it as a local JSON file.\n",
@@ -202,7 +202,7 @@
                                 "Implementation": "Full Implemented",
                                 "child": [
                                     {
-                                        "id": "",
+                                        "id": "WHAT00015",
                                         "uuid": "9f51fe7082994f5aae4389a29d7b4819",
                                         "title": "Layout",
                                         "child": [],
@@ -216,18 +216,18 @@
                                         "last_change_time": "2024-06-25 16:24:07"
                                     },
                                     {
-                                        "id": "",
+                                        "id": "WHAT00016",
                                         "uuid": "8e837e392e814a05a16962ee6835e7a7",
                                         "title": "Basic Operation",
                                         "child": [],
-                                        "content": "",
+                                        "content": "# CN\n\n+ 在树形控件上可以为一个节点添加子节点或其相邻结点，添加相邻节点时可以指定在当前节点上方或下方。\n\n+ 在树形控件上可以删除一个节点。\n\n+ 在树形控件上可以对节点进行复制粘贴操作。\n\n+ 在树形控件上可以对节点上下移动操作。\n\n\n# EN\n\n+ In a tree control, you can add child nodes or adjacent nodes to a node. + When adding adjacent nodes, you can specify them above or below the current node.\n\n+ In a tree control, you can delete a node.\n\n+ In a tree control, you can copy and paste nodes.\n\n+ In a tree control, you can move nodes up and down.\n",
                                         "Owner": "",
                                         "Version": "",
                                         "Status": "",
                                         "Priority": "",
                                         "Implementation": "",
                                         "last_editor": "SESA480732",
-                                        "last_change_time": "2024-06-25 16:20:36"
+                                        "last_change_time": "2024-06-25 16:27:42"
                                     }
                                 ]
                             },
@@ -235,20 +235,20 @@
                                 "id": "WHAT00010",
                                 "uuid": "15f6b85843f74e6086e1601b17046592",
                                 "title": "UI by web",
-                                "content": "# CN\n\n未实现\n\n\n# EN\n\nNot implemented.\n",
+                                "content": "# CN\n\n未实现\n\n\n# EN\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>\n",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "Draft",
                                 "Priority": "Should / Necessary",
                                 "Implementation": "Not Implemented",
                                 "last_editor": "SESA480732",
-                                "last_change_time": "2024-06-25 15:33:23",
+                                "last_change_time": "2024-06-25 16:27:56",
                                 "child": []
                             }
                         ]
                     },
                     {
-                        "id": "",
+                        "id": "WHAT00017",
                         "uuid": "00bf19bb9e064648813cd78a899f97a7",
                         "title": "Usability Design",
                         "content": "",
@@ -261,12 +261,12 @@
                         "last_change_time": "2024-06-25 15:14:45",
                         "child": [
                             {
-                                "id": "",
+                                "id": "WHAT00018",
                                 "uuid": "7109d4c7c6a64a55a5c3a2288086439e",
                                 "title": "Print and Export",
                                 "child": [
                                     {
-                                        "id": "",
+                                        "id": "WHAT00019",
                                         "uuid": "9af2963b88574f1ba2df7bb0f22d7d35",
                                         "title": "Single Document Print",
                                         "child": [],
@@ -280,7 +280,7 @@
                                         "last_change_time": "2024-06-25 16:01:38"
                                     },
                                     {
-                                        "id": "",
+                                        "id": "WHAT00020",
                                         "uuid": "986f9ae6b8c34cffa18485669f6b304c",
                                         "title": "Single Document Export as HTML",
                                         "child": [],
@@ -294,7 +294,7 @@
                                         "last_change_time": "2024-06-25 16:03:09"
                                     },
                                     {
-                                        "id": "",
+                                        "id": "WHAT00021",
                                         "uuid": "993543dc967f4d0a9b33b7761e6378f7",
                                         "title": "Batch Documents Print",
                                         "child": [],
@@ -308,7 +308,7 @@
                                         "last_change_time": "2024-06-25 16:07:38"
                                     },
                                     {
-                                        "id": "",
+                                        "id": "WHAT00022",
                                         "uuid": "c1934c8416254865b3cbc40333b3c879",
                                         "title": "Batch Documents Export as HTML",
                                         "child": [],
@@ -322,7 +322,7 @@
                                         "last_change_time": "2024-06-25 16:10:02"
                                     },
                                     {
-                                        "id": "",
+                                        "id": "WHAT00023",
                                         "uuid": "f11b1b67cac747a6a990045a49076ff6",
                                         "title": "Sub .req File",
                                         "child": [],
@@ -346,7 +346,7 @@
                                 "last_change_time": "2024-06-25 15:49:33"
                             },
                             {
-                                "id": "",
+                                "id": "WHAT00024",
                                 "uuid": "878f48bb93a54cf68882a90fc2c6b18e",
                                 "title": "Statistics",
                                 "content": "# CN\n\n作为用户，我想知道：\n\n+ 总需求数量\n\n+ 子需求数量\n\n+ 处于某些状态下的总/子需求数量\n\n\n# EN\n\nAs an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>",
@@ -360,7 +360,7 @@
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHAT00025",
                                 "uuid": "831bf7aea3094c819075de13d704b454",
                                 "title": "Filter",
                                 "content": "# CN\n\n文档可以根据某些条件进行过滤，基于过滤出来的内容进行导出或打印。\n\n\n# EN\n\nDocuments can be filtered according to certain conditions and exported or printed based on the filtered content.\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>",
@@ -374,7 +374,7 @@
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHAT00026",
                                 "uuid": "9e5fed8db5e842639083e53b13a4a8db",
                                 "title": "Searching",
                                 "content": "# CN\n\n需求文档可以通过以下内容进行搜索：\n\n+ UUID\n\n+ Req ID\n\n+ Title\n\n+ Content\n\n+ Meta Data\n\n\n# EN\n\nRequirement can be searched by:\n\n+ UUID\n\n+ Req ID\n\n+ Title\n\n+ Content\n\n+ Meta Data",
@@ -388,7 +388,7 @@
                                 "child": []
                             },
                             {
-                                "id": "",
+                                "id": "WHAT00027",
                                 "uuid": "94e16f7dfd734be39fd42e2638831d3f",
                                 "title": "Zooming",
                                 "child": [],
@@ -400,11 +400,25 @@
                                 "Implementation": "",
                                 "last_editor": "SESA480732",
                                 "last_change_time": "2024-06-25 16:19:51"
+                            },
+                            {
+                                "id": "WHAT00028",
+                                "uuid": "1af29ce508bc4113bd743b9f2e0d2585",
+                                "title": "Batch Req ID allocation",
+                                "child": [],
+                                "content": "# CN\n\n作为用户，需要批量分配Req ID的功能。让用户一个个手动分配ID是不现实的。\n\n批量分配ID不能影响已存在ID的文档。\n\n分配结束后需要告知用户ID分配的情况。\n\n\n# EN\n\nAs a user, we need the function of batch allocation of Req IDs. It is unrealistic to let users manually allocate IDs one by one.\n\nBatch allocation of IDs cannot affect documents with existing IDs.\n\nAfter the allocation is completed, users need to be informed of the ID allocation status.\n\n\n",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 16:30:55"
                             }
                         ]
                     },
                     {
-                        "id": "",
+                        "id": "WHAT00029",
                         "uuid": "7eb732f34a8943d8ab32bd08b85499e8",
                         "title": "Plugins",
                         "child": [],
