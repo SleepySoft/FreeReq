@@ -16,6 +16,10 @@ req_agent: IReqAgent = None
 # ----------------------------------------------------------------------------------------------------------------------
 
 
+def normalize_path_splitter(path: str) -> str:
+    return path.replace('\\', '/')
+
+
 def find_resources_in_markdown(markdown_text):
     # Markdown链接的正则表达式
     pattern = r'\[.*?\]\((.*?)\)'
@@ -28,7 +32,7 @@ class ResourceManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.table_widget = QTableWidget()
-        self.refresh_button = QPushButton('Refresh')
+        self.scan_button = QPushButton('Scan')
         self.auto_clear_button = QPushButton('Auto Clear')
         self.init_ui()
 
@@ -39,14 +43,14 @@ class ResourceManager(QMainWindow):
         self.table_widget.setColumnCount(3)
         self.table_widget.setHorizontalHeaderLabels(['Req UUID', 'Resource', 'Status'])
 
-        self.refresh_button.clicked.connect(self.refresh_resource_table)
+        self.scan_button.clicked.connect(self.refresh_resource_table)
         self.auto_clear_button.clicked.connect(self.auto_clear)
 
         layout = QVBoxLayout()
         layout.addWidget(self.table_widget)
 
         line = QHBoxLayout()
-        line.addWidget(self.refresh_button)
+        line.addWidget(self.scan_button)
         line.addWidget(self.auto_clear_button)
         layout.addLayout(line)
 
@@ -68,13 +72,14 @@ class ResourceManager(QMainWindow):
                 self.table_widget.setItem(row_position, 0, QTableWidgetItem(uuid))
                 self.table_widget.setItem(row_position, 1, QTableWidgetItem(resource))
 
-                if resource in attachment_resource:
+                if normalize_path_splitter(resource) in attachment_resource:
                     self.table_widget.setItem(row_position, 2, QTableWidgetItem('OK'))
                 else:
                     self.table_widget.setItem(row_position, 2, QTableWidgetItem('Invalid'))
 
+        req_resource_norm = [normalize_path_splitter(value) for values in req_resource.values() for value in values]
         for resource in attachment_resource:
-            if resource not in [value for values in req_resource.values() for value in values]:
+            if resource not in req_resource_norm:
                 row_position = self.table_widget.rowCount()
                 self.table_widget.insertRow(row_position)
 
@@ -114,7 +119,7 @@ class ResourceManager(QMainWindow):
         # Ugly directly access
         search_folder = main_ui.edit_board.text_md_editor.attachment_folder
         all_items = os.listdir(search_folder)
-        rel_items = [os.path.join(search_folder, item) for item in all_items]
+        rel_items = [normalize_path_splitter(os.path.join(search_folder, item)) for item in all_items]
         files = [item for item in rel_items if os.path.isfile(item)]
         return files
 

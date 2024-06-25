@@ -2428,6 +2428,7 @@ class RequirementUI(QWidget, IReqObserver):
         menu.exec(QCursor.pos())
 
     def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
+        # print(f'Tree Selection Changed: {selected} -> {deselected}')
         if self.__selected_node is not None and self.edit_board.is_content_edited():
             ret = QMessageBox.question(self, 'Save or Not',
                                        'Requirement Content Changed.\r\nSave?',
