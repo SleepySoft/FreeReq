@@ -61,7 +61,6 @@
                         "id": "WHY00019",
                         "uuid": "327f6499fe424f27aedb6d62a0986de6",
                         "title": "Deployment",
-                        "child": [],
                         "content": "# CN\n\n尽管它可以支持各种高级功能，但同时只需要单个FreeReq.py文件即可运行，并保留其基本功能。\n\n\n# EN\n\nAlthough it can support various advanced features, it only requires a single FreeReq.py file to run and keep its basic feature.\n",
                         "Owner": "",
                         "Version": "",
@@ -69,13 +68,13 @@
                         "Priority": "",
                         "Implementation": "",
                         "last_editor": "SESA480732",
-                        "last_change_time": "2024-06-25 14:40:03"
+                        "last_change_time": "2024-06-25 14:40:03",
+                        "child": []
                     },
                     {
                         "id": "WHY00020",
                         "uuid": "3ce4bb2bbd894e499f3b59557dffcf02",
                         "title": "Advanced Features",
-                        "child": [],
                         "content": "# CN\n\nFreeReq可以通过插件方式增加更多（令人激动的）高级功能。\n\n\n#EN\n\nFreeReq can add more (exciting) advanced features by plugins.\n",
                         "Owner": "",
                         "Version": "",
@@ -83,7 +82,37 @@
                         "Priority": "",
                         "Implementation": "",
                         "last_editor": "SESA480732",
-                        "last_change_time": "2024-06-25 14:41:22"
+                        "last_change_time": "2024-06-25 14:41:22",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "b971fffbdf2c4a2fb016b72157fb1437",
+                        "title": "Usability Design",
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "6fb61fb7f295441d976740f6d679cbf4",
+                                "title": "Print ",
+                                "child": [],
+                                "content": "# CN\n\n需求文档必须能方便且美观地打印或导出成pdf，以便于离线交流。\n\n\n# EN\n\nThe requirements must be able to be easily and beautifully printed or exported to PDF for offline communication.\n",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 15:48:44"
+                            }
+                        ],
+                        "content": "",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 15:40:40"
                     }
                 ]
             },
@@ -97,126 +126,42 @@
                         "id": "",
                         "uuid": "2308d25d87054d0fbc16908986e19a83",
                         "title": "Document Structure",
-                        "content": "# CN\n\n文档以树形组织，可以在树的任意节点中编辑文档。\n\n文档包含以下固定信息：\n\n+ UUID：文档唯一标识\n\n+ Req ID：文档的需求ID\n\n+ Title：文档标题，做为树的节点名\n\n+ Content：文档内容，以Markdown格式编辑\n\n+ Last Editor：最后一个编辑者，程序应自动读取系统用户名\n\n+ Last Updater Time：最后的编辑时间，程序应自动填入保存时间\n\n\n此外，用户还可以自定义字段，界面根据用户配置动态生成这些字段对应的控件。\n\n这些字段统称为Meta Data，详见“Meta Data”一章。\n\n\n# EN\n\n\n\nThe document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* Link - Link to JIRA or other issue management system\n\n* Implementation - Not Implemented / Full Implemented / Partial Implemented\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
+                        "content": "# CN\n\n文档以树形组织，可以在树的任意节点中编辑文档。\n\n文档包含以下固定信息：\n\n+ UUID - 文档唯一标识\n\n+ Req ID - 文档的需求ID\n\n+ Title - 文档标题，做为树的节点名\n\n+ Content - 文档内容，以Markdown格式编辑\n\n+ Last Editor - 最后一个编辑者，程序应自动读取系统用户名\n\n+ Last Updater Time - 最后的编辑时间，程序应自动填入保存时间\n\n\n此外，用户还可以自定义字段，界面根据用户配置动态生成这些字段对应的控件。\n\n这些字段统称为Meta Data，详见“Meta Data”一章。\n\n\n# EN\n\nDocuments are organized in a tree, and can be edited in any node of the tree.\n\nDocuments contain the following fixed information:\n\n+ UUID - document unique identifier\n\n+ Req ID - document requirement ID, such as: WHYxxx, WHATxxx, HOWxxx\n\n+ Title - document title, as the node name of the tree\n\n+ Content - document content, edited in Markdown format\n\n+ Last Editor - the last editor, the program should automatically read the system user name\n\n+ Last Updater Time - the last editing time, the program should automatically fill in the save time\n\nIn addition, users can also customize fields, and the interface dynamically generates controls corresponding to these fields based on user configuration.\n\nThese fields are collectively referred to as Meta Data, see the \"Meta Data\" chapter for details.\n\n",
                         "Owner": "",
                         "Version": "",
                         "Status": "",
                         "Priority": "",
                         "Implementation": "",
                         "last_editor": "SESA480732",
-                        "last_change_time": "2024-06-25 14:49:32",
+                        "last_change_time": "2024-06-25 14:57:42",
                         "child": [
                             {
-                                "id": "WHY00014",
-                                "uuid": "34dc7bc15a6e4d00b3b8d928abd5db25",
-                                "title": "Title (Name)",
-                                "content": "This field is MUST.\n\nThe title (name) will show as the tree node name.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00005",
-                                "uuid": "09b4670a26774a8796d0b000754b039c",
-                                "title": "ID",
-                                "content": "This field is MUST.\n\nUser can config the ID group such as WHY*, WHAT*, HOW*, or just one\n\nWhen user wants to assign an ID to an requirement item. There should be a menu to select the group. The softare shoud auto generate the unique ID number.\n\nOfcause, if user only specify one group. The group selection menu should not popup and an unique ID should be generated immediately.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00015",
-                                "uuid": "74c4765be9dc44b29fee8c586467e1f5",
-                                "title": "Content",
-                                "content": "This field is MUST.\n\nThe main content of one requirement.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00006",
-                                "uuid": "07be5cbfd34e439f9b81a0681de906e4",
-                                "title": "Author / Owner",
-                                "content": "Option but recommended filed.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Approved",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00007",
-                                "uuid": "6be7f39a27ad40bd8b24f9caa8b25ba8",
-                                "title": "Version",
-                                "content": "Option but recommended filed.",
+                                "id": "WHY00009",
+                                "uuid": "dfc80d4bc1fe494088f9ae8c9d25ca55",
+                                "title": "Req ID",
+                                "content": "# CN\n\n需求ID，一般来说格式诸如：WHYxxx, WHATxxx, HOWxxx。用以给测试用例及外部系统连接到对应的需求文档。\n\n软件需要提供界面让用户配置需求ID模板。\n\n需求ID不能重复。\n\n文档的ID不能由用户手动填写，而应由程序分配。程序应当识别已存在的需求ID，避免分配重复的ID。\n\n\n# EN\n\nReq ID, generally in the format of WHYxxx, WHATxxx, HOWxxx. It is used to connect the test case and external systems to the corresponding requirement document.\n\nThe software needs to provide an interface for users to configure the requirement ID template.\n\nReq IDs cannot be repeated.\n\nThe document ID cannot be filled in manually by the user, but should be assigned by the program. The program should recognize existing Req IDs to avoid assigning duplicate IDs.\n\n",
                                 "Owner": "Sleepy",
                                 "Version": "1.0",
                                 "Status": "Approved",
                                 "Priority": "Could / Nice to Have",
                                 "Implementation": "Full Implemented",
                                 "last_editor": "SESA480732",
-                                "last_change_time": "2024-06-25 14:45:12",
-                                "child": []
-                            },
-                            {
-                                "id": "",
-                                "uuid": "a1d8af0fb08344b49a897accd2566283",
-                                "title": "Status",
-                                "content": "Option but recommended filed.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Approved",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00008",
-                                "uuid": "a9b230242f9e463fb56ca816f8222fe7",
-                                "title": "Link",
-                                "content": "Option but recommended filed.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Draft",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Not Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00009",
-                                "uuid": "dfc80d4bc1fe494088f9ae8c9d25ca55",
-                                "title": "Implementation",
-                                "content": "Option but recommended filed.",
-                                "Owner": "Sleepy",
-                                "Version": "1.0",
-                                "Status": "Approved",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Full Implemented",
+                                "last_change_time": "2024-06-25 15:02:18",
                                 "child": []
                             },
                             {
                                 "id": "",
                                 "uuid": "8cccf216b6664c639d9695f80e94efdc",
                                 "title": "Meta Data",
-                                "child": [],
-                                "content": "Owner - In default meta config\n\nVersion - In default meta config\n\nVersion - In default meta config\n\nStatus - In default meta config\n\nImplementation - In default meta config\n\nLink - User defines, not in default meta config",
+                                "content": "# CN\n\nMeta Data为文档除正文外的附属信息，用以更好地标记和管理文档。\n\n“文档固定信息”中的一部分内容其实就属于Meta Data。除了固定信息外，用户可以自定义Meta Data字段。\n\n程序中提供的示例字段如下：\n\n```\n\"Owner\": [], \"Version\": [], \"Status\": [\"Draft\", \"Submitted\", \"Reviewing\", \"Reserved\", \"Approved\", \"Deferred\", \"Rejected\"], \"Priority\": [\"Must / Vital\", \"Should / Necessary\", \"Could / Nice to Have\", \"To Be Defined\"], \"Implementation\": [\"Not Implemented\", \"Planing\", \"Designing\", \"Implementing\", \"Verifying\", \"Full Implemented\", \"Partial Implemented\"] \n```\n\n其格式类似Python Dict。Key为Meta Data的标题。Value如果为空列表，则可由用户自由填写；否则限制用户选择列表中的内容。\n\n程序会根据Meta Data的配置自动生成编辑界面，并自动将对应的控件数据写入文档中。\n\n\n示例Meta Data各字段的含义如下：\n\n+ Owner：该条需求的负责人\n\n+ Version：需求版本号\n\n+ Status：需求的状态\n\n+ Priority：需求的优先级\n\n+ Implementation：需求的实现状态\n\n这些示例参考了曾经用过的系统，如果不需要，可以将其删除。\n\n\n# EN\n\nMeta Data is the additional information of a document, which is used to better mark and manage the document.\n\n \"Document Fixed Information\" actually belongs to Meta Data. Except the fixed information, users can customize Meta Data fields.\n\nThe sample fields provided in the program are as follows:\n\n```\n\"Owner\": [], \"Version\": [], \"Status\": [\"Draft\", \"Submitted\", \"Reviewing\", \"Reserved\", \"Approved\", \"Deferred\", \"Rejected\"], \"Priority\": [\"Must / Vital\", \"Should / Necessary\", \"Could / Nice to Have\", \"To Be Defined\"], \"Implementation\": [\"Not Implemented\", \"Planing\", \"Designing\", \"Implementing\", \"Verifying\", \"Full Implemented\", \"Partial Implemented\"]\n```\n\nIts format is similar to Python Dict. Key is the title of Meta Data. If Value is an empty list, it can be freely edit by the user; otherwise, the user is restricted to select one of the content in the list.\n\nThe program will automatically generate an editing UI based on the configuration of Meta Data and automatically write the corresponding control data into the document.\n\nThe meanings of each field in the example Meta Data are as follows:\n\n+ Owner: the person in charge of this requirement\n\n+ Version: the version of the requirement\n\n+ Status: the status of the requirement\n\n+ Priority: the priority of the requirement\n\n+ Implementation: the implementation status of the requirement\n\nThese examples refer to the systems that I have been used before. If they are not needed, they can be deleted.\n\n",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "",
                                 "Priority": "",
                                 "Implementation": "",
                                 "last_editor": "SESA480732",
-                                "last_change_time": "2024-06-25 14:45:05"
+                                "last_change_time": "2024-06-25 15:14:19",
+                                "child": []
                             }
                         ]
                     },
@@ -224,83 +169,15 @@
                         "id": "",
                         "uuid": "91a652735c994c868080c8cf6f0f049e",
                         "title": "Storage",
-                        "content": "",
+                        "content": "# CN\n\n程序可以支持多种需求文档存储方式，最基本的存储方式是保存成本地的JSON文件。\n\n\n# EN\n\nFreeReq can support a variety of demand document storage methods. The most basic storage method is to save it as a local JSON file.\n",
                         "Owner": "",
                         "Version": "",
                         "Status": "Approved",
                         "Priority": "Must / Vital",
                         "Implementation": "",
-                        "child": [
-                            {
-                                "id": "WHAT00006",
-                                "uuid": "aa63419e43574685bcd87f3672516a17",
-                                "title": "Local XML storage",
-                                "content": "Requirement can be storaged as XML, which is good organized.\n\nThe file should be readable, not encoded (for some unicode text).",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Rejected",
-                                "Priority": "To Be Defined",
-                                "Implementation": "Not Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHAT00007",
-                                "uuid": "7348dee92b1f4e2993db5cf4e1afa7bb",
-                                "title": "Local JSON storage",
-                                "content": "The document can be saved as JSON, which is easy for persistence and load. It's also readable, though it's less pretty than XML.\n\nThe file should be readable, not encoded (for some unicode text).",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            }
-                        ]
-                    },
-                    {
-                        "id": "",
-                        "uuid": "4f2d4ca37d144ba5be0a84ac23e99d21",
-                        "title": "Storage",
-                        "content": "The data must be saved on local, as text file. It can be XML or JSON.",
-                        "child": [
-                            {
-                                "id": "WHY00010",
-                                "uuid": "36d3bb18d8c944aca2a9a629b16a3d90",
-                                "title": "Auto save",
-                                "content": "The editor should support auto save after node adding and content editing.",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Not Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHY00011",
-                                "uuid": "f5fb6c9641ba48019baa71cae715156d",
-                                "title": "Multiple Storage Method Support",
-                                "content": "The requirement can be stroaged in local file or remote server.",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Draft",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Not Implemented",
-                                "child": [
-                                    {
-                                        "id": "WHY00016",
-                                        "uuid": "32442c5160ca44d98fa19adff178af2b",
-                                        "title": "Local storage",
-                                        "content": "This software MUST support local storage, as text file which can compare and merge easily.",
-                                        "Owner": "Sleepy",
-                                        "Version": "1.0",
-                                        "Status": "Approved",
-                                        "Priority": "Must / Vital",
-                                        "Implementation": "Full Implemented",
-                                        "child": []
-                                    }
-                                ]
-                            }
-                        ]
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 15:18:08",
+                        "child": []
                     },
                     {
                         "id": "WHAT00008",
@@ -329,127 +206,153 @@
                                 "id": "WHAT00010",
                                 "uuid": "15f6b85843f74e6086e1601b17046592",
                                 "title": "UI by web",
-                                "content": "",
+                                "content": "# CN\n\n未实现\n\n\n# EN\n\nNot implemented.\n",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "Draft",
                                 "Priority": "Should / Necessary",
                                 "Implementation": "Not Implemented",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 15:33:23",
                                 "child": []
                             }
                         ]
                     },
                     {
                         "id": "",
-                        "uuid": "f6042164bb2642638be4e457d27ab6f4",
-                        "title": "UI",
-                        "content": "The UI should consider multi-platform support.",
+                        "uuid": "00bf19bb9e064648813cd78a899f97a7",
+                        "title": "Usability Design",
+                        "content": "",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 15:14:45",
                         "child": [
                             {
-                                "id": "WHY00017",
-                                "uuid": "2891bfbf9efe4a109bf1556339133326",
-                                "title": "Tree View",
-                                "content": "The main interface should show all requirement enrty in a tree view. When click on one item. Show its detail on the editor area.",
-                                "Owner": "Sleepy",
+                                "id": "",
+                                "uuid": "7109d4c7c6a64a55a5c3a2288086439e",
+                                "title": "Print and Export",
+                                "child": [
+                                    {
+                                        "id": "",
+                                        "uuid": "9af2963b88574f1ba2df7bb0f22d7d35",
+                                        "title": "Single Document Print",
+                                        "child": [],
+                                        "content": "# CN\n\n程序需要提供将单个需求文档打印为PDF的功能。\n\n注：已知问题 - pyqt5导出的PDF文件太大，可以通过Microsoft PDF Printer再将打印该PDF减少文件尺寸。\n\n\n# EN\n\nThe program have to provide the feature of printing a single requirement document into PDF.\n\nNote: Known issue - The PDF file exported by pyqt5 is too large. You can use Microsoft PDF Printer to print the PDF again to reduce the file size.\n",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 16:01:38"
+                                    },
+                                    {
+                                        "id": "",
+                                        "uuid": "986f9ae6b8c34cffa18485669f6b304c",
+                                        "title": "Single Document Export as HTML",
+                                        "child": [],
+                                        "content": "# CN\n\n由于导出的PDF文件过大，所以增加导出为HTML的功能。\n\n文档中包含的图片资源将会编码为BASE64内嵌在HTML中。\n\n\n# EN\n\nSince the exported PDF file is too large, the feature of exporting to HTML is added.\n\nThe image resources contained in the document will be encoded as BASE64 and embedded in HTML.\n\n",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 16:03:09"
+                                    },
+                                    {
+                                        "id": "",
+                                        "uuid": "993543dc967f4d0a9b33b7761e6378f7",
+                                        "title": "Batch Documents Print",
+                                        "child": [],
+                                        "content": "",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 15:37:42"
+                                    },
+                                    {
+                                        "id": "",
+                                        "uuid": "c1934c8416254865b3cbc40333b3c879",
+                                        "title": "Batch Documents Export as HTML",
+                                        "child": [],
+                                        "content": "",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 15:56:50"
+                                    }
+                                ],
+                                "content": "",
+                                "Owner": "",
                                 "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 15:49:33"
+                            },
+                            {
+                                "id": "",
+                                "uuid": "878f48bb93a54cf68882a90fc2c6b18e",
+                                "title": "Statistics",
+                                "content": "As an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "",
+                                "Implementation": "",
                                 "child": []
                             },
                             {
                                 "id": "",
-                                "uuid": "bf2d3250a8ba4b18b533e74ee8c2b26b",
-                                "title": "Editor",
-                                "content": "",
-                                "child": [
-                                    {
-                                        "id": "WHY00012",
-                                        "uuid": "5f3e7213d779485b8494202459d4cb93",
-                                        "title": "Support Markdown",
-                                        "content": "The editor must support Markdown.\n\nThe Markdown editor should support realtime preview.",
-                                        "Owner": "",
-                                        "Version": "",
-                                        "Status": "Approved",
-                                        "Priority": "Must / Vital",
-                                        "Implementation": "Full Implemented",
-                                        "child": []
-                                    },
-                                    {
-                                        "id": "WHY00013",
-                                        "uuid": "55961ed503954976bc8b70250a34c49d",
-                                        "title": "Zoom the display",
-                                        "content": "The display of requirement can be zoomed. It dosen't mean the font changed but only be larger in the editor and viewer.",
-                                        "Owner": "",
-                                        "Version": "",
-                                        "Status": "Approved",
-                                        "Priority": "Should / Necessary",
-                                        "Implementation": "Full Implemented",
-                                        "child": []
-                                    }
-                                ]
+                                "uuid": "831bf7aea3094c819075de13d704b454",
+                                "title": "Filter and Export",
+                                "content": "The requirement can be exported as various format, such as\n\n* Text file\n\n* Excel File\n\n* Sub .req file\n\n* Other format as per user's requirement\n\nThe exported content can be filtered before exporting. In this case, the export file should only contain filtered content.",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "",
+                                "Implementation": "",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "9e5fed8db5e842639083e53b13a4a8db",
+                                "title": "Search and Indexing",
+                                "content": "Requirement can be searched by:\n\n* Name\n\n* ID\n\n* The text in content\n\n* UUID\n\n* Extra data (meta data)",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "",
+                                "Implementation": "",
+                                "child": []
                             }
                         ]
                     },
                     {
                         "id": "",
-                        "uuid": "ae62244719d74e0fac24f6d10ac119e9",
-                        "title": "Batch operation",
-                        "content": "As an user, I want to do batch operation on:\n\n+ ID\n\n+ Other extra data that configed by meta data.",
+                        "uuid": "7eb732f34a8943d8ab32bd08b85499e8",
+                        "title": "Plugins",
+                        "child": [],
+                        "content": "",
                         "Owner": "",
                         "Version": "",
-                        "Status": "Draft",
+                        "Status": "",
                         "Priority": "",
                         "Implementation": "",
-                        "child": []
-                    },
-                    {
-                        "id": "",
-                        "uuid": "ae62244719d74e0fac24f6d10ac119e9",
-                        "title": "Batch operation",
-                        "content": "As an user, I want to do batch operation on:\n\n+ ID\n\n+ Other extra data that configed by meta data.",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Draft",
-                        "Priority": "",
-                        "Implementation": "",
-                        "child": []
-                    },
-                    {
-                        "id": "",
-                        "uuid": "9e5fed8db5e842639083e53b13a4a8db",
-                        "title": "Search and Indexing",
-                        "content": "Requirement can be searched by:\n\n* Name\n\n* ID\n\n* The text in content\n\n* UUID\n\n* Extra data (meta data)",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Draft",
-                        "Priority": "",
-                        "Implementation": "",
-                        "child": []
-                    },
-                    {
-                        "id": "",
-                        "uuid": "831bf7aea3094c819075de13d704b454",
-                        "title": "Filter and Export",
-                        "content": "The requirement can be exported as various format, such as\n\n* Text file\n\n* Excel File\n\n* Sub .req file\n\n* Other format as per user's requirement\n\nThe exported content can be filtered before exporting. In this case, the export file should only contain filtered content.",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Draft",
-                        "Priority": "",
-                        "Implementation": "",
-                        "child": []
-                    },
-                    {
-                        "id": "",
-                        "uuid": "878f48bb93a54cf68882a90fc2c6b18e",
-                        "title": "Statistics",
-                        "content": "As an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Draft",
-                        "Priority": "",
-                        "Implementation": "",
-                        "child": []
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 15:49:07"
                     }
                 ]
             },
