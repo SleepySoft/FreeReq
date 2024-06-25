@@ -200,7 +200,36 @@
                                 "Status": "Approved",
                                 "Priority": "Must / Vital",
                                 "Implementation": "Full Implemented",
-                                "child": []
+                                "child": [
+                                    {
+                                        "id": "",
+                                        "uuid": "9f51fe7082994f5aae4389a29d7b4819",
+                                        "title": "Layout",
+                                        "child": [],
+                                        "content": "# CN\n\n+ 文档结构以树形控件展示。\n\n+ 文编辑区域需要支持Markdown。\n\n+ 文提供Markdown实时预览。\n\n+ 提供Meta Data字段的编辑界面。\n\n\n# EN\n\n+ The document structure is displayed in a tree control.\n\n+ The document editing area needs to support Markdown.\n\n+ The document provides a real-time preview of Markdown.\n\n+ Provides an editing interface for the Meta Data field.\n",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 16:24:07"
+                                    },
+                                    {
+                                        "id": "",
+                                        "uuid": "8e837e392e814a05a16962ee6835e7a7",
+                                        "title": "Basic Operation",
+                                        "child": [],
+                                        "content": "",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 16:20:36"
+                                    }
+                                ]
                             },
                             {
                                 "id": "WHAT00010",
@@ -269,28 +298,42 @@
                                         "uuid": "993543dc967f4d0a9b33b7761e6378f7",
                                         "title": "Batch Documents Print",
                                         "child": [],
-                                        "content": "",
+                                        "content": "# CN\n\n由于大部分情况下需要对外提供一系列的需求文档，所以需要增加批量打印成PDF功能。\n\n选择文档树的一个节点，程序会打印该节点及递归打印该节点所有子节点的内容到**一个**文件中。\n\n提供紧凑其宽松打印选项：前者需求文档连续打印不分页；后者每个需求文档完结后会分页。\n\n\n# EN\n\nSince a series of requirement documents need to be provided to the outside in most cases, it is necessary to add the function of batch printing to PDF.\n\nSelect a node in the document tree, and the program will print the content of the node and all its child nodes recursively into **ONE** file.\n\nProvide **Dense** and **Sparse** printing options: the former prints the requirement documents continuously without paging; the latter prints the documents after each requirement document is completed.\n\n",
                                         "Owner": "",
                                         "Version": "",
                                         "Status": "",
                                         "Priority": "",
                                         "Implementation": "",
                                         "last_editor": "SESA480732",
-                                        "last_change_time": "2024-06-25 15:37:42"
+                                        "last_change_time": "2024-06-25 16:07:38"
                                     },
                                     {
                                         "id": "",
                                         "uuid": "c1934c8416254865b3cbc40333b3c879",
                                         "title": "Batch Documents Export as HTML",
                                         "child": [],
-                                        "content": "",
+                                        "content": "# CN\n\n可以将多个文档打印到同一个HTML中，或者直接导出成带目录的HTML。\n\n\n# EN\n\nYou can print multiple documents to the same HTML, or directly export to HTML with a table of contents.\n\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>",
                                         "Owner": "",
                                         "Version": "",
                                         "Status": "",
                                         "Priority": "",
                                         "Implementation": "",
                                         "last_editor": "SESA480732",
-                                        "last_change_time": "2024-06-25 15:56:50"
+                                        "last_change_time": "2024-06-25 16:10:02"
+                                    },
+                                    {
+                                        "id": "",
+                                        "uuid": "f11b1b67cac747a6a990045a49076ff6",
+                                        "title": "Sub .req File",
+                                        "child": [],
+                                        "content": "# CN\n\n可以将文档的一部分导出成另一个.req文件。\n\n\n# EN\n\nIt is possible to export a sub set of the document into another .req file.\n\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>",
+                                        "Owner": "",
+                                        "Version": "",
+                                        "Status": "",
+                                        "Priority": "",
+                                        "Implementation": "",
+                                        "last_editor": "SESA480732",
+                                        "last_change_time": "2024-06-25 16:12:30"
                                     }
                                 ],
                                 "content": "",
@@ -306,37 +349,57 @@
                                 "id": "",
                                 "uuid": "878f48bb93a54cf68882a90fc2c6b18e",
                                 "title": "Statistics",
-                                "content": "As an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub",
+                                "content": "# CN\n\n作为用户，我想知道：\n\n+ 总需求数量\n\n+ 子需求数量\n\n+ 处于某些状态下的总/子需求数量\n\n\n# EN\n\nAs an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "Draft",
                                 "Priority": "",
                                 "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 16:14:03",
                                 "child": []
                             },
                             {
                                 "id": "",
                                 "uuid": "831bf7aea3094c819075de13d704b454",
-                                "title": "Filter and Export",
-                                "content": "The requirement can be exported as various format, such as\n\n* Text file\n\n* Excel File\n\n* Sub .req file\n\n* Other format as per user's requirement\n\nThe exported content can be filtered before exporting. In this case, the export file should only contain filtered content.",
+                                "title": "Filter",
+                                "content": "# CN\n\n文档可以根据某些条件进行过滤，基于过滤出来的内容进行导出或打印。\n\n\n# EN\n\nDocuments can be filtered according to certain conditions and exported or printed based on the filtered content.\n\n<font color=\"blue\">[!] TODO: Not implemented.</font>",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "Draft",
                                 "Priority": "",
                                 "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 16:14:09",
                                 "child": []
                             },
                             {
                                 "id": "",
                                 "uuid": "9e5fed8db5e842639083e53b13a4a8db",
-                                "title": "Search and Indexing",
-                                "content": "Requirement can be searched by:\n\n* Name\n\n* ID\n\n* The text in content\n\n* UUID\n\n* Extra data (meta data)",
+                                "title": "Searching",
+                                "content": "# CN\n\n需求文档可以通过以下内容进行搜索：\n\n+ UUID\n\n+ Req ID\n\n+ Title\n\n+ Content\n\n+ Meta Data\n\n\n# EN\n\nRequirement can be searched by:\n\n+ UUID\n\n+ Req ID\n\n+ Title\n\n+ Content\n\n+ Meta Data",
                                 "Owner": "",
                                 "Version": "",
                                 "Status": "Draft",
                                 "Priority": "",
                                 "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 16:20:00",
                                 "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "94e16f7dfd734be39fd42e2638831d3f",
+                                "title": "Zooming",
+                                "child": [],
+                                "content": "# CN\n\n编辑区和预览区文字可以放大和缩小。\n\n\n# EN\n\nThe text in the editor and previewer can be enlarged or reduced.\n",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 16:19:51"
                             }
                         ]
                     },
@@ -345,14 +408,14 @@
                         "uuid": "7eb732f34a8943d8ab32bd08b85499e8",
                         "title": "Plugins",
                         "child": [],
-                        "content": "",
+                        "content": "# CN\n\n软件可以通过插件扩展功能。\n\n插件可以通过配置文件（config.json）进行使能。\n\n插件的配置参数也可以放在该文件中。\n\n\n# EN\n\nFree Req can extend its functionality through plugins.\n\nPlugins can be enabled through a configuration file (config.json).\n\nConfiguration parameters for plugins can also be placed in this file.\n",
                         "Owner": "",
                         "Version": "",
                         "Status": "",
                         "Priority": "",
                         "Implementation": "",
                         "last_editor": "SESA480732",
-                        "last_change_time": "2024-06-25 15:49:07"
+                        "last_change_time": "2024-06-25 16:22:11"
                     }
                 ]
             },
