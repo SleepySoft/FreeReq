@@ -38,7 +38,7 @@
         "title": "FreeReq",
         "child": [
             {
-                "id": "",
+                "id": "WHY00018",
                 "uuid": "11c1266e145249858bc47eb007808fe1",
                 "title": "Business Needs (WHY)",
                 "content": "",
@@ -46,15 +46,65 @@
                     {
                         "id": "WHY00004",
                         "uuid": "73f95496372641ab8a94f7e817b0c777",
-                        "title": "Purpose",
-                        "content": "I want a tool to manage my personal software requirement. But the tools I found are not fit for me. Most of them are heavy and commercial. It should looks like:\n\n1. Light weight and free\n\n2. Storage the data in local disk, not network.\n\n3. The file it saved should be text format which is still readable without the tool.\n\n4. It should be a tree style document which just like Caliber.\n\n5. It should support Markdown for good writing and reading.",
+                        "title": "Concept",
+                        "content": "# CN\n\n我需要一个工具来管理个人的开源项目需求，但找不到合适的工具。因为大部分的需求管理工具都是收费的，并且比较重型。我期望的工具是这样的：\n\n1. 免费，轻量级\n\n2. 需求文件必须存储在本地，不能接受在线使用\n\n3. 保存的需求文件必须为文本文件，即使不使用特定工具也能阅读，并且有利于git管理\n\n4. 以树形的结构组织需求文档（就像Caliber一样）\n\n5. 它应该支持Markdown编辑\n\n\n# EN\n\n\nI want a tool to manage my personal software requirement. But the tools I found are not fit for me. Most of them are heavy and commercial. It should looks like:\n\n1. Light weight and free\n\n2. Storage the data in local disk, not network.\n\n3. The file it saved should be text format which is still readable without the tool.\n\n4. It should be a tree style document which just like Caliber.\n\n5. It should support Markdown for good writing and reading.",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 14:34:48",
                         "child": []
                     },
+                    {
+                        "id": "WHY00019",
+                        "uuid": "327f6499fe424f27aedb6d62a0986de6",
+                        "title": "Deployment",
+                        "child": [],
+                        "content": "# CN\n\n尽管它可以支持各种高级功能，但同时只需要单个FreeReq.py文件即可运行，并保留其基本功能。\n\n\n# EN\n\nAlthough it can support various advanced features, it only requires a single FreeReq.py file to run and keep its basic feature.\n",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 14:40:03"
+                    },
+                    {
+                        "id": "WHY00020",
+                        "uuid": "3ce4bb2bbd894e499f3b59557dffcf02",
+                        "title": "Advanced Features",
+                        "child": [],
+                        "content": "# CN\n\nFreeReq可以通过插件方式增加更多（令人激动的）高级功能。\n\n\n#EN\n\nFreeReq can add more (exciting) advanced features by plugins.\n",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 14:41:22"
+                    }
+                ]
+            },
+            {
+                "id": "",
+                "uuid": "d482e027840e4fcc860d8cc26e44e83c",
+                "title": "Stakeholder Requirements (WHAT)",
+                "content": "",
+                "child": [
                     {
                         "id": "",
                         "uuid": "2308d25d87054d0fbc16908986e19a83",
                         "title": "Document Structure",
-                        "content": "The document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* Link - Link to JIRA or other issue management system\n\n* Implementation - Not Implemented / Full Implemented / Partial Implemented\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
+                        "content": "# CN\n\n文档以树形组织，可以在树的任意节点中编辑文档。\n\n文档包含以下固定信息：\n\n+ UUID：文档唯一标识\n\n+ Req ID：文档的需求ID\n\n+ Title：文档标题，做为树的节点名\n\n+ Content：文档内容，以Markdown格式编辑\n\n+ Last Editor：最后一个编辑者，程序应自动读取系统用户名\n\n+ Last Updater Time：最后的编辑时间，程序应自动填入保存时间\n\n\n此外，用户还可以自定义字段，界面根据用户配置动态生成这些字段对应的控件。\n\n这些字段统称为Meta Data，详见“Meta Data”一章。\n\n\n# EN\n\n\n\nThe document should be organized as a tree. Except the title and content, it should also support other extra information which called \"metadata\".\n\nThe data can be\n\n* ID - WHYxxx, WHATxxx, HOWxxx\n\n* Author / Owner\n\n* Version\n\n* Status - Draft, Approved, Rejected\n\n* Link - Link to JIRA or other issue management system\n\n* Implementation - Not Implemented / Full Implemented / Partial Implemented\n\nAnd the metadata should be configurable. Once user configured the metadata item. The item must editable on the editor.\n\nThe data type can be:\n\n* Simple input\n\n* Selection which limit the option\n\n\n",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "last_editor": "SESA480732",
+                        "last_change_time": "2024-06-25 14:49:32",
                         "child": [
                             {
                                 "id": "WHY00014",
@@ -114,6 +164,8 @@
                                 "Status": "Approved",
                                 "Priority": "Could / Nice to Have",
                                 "Implementation": "Full Implemented",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 14:45:12",
                                 "child": []
                             },
                             {
@@ -149,6 +201,57 @@
                                 "Version": "1.0",
                                 "Status": "Approved",
                                 "Priority": "Could / Nice to Have",
+                                "Implementation": "Full Implemented",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "8cccf216b6664c639d9695f80e94efdc",
+                                "title": "Meta Data",
+                                "child": [],
+                                "content": "Owner - In default meta config\n\nVersion - In default meta config\n\nVersion - In default meta config\n\nStatus - In default meta config\n\nImplementation - In default meta config\n\nLink - User defines, not in default meta config",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "last_editor": "SESA480732",
+                                "last_change_time": "2024-06-25 14:45:05"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "",
+                        "uuid": "91a652735c994c868080c8cf6f0f049e",
+                        "title": "Storage",
+                        "content": "",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "Approved",
+                        "Priority": "Must / Vital",
+                        "Implementation": "",
+                        "child": [
+                            {
+                                "id": "WHAT00006",
+                                "uuid": "aa63419e43574685bcd87f3672516a17",
+                                "title": "Local XML storage",
+                                "content": "Requirement can be storaged as XML, which is good organized.\n\nThe file should be readable, not encoded (for some unicode text).",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Rejected",
+                                "Priority": "To Be Defined",
+                                "Implementation": "Not Implemented",
+                                "child": []
+                            },
+                            {
+                                "id": "WHAT00007",
+                                "uuid": "7348dee92b1f4e2993db5cf4e1afa7bb",
+                                "title": "Local JSON storage",
+                                "content": "The document can be saved as JSON, which is easy for persistence and load. It's also readable, though it's less pretty than XML.\n\nThe file should be readable, not encoded (for some unicode text).",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Must / Vital",
                                 "Implementation": "Full Implemented",
                                 "child": []
                             }
@@ -196,6 +299,43 @@
                                         "child": []
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "WHAT00008",
+                        "uuid": "3c09178a2ebb44e89f82438478c700eb",
+                        "title": "UI",
+                        "content": "This soft MUST provide basic UI for requirement browsing.",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "Approved",
+                        "Priority": "Must / Vital",
+                        "Implementation": "Partial Implemented",
+                        "child": [
+                            {
+                                "id": "WHAT00009",
+                                "uuid": "b599ccfeacdd4489a96eae4391f5bf2d",
+                                "title": "UI by pyqt",
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Approved",
+                                "Priority": "Must / Vital",
+                                "Implementation": "Full Implemented",
+                                "child": []
+                            },
+                            {
+                                "id": "WHAT00010",
+                                "uuid": "15f6b85843f74e6086e1601b17046592",
+                                "title": "UI by web",
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "Draft",
+                                "Priority": "Should / Necessary",
+                                "Implementation": "Not Implemented",
+                                "child": []
                             }
                         ]
                     },
@@ -253,6 +393,30 @@
                     },
                     {
                         "id": "",
+                        "uuid": "ae62244719d74e0fac24f6d10ac119e9",
+                        "title": "Batch operation",
+                        "content": "As an user, I want to do batch operation on:\n\n+ ID\n\n+ Other extra data that configed by meta data.",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "Draft",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "ae62244719d74e0fac24f6d10ac119e9",
+                        "title": "Batch operation",
+                        "content": "As an user, I want to do batch operation on:\n\n+ ID\n\n+ Other extra data that configed by meta data.",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "Draft",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
                         "uuid": "9e5fed8db5e842639083e53b13a4a8db",
                         "title": "Search and Indexing",
                         "content": "Requirement can be searched by:\n\n* Name\n\n* ID\n\n* The text in content\n\n* UUID\n\n* Extra data (meta data)",
@@ -277,170 +441,15 @@
                     },
                     {
                         "id": "",
-                        "uuid": "ae62244719d74e0fac24f6d10ac119e9",
-                        "title": "Batch operation",
-                        "child": [],
-                        "content": "As an user, I want to do batch operation on:\n\n+ ID\n\n+ Other extra data that configed by meta data.",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Draft",
-                        "Priority": "",
-                        "Implementation": ""
-                    },
-                    {
-                        "id": "",
                         "uuid": "878f48bb93a54cf68882a90fc2c6b18e",
                         "title": "Statistics",
-                        "child": [],
                         "content": "As an user, I want to know:\n\n+ The total requirement count\n\n+ The sub requirement count\n\n+ The requirement that in some status count of tatal / sub",
                         "Owner": "",
                         "Version": "",
                         "Status": "Draft",
                         "Priority": "",
-                        "Implementation": ""
-                    }
-                ]
-            },
-            {
-                "id": "",
-                "uuid": "d482e027840e4fcc860d8cc26e44e83c",
-                "title": "Stakeholder Requirements (WHAT)",
-                "content": "",
-                "child": [
-                    {
-                        "id": "",
-                        "uuid": "fbe8c15815414f928221755b4c4ee124",
-                        "title": "Document Structure",
-                        "content": "",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "",
-                        "Priority": "",
                         "Implementation": "",
-                        "child": [
-                            {
-                                "id": "WHAT00003",
-                                "uuid": "c2854fbc4c93467985a51a7a8678248d",
-                                "title": "Title (Name)",
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHAT00005",
-                                "uuid": "348268da6cea42728b9a26c1e44a9380",
-                                "title": "ID",
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHAT00004",
-                                "uuid": "c0c81af94db14a03866d2ff9075481c3",
-                                "title": "Content",
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHAT00002",
-                                "uuid": "d5f6ecaedce64a4b9a9569a3dbba3fa1",
-                                "title": "Other Meta Data",
-                                "content": "Owner - In default meta config\n\nVersion - In default meta config\n\nVersion - In default meta config\n\nStatus - In default meta config\n\nImplementation - In default meta config\n\nLink - User defines, not in default meta config",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Could / Nice to Have",
-                                "Implementation": "Partial Implemented",
-                                "child": []
-                            }
-                        ]
-                    },
-                    {
-                        "id": "",
-                        "uuid": "91a652735c994c868080c8cf6f0f049e",
-                        "title": "Storage",
-                        "content": "",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Approved",
-                        "Priority": "Must / Vital",
-                        "Implementation": "",
-                        "child": [
-                            {
-                                "id": "WHAT00006",
-                                "uuid": "aa63419e43574685bcd87f3672516a17",
-                                "title": "Local XML storage",
-                                "content": "Requirement can be storaged as XML, which is good organized.\n\nThe file should be readable, not encoded (for some unicode text).",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Rejected",
-                                "Priority": "To Be Defined",
-                                "Implementation": "Not Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHAT00007",
-                                "uuid": "7348dee92b1f4e2993db5cf4e1afa7bb",
-                                "title": "Local JSON storage",
-                                "content": "The document can be saved as JSON, which is easy for persistence and load. It's also readable, though it's less pretty than XML.\n\nThe file should be readable, not encoded (for some unicode text).",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            }
-                        ]
-                    },
-                    {
-                        "id": "WHAT00008",
-                        "uuid": "3c09178a2ebb44e89f82438478c700eb",
-                        "title": "UI",
-                        "content": "This soft MUST provide basic UI for requirement browsing.",
-                        "Owner": "",
-                        "Version": "",
-                        "Status": "Approved",
-                        "Priority": "Must / Vital",
-                        "Implementation": "Partial Implemented",
-                        "child": [
-                            {
-                                "id": "WHAT00009",
-                                "uuid": "b599ccfeacdd4489a96eae4391f5bf2d",
-                                "title": "UI by pyqt",
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Approved",
-                                "Priority": "Must / Vital",
-                                "Implementation": "Full Implemented",
-                                "child": []
-                            },
-                            {
-                                "id": "WHAT00010",
-                                "uuid": "15f6b85843f74e6086e1601b17046592",
-                                "title": "UI by web",
-                                "content": "",
-                                "Owner": "",
-                                "Version": "",
-                                "Status": "Draft",
-                                "Priority": "Should / Necessary",
-                                "Implementation": "Not Implemented",
-                                "child": []
-                            }
-                        ]
+                        "child": []
                     }
                 ]
             },
