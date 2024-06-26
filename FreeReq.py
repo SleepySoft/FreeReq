@@ -310,7 +310,26 @@ class ReqNode:
                 self.append_child(node)
             del self.__data[STATIC_FIELD_CHILD]
 
-    # --------------------
+    def serialize(self) -> str:
+        req_data_dict = self.to_dict()
+        json_text = json.dumps(req_data_dict, indent=4, ensure_ascii=False)
+        return json_text
+
+    @staticmethod
+    def deserialize(json_text: str) -> ReqNode:
+        try:
+            req_data_dict = json.loads(json_text)
+            req_node = ReqNode()
+            req_node.from_dict(req_data_dict)
+            return req_node
+        except Exception as e:
+            print(str(e))
+            print(traceback.format_exc())
+            return None
+        finally:
+            pass
+
+    # ------------------------------------------------------------------------------
 
     def map(self, func: Callable[[ReqNode], None]):
         func(self)
