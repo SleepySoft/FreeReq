@@ -27,7 +27,7 @@ FreeReq可以将需求文档组织成树形结构。一个需求文档可以包�
 
 + UUID - 文档唯一标识
 
-+ Req ID - 文档的需求ID
++ Req ID - 文档的需求ID（唯一的，不重复）
 
 + Title - 文档标题，做为树的节点名
 
@@ -112,7 +112,7 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 
 基于KeyFaiss，使用embedding对需求项进行索引。借助向量数据库，用户可以通过自然语言对需求文档进行搜索。
 
-请注意，embedding模型会影响搜索结果。理论上根据不同的语言，需要在程序中选择对应的embedding模型。
+请注意，embedding模型会影响搜索结果。理论上根据不同的语言，需要在程序中选择对应的embedding模型（需要改代码）。
 
 这个插件需要faiss和text2vec库支持。
 
@@ -129,9 +129,7 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 
 + 类ChatGPT API的LLM网络服务
 
-并基于gradio提供网页聊天功能。
-
-这个插件需要HuggingFace库支持。
+该插件基于gradio提供网页聊天功能，选择不同的LLM需要修改代码。
 
 
 # 更新
