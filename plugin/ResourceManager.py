@@ -88,8 +88,11 @@ class ResourceManager(QMainWindow):
         self.table_widget.resizeColumnsToContents()
 
     def auto_clear(self):
+        ref_resources = [value for value_list in self.search_req_resource().values() for value in value_list]
+        ref_resources_norm = [normalize_path_splitter(value) for value in ref_resources]
+
         unused_files = [resource for resource in self.search_attachment_file()
-                        if resource not in [value for values in self.search_req_resource().values() for value in values]]
+                        if normalize_path_splitter(resource) not in ref_resources_norm]
 
         if unused_files:
             msg = QMessageBox(self)
