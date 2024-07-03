@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, QSettings
-from PyQt5.QtWidgets import QPushButton, QApplication, QMainWindow, QTextEdit
+from PyQt5.QtWidgets import QPushButton, QTextEdit, QVBoxLayout, QWidget
 from FreeReq import IReqAgent, RequirementUI
 
 
@@ -16,10 +16,9 @@ req_agent: IReqAgent = None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-class ScratchPaper(QMainWindow):
-    def __init__(self):
-        super().__init__()
+class ScratchPaper(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.timer = QTimer(self)
         self.textEdit = QTextEdit(self)
         self.settings = QSettings("SleepySoft", "FreeReq")
@@ -28,10 +27,18 @@ class ScratchPaper(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle('Scratch Paper')
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        # self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
-        self.setCentralWidget(self.textEdit)
-        self.textEdit.textChanged.connect(self.on_text_changed)
+        self.setWindowFlags(
+            Qt.Window |  # 标准窗口框架
+            Qt.WindowTitleHint |  # 添加窗口标题栏
+            Qt.WindowSystemMenuHint |  # 添加系统菜单（在标题栏上右键时出现）
+            Qt.WindowMinMaxButtonsHint |  # 添加最大化和最小化按钮
+            Qt.WindowCloseButtonHint  # 添加关闭按钮
+        )
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.textEdit)
 
         font = QFont()
         font.setPointSize(12)
@@ -43,8 +50,6 @@ class ScratchPaper(QMainWindow):
                 self.textEdit.setPlainText(f.read())
         except Exception as e:
             print(e)
-        finally:
-            pass
 
         # Set up a timer to save the file every 2 seconds
         self.timer.timeout.connect(self.auto_save)
@@ -82,7 +87,7 @@ scratch_paper: ScratchPaper = None
 def on_template_button_click():
     global scratch_paper
     if scratch_paper is None:
-        scratch_paper = ScratchPaper()
+        scratch_paper = ScratchPaper(main_ui)
     scratch_paper.show()
 
 
