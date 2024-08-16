@@ -142,6 +142,10 @@ STATIC_FIELDS = [STATIC_FIELD_ID, STATIC_FIELD_UUID, STATIC_FIELD_TITLE, STATIC_
 
 STATIC_META_ID_PREFIX = 'meta_group'
 
+ABOUT_MESSAGE = """FreeReq by Sleepy
+
+Github : https://github.com/SleepySoft/FreeReq"""
+
 
 class ReqNode:
     def __call__(self):
@@ -622,21 +626,11 @@ class ReqSingleJsonFileAgent(IReqAgent):
         return req_names
 
     def new_req(self, req_name: str, overwrite: bool = False) -> bool:
-        if not overwrite and req_name in self.list_req():
-            return False
-        if req_name.lower().endswith('.req'):
-            self.__req_file_name = req_name
-        else:
-            self.__req_file_name = req_name + '.req'
-        self.__req_meta_dict = {}
-        self.__req_data_dict = {}
-        self.__req_node_root = ReqNode(req_name)
-        self.notify_req_loaded(self.req_full_path())
-        return True
+        self.__do_touch(req_name)
+        return self.open_req(req_name)
 
     def open_req(self, req_name: str) -> bool:
-        # if req_name not in self.list_req():
-        #     return False
+        self.__do_close()
 
         if req_name.lower().endswith('.req'):
             req_file = req_name
@@ -648,19 +642,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
         if path_part != '':
             self.__req_path = path_part
-
-        self.__do_close()
-
-        # ret = self.__load_req_json()
-        # issues = self.__check_correct_req_data()
-        #
-        # if len(issues) > 0:
-        #     print('---------------------- Issue Detected ----------------------')
-        #     for issue in issues:
-        #         print(issue)
-        #     print('------------------------------------------------------------')
-        #
-        # self.notify_req_loaded(self.req_full_path())
+            os.chdir( self.__req_path)
+            print(f'Change current path to: ${self.__req_path}')
 
         return self.__do_load(file_part)
 
@@ -803,10 +786,21 @@ class ReqSingleJsonFileAgent(IReqAgent):
     def __do_close(self):
         if self.__req_file_name != '':
             editing_file = self.req_full_path()
+
+            # Keeping self.__req_path
+
             self.__req_file_name = ''
             self.__req_meta_dict = {}
             self.__req_data_dict = {}
-            self.__req_node_root = ReqNode('None')
+            self.__req_node_root = None
+
+            self.__req_id_max = {}
+            self.__uuid_node_index = {}
+            self.__req_id_node_index = {}
+            self.__collected_information = {}
+
+            self.req_hash = None
+
             self.notify_req_closed(editing_file)
 
     def __do_save(self) -> bool:
@@ -821,6 +815,16 @@ class ReqSingleJsonFileAgent(IReqAgent):
             self.__update_req_hash()
             self.notify_req_saved(self.req_full_path())
         return result
+
+    def __do_touch(self, req_file) -> bool:
+        try:
+            with open(req_file, 'wt', encoding='utf-8') as f:
+                f.write('{}')
+            return True
+        except Exception as e:
+            print(str(e))
+            print(traceback.format_exc())
+            return False
 
     def __load_req_json(self) -> bool:
         try:
@@ -862,9 +866,17 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def __hash_req(self):
         sha256_hash = hashlib.sha256()
-        with open(self.req_full_path(), "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
+        try:
+            with open(self.req_full_path(), "rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(byte_block)
+        except FileNotFoundError:
+            # The first save may cause file not found fail.
+            return ''
+        except Exception as e:
+            print('Error: Hash req file fail.')
+            print(e)
+            return ''
         return sha256_hash.hexdigest()
 
     def __check_req_hash(self) -> bool:
@@ -896,6 +908,14 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
         self.__req_node_root.for_each(node_checker)
         return issues
+
+    # -------------------------------------------------------------------------------
+
+    @staticmethod
+    def get_filename_without_extension(path):
+        filename_with_extension = os.path.basename(path)
+        filename_without_extension, _ = os.path.splitext(filename_with_extension)
+        return filename_without_extension
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2300,6 +2320,10 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         # self.__button_req_refresh = QPushButton('Refresh')
 
+        self.menu_bar = self.menuBar()
+        self.status_bar = self.statusBar()
+        self.status_bar_label = QLabel('')
+
         self.dock_tree_requirements = QDockWidget("Outline", self)
         self.dock_tree_requirements.visibilityChanged.connect(self.on_dock_visibility_changed)
 
@@ -2320,6 +2344,13 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.__init_menu()
 
     def __layout_ui(self):
+        # ---------------------- Dock widget (left) ----------------------
+
+        self.dock_tree_requirements.setWidget(self.__tree_requirements)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_tree_requirements)
+
+        # ----------------------- Main area (right) ----------------------
+
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         central_widget.setLayout(self.layout_root)
@@ -2329,16 +2360,12 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         self.layout_root.addWidget(splitter)
 
-        # ------------------------ Right area ------------------------
-
         self.edit_tab.addTab(self.edit_board, 'Requirement Edit')
         self.edit_tab.addTab(self.meta_board, 'Meta Config')
 
-        self.__init_dock_widgets()
+        # ----------------------- Status bar (bottom) ----------------------
 
-    def __init_dock_widgets(self):
-        self.dock_tree_requirements.setWidget(self.__tree_requirements)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_tree_requirements)
+        self.status_bar.addPermanentWidget(self.status_bar_label)
 
     def __config_ui(self):
         self.setMinimumSize(800, 600)
@@ -2366,29 +2393,38 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.__tree_requirements.selectionModel().selectionChanged.connect(self.on_requirement_tree_selection_changed)
 
     def __init_menu(self):
-        menubar = self.menuBar()
-
         # File Menu
-        file_menu = menubar.addMenu('File')
-        new_action = QAction('New', self)
-        open_action = QAction('Open', self)
+        file_menu = self.menu_bar.addMenu('File')
+
+        open_action = QAction('Open...', self)
+        new_action = QAction('New...', self)
         save_action = QAction('Save', self)
         exit_action = QAction('Exit', self)
-        file_menu.addAction(new_action)
         file_menu.addAction(open_action)
+        file_menu.addSeparator()
+        file_menu.addAction(new_action)
+        file_menu.addSeparator()
         file_menu.addAction(save_action)
         file_menu.addSeparator()
         file_menu.addAction(exit_action)
 
         # Edit Menu
-        edit_menu = menubar.addMenu('Edit')
-        search_action = QAction('Find...', self)
+        edit_menu = self.menu_bar.addMenu('Edit')
+        search_action = QAction('Find', self)
+        add_top_action = QAction('Add New Top Item', self)
+        rename_req_action = QAction('Rename Requirement', self)
+
         # undo_action = QAction('Undo', self)
         # redo_action = QAction('Redo', self)
         # cut_action = QAction('Cut', self)
         # copy_action = QAction('Copy', self)
         # paste_action = QAction('Paste', self)
+
         edit_menu.addAction(search_action)
+        edit_menu.addSeparator()
+        edit_menu.addAction(add_top_action)
+        edit_menu.addAction(rename_req_action)
+
         # edit_menu.addAction(undo_action)
         # edit_menu.addAction(redo_action)
         # edit_menu.addSeparator()
@@ -2397,13 +2433,13 @@ class RequirementUI(QMainWindow, IReqObserver):
         # edit_menu.addAction(paste_action)
 
         # View Menu
-        view_menu = menubar.addMenu('View')
+        view_menu = self.menu_bar.addMenu('View')
         self.toggle_tree_action = QAction('Toggle Requirements', self, checkable=True, checked=True)
         view_menu.addAction(self.toggle_tree_action)
         self.toggle_tree_action.triggered.connect(self.toggle_tree_requirements)
 
         # About Menu
-        about_menu = menubar.addMenu('About')
+        about_menu = self.menu_bar.addMenu('About')
         about_action = QAction('About', self)
         about_menu.addAction(about_action)
 
@@ -2412,7 +2448,11 @@ class RequirementUI(QMainWindow, IReqObserver):
         open_action.triggered.connect(self.handle_open)
         save_action.triggered.connect(self.handle_save)
         exit_action.triggered.connect(self.handle_exit)
+
         search_action.triggered.connect(self.handle_search)
+        rename_req_action.triggered.connect(self.handle_rename_req)
+        add_top_action.triggered.connect(self.handle_add_top)
+
         # undo_action.triggered.connect(self.handle_undo)
         # redo_action.triggered.connect(self.handle_redo)
         # cut_action.triggered.connect(self.handle_cut)
@@ -2425,12 +2465,12 @@ class RequirementUI(QMainWindow, IReqObserver):
             self.dock_tree_requirements.hide()
         else:
             self.dock_tree_requirements.show()
-        # self.toggle_tree_action.setChecked(self.dock_tree_requirements.isVisible())
 
     def on_dock_visibility_changed(self, visible):
         self.toggle_tree_action.setChecked(visible)
 
-    # Placeholder methods for menu actions
+    # ------------------------ Menu actions ------------------------
+
     def handle_new(self):
         self.on_menu_create_new_req()
 
@@ -2445,6 +2485,12 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def handle_search(self):
         self.pop_search()
+
+    def handle_add_top(self):
+        self.on_requirement_tree_menu_add_top_item()
+
+    def handle_rename_req(self):
+        self.on_menu_rename_req()
 
     # def handle_undo(self):
     #     pass
@@ -2462,16 +2508,16 @@ class RequirementUI(QMainWindow, IReqObserver):
     #     pass
 
     def handle_about(self):
-        pass
+        QMessageBox.information(self, 'About', ABOUT_MESSAGE)
 
     # ---------------------- Agent observer -----------------------
 
     def on_req_loaded(self, req_uri: str):
-        # Change the current path to the requirement file path.
-        # So the relative markdown file link will be correct.
-        req_path = self.__req_data_agent.get_req_path()
-        print('Change current path to: ' + req_path)
-        os.chdir(req_path)
+        # # Change the current path to the requirement file path.
+        # # So the relative markdown file link will be correct.
+        # req_path = self.__req_data_agent.get_req_path()
+        # print('Change current path to: ' + req_path)
+        # os.chdir(req_path)
 
         self.watcher.addPath(req_uri)
         # self.meta_board.reload_meta_data()
@@ -2486,6 +2532,7 @@ class RequirementUI(QMainWindow, IReqObserver):
                                     'The req file has been changed outside.\n'
                                     f'Avoiding data lost, editing req file is renamed to {kwargs.get("backup_file")}\n'
                                     'Please close this file and merge them by manual.')
+            self.update_status('Conflict')
 
     # --------------------- File observer path ---------------------
 
@@ -2698,22 +2745,32 @@ class RequirementUI(QMainWindow, IReqObserver):
         if is_ok and req_name != '':
             node_root = self.__req_data_agent.get_req_root()
             if node_root is not None:
-                node_root.set_title(req_name)
-                self.__req_data_agent.update_node(node_root)
+                edit_node = node_root.clone()
+                edit_node.set_title(req_name)
+                self.__req_data_agent.update_node(edit_node)
                 # self.__req_data_agent.inform_node_data_updated(node_root)
 
     def on_menu_create_new_req(self):
-        req_name, is_ok = QInputDialog.getText(
-            self, "Create New Requirement", "Requirement Name: ", QLineEdit.Normal, "")
-        req_name = req_name.strip()
-        if is_ok and req_name != '':
-            if req_name in self.__req_data_agent.list_req():
-                ret = QMessageBox.question(
-                    self, 'Overwrite', 'Requirement already exists.\n\nOverwrite?',
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if ret != QMessageBox.Yes:
-                    return
 
+        # Reserved: FreeReq may open a request by connecting to a remote server,
+        #           in which case selecting req requires going through the Agent.
+        #
+        # req_name, is_ok = QInputDialog.getText(
+        #     self, "Create New Requirement", "Requirement Name: ", QLineEdit.Normal, "")
+        # req_name = req_name.strip()
+        # if is_ok and req_name != '':
+        #     if req_name in self.__req_data_agent.list_req():
+        #         ret = QMessageBox.question(
+        #             self, 'Overwrite', 'Requirement already exists.\n\nOverwrite?',
+        #             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        #         if ret != QMessageBox.Yes:
+        #             return
+
+        file_path, is_ok = QFileDialog.getSaveFileName(
+            self, "Save As", "", "Requirement Files (*.req);;All Files (*)")
+        req_name = file_path.strip()
+
+        if is_ok and req_name:
             self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
             self.__req_data_agent.new_req(req_name, overwrite=True)
             self.__req_model.endRemoveRows()
@@ -2724,13 +2781,17 @@ class RequirementUI(QMainWindow, IReqObserver):
     def on_menu_open_local_file(self):
         file_path, is_ok = QFileDialog.getOpenFileName(
             self, 'Select File', '', 'Requirement File (*.req);;All files (*.*)')
-        if is_ok:
+        req_name = file_path.strip()
+
+        if is_ok and req_name:
             self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
             self.__req_data_agent.open_req(file_path)
             self.__req_model.endRemoveRows()
 
             self.edit_board.edit_req(None)
             self.meta_board.reload_meta_data()
+
+    # -------------------------------- Public function --------------------------------
 
     def pop_search(self):
         text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
@@ -2763,6 +2824,12 @@ class RequirementUI(QMainWindow, IReqObserver):
     def get_plugin(self) -> PluginManager:
         # Workaround
         return plugin_manager
+
+    def toast_status(self, text: str, time_ms: int = 3000):
+        self.status_bar.showMessage(text, time_ms)
+
+    def update_status(self, text: str):
+        self.status_bar_label.setText(text)
 
     # --------------------------------------------------------
 
