@@ -2300,6 +2300,9 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         # self.__button_req_refresh = QPushButton('Refresh')
 
+        self.dock_tree_requirements = QDockWidget("Outline", self)
+        self.dock_tree_requirements.visibilityChanged.connect(self.on_dock_visibility_changed)
+
         self.edit_tab = QTabWidget()
         self.meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
         self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
@@ -2334,7 +2337,6 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.__init_dock_widgets()
 
     def __init_dock_widgets(self):
-        self.dock_tree_requirements = QDockWidget("Requirements", self)
         self.dock_tree_requirements.setWidget(self.__tree_requirements)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_tree_requirements)
 
@@ -2380,17 +2382,19 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         # Edit Menu
         edit_menu = menubar.addMenu('Edit')
-        undo_action = QAction('Undo', self)
-        redo_action = QAction('Redo', self)
-        cut_action = QAction('Cut', self)
-        copy_action = QAction('Copy', self)
-        paste_action = QAction('Paste', self)
-        edit_menu.addAction(undo_action)
-        edit_menu.addAction(redo_action)
-        edit_menu.addSeparator()
-        edit_menu.addAction(cut_action)
-        edit_menu.addAction(copy_action)
-        edit_menu.addAction(paste_action)
+        search_action = QAction('Find...', self)
+        # undo_action = QAction('Undo', self)
+        # redo_action = QAction('Redo', self)
+        # cut_action = QAction('Cut', self)
+        # copy_action = QAction('Copy', self)
+        # paste_action = QAction('Paste', self)
+        edit_menu.addAction(search_action)
+        # edit_menu.addAction(undo_action)
+        # edit_menu.addAction(redo_action)
+        # edit_menu.addSeparator()
+        # edit_menu.addAction(cut_action)
+        # edit_menu.addAction(copy_action)
+        # edit_menu.addAction(paste_action)
 
         # View Menu
         view_menu = menubar.addMenu('View')
@@ -2408,11 +2412,12 @@ class RequirementUI(QMainWindow, IReqObserver):
         open_action.triggered.connect(self.handle_open)
         save_action.triggered.connect(self.handle_save)
         exit_action.triggered.connect(self.handle_exit)
-        undo_action.triggered.connect(self.handle_undo)
-        redo_action.triggered.connect(self.handle_redo)
-        cut_action.triggered.connect(self.handle_cut)
-        copy_action.triggered.connect(self.handle_copy)
-        paste_action.triggered.connect(self.handle_paste)
+        search_action.triggered.connect(self.handle_search)
+        # undo_action.triggered.connect(self.handle_undo)
+        # redo_action.triggered.connect(self.handle_redo)
+        # cut_action.triggered.connect(self.handle_cut)
+        # copy_action.triggered.connect(self.handle_copy)
+        # paste_action.triggered.connect(self.handle_paste)
         about_action.triggered.connect(self.handle_about)
 
     def toggle_tree_requirements(self):
@@ -2420,35 +2425,41 @@ class RequirementUI(QMainWindow, IReqObserver):
             self.dock_tree_requirements.hide()
         else:
             self.dock_tree_requirements.show()
-        self.toggle_tree_action.setChecked(self.dock_tree_requirements.isVisible())
+        # self.toggle_tree_action.setChecked(self.dock_tree_requirements.isVisible())
+
+    def on_dock_visibility_changed(self, visible):
+        self.toggle_tree_action.setChecked(visible)
 
     # Placeholder methods for menu actions
     def handle_new(self):
-        pass
+        self.on_menu_create_new_req()
 
     def handle_open(self):
-        pass
+        self.on_menu_open_local_file()
 
     def handle_save(self):
-        pass
+        self.edit_board.on_button_save_content()
 
     def handle_exit(self):
-        pass
+        self.close()
 
-    def handle_undo(self):
-        pass
+    def handle_search(self):
+        self.pop_search()
 
-    def handle_redo(self):
-        pass
-
-    def handle_cut(self):
-        pass
-
-    def handle_copy(self):
-        pass
-
-    def handle_paste(self):
-        pass
+    # def handle_undo(self):
+    #     pass
+    #
+    # def handle_redo(self):
+    #     pass
+    #
+    # def handle_cut(self):
+    #     pass
+    #
+    # def handle_copy(self):
+    #     pass
+    #
+    # def handle_paste(self):
+    #     pass
 
     def handle_about(self):
         pass
@@ -2490,9 +2501,7 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
-            text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
-            if ok:
-                self.search_tree(text)
+            self.pop_search()
         elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
             self.edit_board.on_button_save_content()
 
@@ -2533,11 +2542,11 @@ class RequirementUI(QMainWindow, IReqObserver):
             if len(self.__cut_items) > 0:
                 menu.addAction('Paste as Top Item', partial(self.on_requirement_tree_menu_paste_item, 'top'))
             menu.addSeparator()
-            menu.addAction('Rename Requirement', self.on_requirement_tree_menu_rename_req)
+            menu.addAction('Rename Requirement', self.on_menu_rename_req)
             menu.addSeparator()
-            menu.addAction('Create a New Requirement', self.on_requirement_tree_menu_create_new_req)
+            menu.addAction('Create a New Requirement', self.on_menu_create_new_req)
             menu.addSeparator()
-            menu.addAction('Open Local Requirement File', self.on_requirement_tree_menu_open_local_file)
+            menu.addAction('Open Local Requirement File', self.on_menu_open_local_file)
         menu.exec(QCursor.pos())
 
     def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
@@ -2682,7 +2691,7 @@ class RequirementUI(QMainWindow, IReqObserver):
             msgBox.setText(f'Async printing to {file_name}. \nPlease wait for printing finished.')
             msgBox.exec_()
 
-    def on_requirement_tree_menu_rename_req(self):
+    def on_menu_rename_req(self):
         req_name, is_ok = QInputDialog.getText(
             self, "Rename Requirement", "Requirement Name: ", QLineEdit.Normal, "")
         req_name = req_name.strip()
@@ -2693,7 +2702,7 @@ class RequirementUI(QMainWindow, IReqObserver):
                 self.__req_data_agent.update_node(node_root)
                 # self.__req_data_agent.inform_node_data_updated(node_root)
 
-    def on_requirement_tree_menu_create_new_req(self):
+    def on_menu_create_new_req(self):
         req_name, is_ok = QInputDialog.getText(
             self, "Create New Requirement", "Requirement Name: ", QLineEdit.Normal, "")
         req_name = req_name.strip()
@@ -2712,7 +2721,7 @@ class RequirementUI(QMainWindow, IReqObserver):
             self.edit_board.edit_req(None)
             self.meta_board.reload_meta_data()
 
-    def on_requirement_tree_menu_open_local_file(self):
+    def on_menu_open_local_file(self):
         file_path, is_ok = QFileDialog.getOpenFileName(
             self, 'Select File', '', 'Requirement File (*.req);;All files (*.*)')
         if is_ok:
@@ -2722,6 +2731,11 @@ class RequirementUI(QMainWindow, IReqObserver):
 
             self.edit_board.edit_req(None)
             self.meta_board.reload_meta_data()
+
+    def pop_search(self):
+        text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
+        if ok:
+            self.search_tree(text)
 
     def search_tree(self, text: str):
         root_node = self.__req_data_agent.get_req_root()
