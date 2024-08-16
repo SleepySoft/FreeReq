@@ -2397,12 +2397,14 @@ class RequirementUI(QMainWindow, IReqObserver):
         file_menu = self.menu_bar.addMenu('File')
 
         open_action = QAction('Open...', self)
-        new_action = QAction('New...', self)
+        new_action = QAction('New Empty...', self)
+        new_template_action = QAction('New Template...', self)
         save_action = QAction('Save', self)
         exit_action = QAction('Exit', self)
         file_menu.addAction(open_action)
         file_menu.addSeparator()
         file_menu.addAction(new_action)
+        file_menu.addAction(new_template_action)
         file_menu.addSeparator()
         file_menu.addAction(save_action)
         file_menu.addSeparator()
@@ -2445,6 +2447,7 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         # Connect actions to handlers (leave handlers empty for now)
         new_action.triggered.connect(self.handle_new)
+        new_template_action.triggered.connect(self.handle_new_template)
         open_action.triggered.connect(self.handle_open)
         save_action.triggered.connect(self.handle_save)
         exit_action.triggered.connect(self.handle_exit)
@@ -2473,6 +2476,16 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def handle_new(self):
         self.on_menu_create_new_req()
+
+    def handle_new_template(self):
+        if self.on_menu_create_new_req():
+            req_root = self.__req_data_agent.get_req_root()
+            if req_root.child_count() == 0:
+                self.__req_model.insert_node_children(req_root, [
+                    ReqNode('Business Needs (WHY)'),
+                    ReqNode('Stakeholder Requirements (WHAT)'),
+                    ReqNode('System Requirements (HOW)')
+                ], 0)
 
     def handle_open(self):
         self.on_menu_open_local_file()
@@ -2750,7 +2763,7 @@ class RequirementUI(QMainWindow, IReqObserver):
                 self.__req_data_agent.update_node(edit_node)
                 # self.__req_data_agent.inform_node_data_updated(node_root)
 
-    def on_menu_create_new_req(self):
+    def on_menu_create_new_req(self) -> bool:
 
         # Reserved: FreeReq may open a request by connecting to a remote server,
         #           in which case selecting req requires going through the Agent.
@@ -2772,11 +2785,14 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         if is_ok and req_name:
             self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
-            self.__req_data_agent.new_req(req_name, overwrite=True)
+            success = self.__req_data_agent.new_req(req_name, overwrite=True)
             self.__req_model.endRemoveRows()
 
             self.edit_board.edit_req(None)
             self.meta_board.reload_meta_data()
+        else:
+            success = False
+        return success
 
     def on_menu_open_local_file(self):
         file_path, is_ok = QFileDialog.getOpenFileName(
