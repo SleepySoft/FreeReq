@@ -74,7 +74,7 @@ try:
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-    QAbstractItemView, QScrollArea
+    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -2275,7 +2275,7 @@ class IndexListUI(QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class RequirementUI(QWidget, IReqObserver):
+class RequirementUI(QMainWindow, IReqObserver):
     def __init__(self, req_data_agent: IReqAgent):
         super().__init__()
 
@@ -2314,12 +2314,14 @@ class RequirementUI(QWidget, IReqObserver):
     def __init_ui(self):
         self.__layout_ui()
         self.__config_ui()
+        self.__init_menu()
 
     def __layout_ui(self):
-        self.setLayout(self.layout_root)
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        central_widget.setLayout(self.layout_root)
 
         splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(self.__tree_requirements)
         splitter.addWidget(self.edit_tab)
 
         self.layout_root.addWidget(splitter)
@@ -2328,6 +2330,13 @@ class RequirementUI(QWidget, IReqObserver):
 
         self.edit_tab.addTab(self.edit_board, 'Requirement Edit')
         self.edit_tab.addTab(self.meta_board, 'Meta Config')
+
+        self.__init_dock_widgets()
+
+    def __init_dock_widgets(self):
+        self.dock_tree_requirements = QDockWidget("Requirements", self)
+        self.dock_tree_requirements.setWidget(self.__tree_requirements)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_tree_requirements)
 
     def __config_ui(self):
         self.setMinimumSize(800, 600)
@@ -2340,7 +2349,6 @@ class RequirementUI(QWidget, IReqObserver):
         self.__tree_requirements.setContextMenuPolicy(Qt.CustomContextMenu)
 
         try:
-            # QTreeView style From: https://doc.qt.io/qt-6/stylesheet-examples.html
             with open(os.path.join(self_path, 'res', 'tree_style.qss'), 'rt', encoding='utf-8') as f:
                 tree_style = f.read()
                 tree_style_abs_path = tree_style.replace('res/', os.path.join(self_path, 'res', ''))
@@ -2352,12 +2360,98 @@ class RequirementUI(QWidget, IReqObserver):
         finally:
             pass
 
-        # self.__button_req_refresh.clicked.connect(self.on_button_req_refresh)
-
-        self.__tree_requirements.setModel(self.__req_model)
-        # self.__tree_requirements.clicked.connect(self.on_requirement_tree_click)
         self.__tree_requirements.customContextMenuRequested.connect(self.on_requirement_tree_menu)
         self.__tree_requirements.selectionModel().selectionChanged.connect(self.on_requirement_tree_selection_changed)
+
+    def __init_menu(self):
+        menubar = self.menuBar()
+
+        # File Menu
+        file_menu = menubar.addMenu('File')
+        new_action = QAction('New', self)
+        open_action = QAction('Open', self)
+        save_action = QAction('Save', self)
+        exit_action = QAction('Exit', self)
+        file_menu.addAction(new_action)
+        file_menu.addAction(open_action)
+        file_menu.addAction(save_action)
+        file_menu.addSeparator()
+        file_menu.addAction(exit_action)
+
+        # Edit Menu
+        edit_menu = menubar.addMenu('Edit')
+        undo_action = QAction('Undo', self)
+        redo_action = QAction('Redo', self)
+        cut_action = QAction('Cut', self)
+        copy_action = QAction('Copy', self)
+        paste_action = QAction('Paste', self)
+        edit_menu.addAction(undo_action)
+        edit_menu.addAction(redo_action)
+        edit_menu.addSeparator()
+        edit_menu.addAction(cut_action)
+        edit_menu.addAction(copy_action)
+        edit_menu.addAction(paste_action)
+
+        # View Menu
+        view_menu = menubar.addMenu('View')
+        self.toggle_tree_action = QAction('Toggle Requirements', self, checkable=True, checked=True)
+        view_menu.addAction(self.toggle_tree_action)
+        self.toggle_tree_action.triggered.connect(self.toggle_tree_requirements)
+
+        # About Menu
+        about_menu = menubar.addMenu('About')
+        about_action = QAction('About', self)
+        about_menu.addAction(about_action)
+
+        # Connect actions to handlers (leave handlers empty for now)
+        new_action.triggered.connect(self.handle_new)
+        open_action.triggered.connect(self.handle_open)
+        save_action.triggered.connect(self.handle_save)
+        exit_action.triggered.connect(self.handle_exit)
+        undo_action.triggered.connect(self.handle_undo)
+        redo_action.triggered.connect(self.handle_redo)
+        cut_action.triggered.connect(self.handle_cut)
+        copy_action.triggered.connect(self.handle_copy)
+        paste_action.triggered.connect(self.handle_paste)
+        about_action.triggered.connect(self.handle_about)
+
+    def toggle_tree_requirements(self):
+        if self.dock_tree_requirements.isVisible():
+            self.dock_tree_requirements.hide()
+        else:
+            self.dock_tree_requirements.show()
+        self.toggle_tree_action.setChecked(self.dock_tree_requirements.isVisible())
+
+    # Placeholder methods for menu actions
+    def handle_new(self):
+        pass
+
+    def handle_open(self):
+        pass
+
+    def handle_save(self):
+        pass
+
+    def handle_exit(self):
+        pass
+
+    def handle_undo(self):
+        pass
+
+    def handle_redo(self):
+        pass
+
+    def handle_cut(self):
+        pass
+
+    def handle_copy(self):
+        pass
+
+    def handle_paste(self):
+        pass
+
+    def handle_about(self):
+        pass
 
     # ---------------------- Agent observer -----------------------
 
