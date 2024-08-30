@@ -67,7 +67,7 @@ from PyPDF2 import PdfMerger
 try:
     # Use try catch for running FreeReq without UI
 
-    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor
+    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
     QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer
@@ -83,7 +83,40 @@ finally:
     pass
 
 try:
+    from PyQt5.QtCore import pyqtSlot
     from PyQt5.QtWebEngineWidgets import QWebEngineView
+
+    class QCustomerWebEngineView(QWebEngineView):
+        """
+
+        """
+        def __init__(self):
+            super(QCustomerWebEngineView, self).__init__()
+
+            self.html_save = ''
+            self.base_url_save = ''
+
+            self.loadStarted.connect(self.on_load_started)
+            self.loadFinished.connect(self.on_load_finished)
+
+        def setHtml(self, p_str, baseUrl=''):
+            self.html_save = p_str
+            self.base_url_save = QUrl(baseUrl) if baseUrl else QUrl()
+            super(QCustomerWebEngineView, self).setHtml(p_str, self.base_url_save)
+
+        @pyqtSlot()
+        def on_load_started(self):
+            self.urlChanged.connect(self.on_url_changed)
+
+        @pyqtSlot()
+        def on_load_finished(self):
+            self.urlChanged.disconnect(self.on_url_changed)
+
+        def on_url_changed(self, url):
+            if url.scheme() == 'http' or url.scheme() == 'https':
+                QDesktopServices.openUrl(url)
+                self.setUrl(QUrl('about:blank'))  # 防止页面跳转
+                super(QCustomerWebEngineView, self).setHtml(self.html_save, baseUrl=self.base_url_save)
 except Exception as e:
     print(e)
     print('No QWebEngineView')
@@ -95,7 +128,7 @@ self_path = os.path.dirname(os.path.abspath(__file__))
 
 def is_web_engine_view(view) -> bool:
     try:
-        return isinstance(view, QWebEngineView)
+        return isinstance(view, QWebEngineView) or isinstance(view, QCustomerWebEngineView)
     except NameError:
         return False
 
@@ -1477,7 +1510,7 @@ def render_markdown(md_text: str) -> str:
     return HTML_TEMPLATE.format(css=MARK_DOWN_CSS_TABLE, content=ret)
 
 
-def html_to_view(html_text: str, view: QWebEngineView or QTextEdit, root_path: str = ''):
+def html_to_view(html_text: str, view, root_path: str = ''):
     html_text = html_text.replace('strike>', 'del>')
 
     try:
@@ -1498,7 +1531,7 @@ def html_to_view(html_text: str, view: QWebEngineView or QTextEdit, root_path: s
         pass
 
 
-def markdown_to_view(md_text: str, view: QWebEngineView or QTextEdit, root_path: str = ''):
+def markdown_to_view(md_text: str, view, root_path: str = ''):
     html_text = render_markdown(md_text)
     html_to_view(html_text, view, root_path)
 
@@ -1548,7 +1581,7 @@ def print_text_edit(text_edit: QTextEdit, file_name: str = 'export.pdf'):
     preview.exec_()
 
 
-def print_web_view(web_view: QWebEngineView, file_name: str = 'export.pdf'):
+def print_web_view(web_view, file_name: str = 'export.pdf'):
     def handle_print_finished(filename, success):
         if success:
             if platform.system() == "Windows":
@@ -1571,7 +1604,7 @@ class WebViewPrinter:
         self.markdowns = markdowns
         self.callback = cb_on_finish_or_error
         self.current_index = 0
-        self.web_view = QWebEngineView()
+        self.web_view = QCustomerWebEngineView()
         self.web_view.setHidden(True)  # Hide the web view
         self.web_view.loadFinished.connect(self.__handle_load_finished)
         self.web_view.page().pdfPrintingFinished.connect(self.__handle_print_finished)
@@ -1719,7 +1752,7 @@ class ReqEditorBoard(QWidget):
         self.text_md_editor = MarkdownEditor()
 
         try:
-            self.text_md_viewer = QWebEngineView()
+            self.text_md_viewer = QCustomerWebEngineView()
         except Exception as e:
             print(e)
             print(traceback.format_exc())
