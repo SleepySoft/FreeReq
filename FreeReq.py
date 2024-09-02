@@ -84,39 +84,16 @@ finally:
 
 try:
     from PyQt5.QtCore import pyqtSlot
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
+    from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 
-    class QCustomerWebEngineView(QWebEngineView):
-        """
+    # https://stackoverflow.com/questions/47736408/qwebengineview-how-to-open-links-in-system-browser
 
-        """
-        def __init__(self):
-            super(QCustomerWebEngineView, self).__init__()
-
-            self.html_save = ''
-            self.base_url_save = ''
-
-            self.loadStarted.connect(self.on_load_started)
-            self.loadFinished.connect(self.on_load_finished)
-
-        def setHtml(self, p_str, baseUrl=''):
-            self.html_save = p_str
-            self.base_url_save = QUrl(baseUrl) if baseUrl else QUrl()
-            super(QCustomerWebEngineView, self).setHtml(p_str, self.base_url_save)
-
-        @pyqtSlot()
-        def on_load_started(self):
-            self.urlChanged.connect(self.on_url_changed)
-
-        @pyqtSlot()
-        def on_load_finished(self):
-            self.urlChanged.disconnect(self.on_url_changed)
-
-        def on_url_changed(self, url):
-            if url.scheme() == 'http' or url.scheme() == 'https':
+    class QCustomerWebEnginePage(QWebEnginePage):
+        def acceptNavigationRequest(self, url, _type, isMainFrame):
+            if _type == QWebEnginePage.NavigationTypeLinkClicked:
                 QDesktopServices.openUrl(url)
-                self.setUrl(QUrl('about:blank'))  # 防止页面跳转
-                super(QCustomerWebEngineView, self).setHtml(self.html_save, baseUrl=self.base_url_save)
+                return False
+            return True
 except Exception as e:
     print(e)
     print('No QWebEngineView')
@@ -128,7 +105,7 @@ self_path = os.path.dirname(os.path.abspath(__file__))
 
 def is_web_engine_view(view) -> bool:
     try:
-        return isinstance(view, QWebEngineView) or isinstance(view, QCustomerWebEngineView)
+        return isinstance(view, QWebEngineView)
     except NameError:
         return False
 
@@ -1604,7 +1581,7 @@ class WebViewPrinter:
         self.markdowns = markdowns
         self.callback = cb_on_finish_or_error
         self.current_index = 0
-        self.web_view = QCustomerWebEngineView()
+        self.web_view = QWebEngineView()
         self.web_view.setHidden(True)  # Hide the web view
         self.web_view.loadFinished.connect(self.__handle_load_finished)
         self.web_view.page().pdfPrintingFinished.connect(self.__handle_print_finished)
@@ -1752,7 +1729,8 @@ class ReqEditorBoard(QWidget):
         self.text_md_editor = MarkdownEditor()
 
         try:
-            self.text_md_viewer = QCustomerWebEngineView()
+            self.text_md_viewer = QWebEngineView()
+            self.text_md_viewer.setPage(QCustomerWebEnginePage(self.text_md_viewer))
         except Exception as e:
             print(e)
             print(traceback.format_exc())
