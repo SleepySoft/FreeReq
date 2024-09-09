@@ -934,7 +934,9 @@ class ReqModel(QAbstractItemModel):
     def __init__(self, req_data_agent: IReqAgent):
         super(ReqModel, self).__init__()
         self.__req_data_agent = req_data_agent
-        self.__show_meta = True
+        self.__show_meta = False
+        self.__meta_full_columns = []
+        self.__meta_selected_columns = []
 
     # ------------------------------------- Method -------------------------------------
 
@@ -1085,6 +1087,13 @@ class ReqModel(QAbstractItemModel):
 
         self.endInsertRows()
         self.end_edit()
+
+    # -------------------------------------------------------------------------------------
+
+    def refresh_meta_config(self):
+        self.__meta_full_columns = self.column_titles()
+        # TODO: Column filter
+        self.__meta_selected_columns = self.__meta_full_columns
 
     def column_titles(self) -> List[str]:
         # TODO: Optimise - Just update when MetaData updated

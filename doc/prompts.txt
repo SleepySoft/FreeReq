@@ -272,3 +272,17 @@ def headerData(self, section, orientation, role=0):
 
 
 
+完善以下代码，创建并展示一个可调整大小，并包含最大化最小化及关闭按钮的模态对话框，对话框中央为tree view，tree view的model为req_model。
+```
+def on_meta_view_button_click():
+    if req_agent is None:
+        return
+
+    req_model = ReqModel(req_agent)
+    req_model.refresh_meta_config()
+
+```
+
+
+
+
