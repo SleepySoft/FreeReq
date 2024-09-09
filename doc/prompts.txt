@@ -207,3 +207,33 @@ QTreeView要求可以任意贴边，且能关闭后通过View菜单下的子菜�
 
 如何给QMainWindow下方增加状态栏并更新其显示。
 
+
+
+
+我希望在QTreeView中显示metadata，metadata的获取和迭代如下所示：
+
+meta_data = req_agent.get_req_meta()
+for meta_name, meta_selection in meta_data.items():
+    pass
+
+QTreeView的列头为meta_name，且基于以下的Model，
+
+self.__tree_meta.setModel(self.__req_model)
+self.__tree_meta.setAlternatingRowColors(True)
+self.__tree_meta.setContextMenuPolicy(Qt.CustomContextMenu)
+
+列表中的项显示对应的节点的metadata，这个地方留出来，我想办法填写。给我一个实现的框架。
+
+
+
+
+
+
+
+
+
+
+
+
+
+

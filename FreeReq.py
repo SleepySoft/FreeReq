@@ -934,8 +934,12 @@ class ReqModel(QAbstractItemModel):
     def __init__(self, req_data_agent: IReqAgent):
         super(ReqModel, self).__init__()
         self.__req_data_agent = req_data_agent
+        self.__show_meta = False
 
     # ------------------------------------- Method -------------------------------------
+
+    def show_meta(self, show: bool):
+        self.__show_meta = show
 
     def begin_edit(self):
         self.layoutAboutToBeChanged.emit()
@@ -1019,7 +1023,7 @@ class ReqModel(QAbstractItemModel):
         # if parent.isValid():
         #     return len(parent.internalPointer().data())
         # return len(self.__root_node.data())
-        return 1
+        return 1 if not self.__show_meta else 1
 
     def headerData(self, section, orientation, role=0):
         if self.__req_data_agent is None:
