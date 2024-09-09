@@ -164,6 +164,17 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 + 添加 Req ID 批量分配
 + 改进 ChatReq：添加 ChatLLM.py 和 WebChat.py
 
+## 20240902
+
++ 将程序界面框架改为QMainWidget并增加菜单功能
++ 可以直接通过菜单新建Req文件，包括按模板新建Req文件
++ 优化Markdown中打开链接的方法，在使用QWebEngineView的情况下可以直接调用系统命令打开链接中的文件
+
+## 20240909
+
++ 增加Meta Data统计表功能
++ 增加展开/折叠树节点功能
+
 
 # 使用方法
 

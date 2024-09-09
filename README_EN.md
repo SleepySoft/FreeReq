@@ -174,6 +174,17 @@ This plug-in provides web chat function based on gradio. Selecting different LLM
 + Add Req ID batch assign
 + Improve the ChatReq : Add ChatLLM.py and WebChat.py
 
+## 20240902
+
++ Change the UI framework to QMainWidget and add menus
++ You can create a new Req file directly through the menu, including creating a new Req file according to the template
++ Optimize the method of opening links in Markdown. When using QWebEngineView, you can directly call the system command to open the file in the link
+
+## 20240909
+
++ Add Meta Data statistics table function
++ Add expand/collapse tree node function
+
 # Usage
 
 ![](doc/ui_req_edit.png)
