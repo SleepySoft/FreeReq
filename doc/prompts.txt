@@ -1,3 +1,10 @@
+你作为一个专业的python程序员，基于python3.8编写程序。你将会用到pyqt5、pandas、openyxl完成下面我所描述的功能，每个功能需要使用英文进行python标准格式的注释。理解了就说“好的”。
+
+
+
+
+
+
 我使用pyqt5，有一个QTextEdit，名为self.__text_md_editor，我希望它能接受文件拖入或者图片粘贴。如果是文件拖入，给用户三个选项：
 1.将文件复制到attachment目录下（默认），如果存在同名文件，则弹出输入框要求用户改名（默认输入内容是一个随机UUID），直到名字不冲突为止。
 2.直接链接到文件
@@ -283,6 +290,45 @@ def on_meta_view_button_click():
 
 ```
 
+
+
+
+
+有一个在名为self.dock_tree_requirements的QDockWidget中的名为self.__tree_requirements的QTreeView。
+我希望实现一个函数，将self.__tree_requirements从QDockWidget中移出来，放入一个模态对话框中并显示。模态对话框要求可以调整大小，且同时具有最大最小及关闭按钮。
+当用户退出模态对话框时，将self.__tree_requirements重新放入self.dock_tree_requirements中回复本来的显示状态。
+这个功能是否可以实现，如果可以，请给出代码。
+
+
+
+
+
+
+
+
+
+
+当__show_meta为True时，通过多列显示meta data内容，但当它重新设置为False时，虽然columnCount返回1，但之前的多列依然保留，这是为什么？
+```
+def columnCount(self, parent: QModelIndex = None, *args, **kwargs):
+    return 1 if not self.__show_meta else len(self.column_titles())
+
+def headerData(self, section, orientation, role=0):
+    if self.__req_data_agent is None:
+        return None
+
+    role = Qt.ItemDataRole(role)
+    if role != Qt.DisplayRole:
+        return None
+
+    if orientation == Qt.Horizontal:
+        if self.__show_meta:
+            title = self.column_titles()
+            return title[section] if section < len(title) else ''
+        else:
+            return self.__req_data_agent.get_req_name()
+    return None
+```
 
 
 

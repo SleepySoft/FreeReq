@@ -74,7 +74,7 @@ try:
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow
+    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -940,8 +940,11 @@ class ReqModel(QAbstractItemModel):
 
     # ------------------------------------- Method -------------------------------------
 
-    def show_meta(self, show: bool):
-        self.__show_meta = show
+    def show_meta(self, show_meta: bool):
+        if self.__show_meta != show_meta:
+            self.beginResetModel()
+            self.__show_meta = show_meta
+            self.endResetModel()
 
     def begin_edit(self):
         self.layoutAboutToBeChanged.emit()
@@ -2481,8 +2484,11 @@ class RequirementUI(QMainWindow, IReqObserver):
         # View Menu
         view_menu = self.menu_bar.addMenu('View')
         self.toggle_tree_action = QAction('Toggle Requirements', self, checkable=True, checked=True)
+        self.toggle_tree_meta_stat = QAction('Tree Meta Statistics View')
         view_menu.addAction(self.toggle_tree_action)
+        view_menu.addAction(self.toggle_tree_meta_stat)
         self.toggle_tree_action.triggered.connect(self.toggle_tree_requirements)
+        self.toggle_tree_meta_stat.triggered.connect(self.toggle_tree_meta_statistics)
 
         # About Menu
         about_menu = self.menu_bar.addMenu('About')
@@ -2512,6 +2518,11 @@ class RequirementUI(QMainWindow, IReqObserver):
             self.dock_tree_requirements.hide()
         else:
             self.dock_tree_requirements.show()
+
+    def toggle_tree_meta_statistics(self):
+        self.__req_model.show_meta(True)
+        self.show_tree_in_dialog()
+        self.__req_model.show_meta(False)
 
     def on_dock_visibility_changed(self, visible):
         self.toggle_tree_action.setChecked(visible)
@@ -2890,6 +2901,26 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def update_status(self, text: str):
         self.status_bar_label.setText(text)
+
+    def show_tree_in_dialog(self):
+        # 创建模态对话框
+        dialog = QDialog(self, Qt.Window)
+        dialog.setWindowTitle("Requirements Meta Statistics")
+        dialog.setMinimumSize(1024, 768)
+        dialog.setModal(True)  # 设置为模态对话框
+
+        # 创建布局并添加QTreeView
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(self.__tree_requirements)
+
+        # 调整对话框大小以适应内容
+        dialog.resize(self.__tree_requirements.sizeHint())
+
+        # 显示对话框
+        dialog.exec_()
+
+        # 对话框关闭后，将QTreeView重新放回QDockWidget
+        self.dock_tree_requirements.setWidget(self.__tree_requirements)
 
     # --------------------------------------------------------
 
