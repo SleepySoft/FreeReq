@@ -934,7 +934,7 @@ class ReqModel(QAbstractItemModel):
     def __init__(self, req_data_agent: IReqAgent):
         super(ReqModel, self).__init__()
         self.__req_data_agent = req_data_agent
-        self.__show_meta = False
+        self.__show_meta = True
 
     # ------------------------------------- Method -------------------------------------
 
@@ -961,14 +961,21 @@ class ReqModel(QAbstractItemModel):
     # ------------------------------------ Override ------------------------------------
 
     def data(self, index: QModelIndex, role=None):
-        if index is None or not index.isValid():
+        if index is None or not index.isValid() or not index.internalPointer():
             return None
 
         req_node: ReqNode = index.internalPointer()
 
         if role == Qt.DisplayRole:
-            return req_node.get_title()
-
+            column_index = index.column()
+            if column_index == 0:
+                return req_node.get_title()
+            elif column_index == 1:
+                return req_node.get(STATIC_FIELD_ID, '')
+            elif self.__show_meta:
+                column_titles = self.column_titles()
+                meta_data_key = column_titles[column_index] if column_index < len(column_titles) else ''
+                return req_node.data().get(meta_data_key, '')
         return None
 
     def index(self, row, column, parent: QModelIndex = None, *args, **kwargs):
@@ -1020,10 +1027,7 @@ class ReqModel(QAbstractItemModel):
         return row_count
 
     def columnCount(self, parent: QModelIndex = None, *args, **kwargs):
-        # if parent.isValid():
-        #     return len(parent.internalPointer().data())
-        # return len(self.__root_node.data())
-        return 1 if not self.__show_meta else 1
+        return 1 if not self.__show_meta else len(self.column_titles())
 
     def headerData(self, section, orientation, role=0):
         if self.__req_data_agent is None:
@@ -1034,7 +1038,11 @@ class ReqModel(QAbstractItemModel):
             return None
 
         if orientation == Qt.Horizontal:
-            return self.__req_data_agent.get_req_name()
+            if self.__show_meta:
+                title = self.column_titles()
+                return title[section] if section < len(title) else ''
+            else:
+                return self.__req_data_agent.get_req_name()
         return None
 
     def insertRow(self, row: int, parent: QModelIndex = None, *args, **kwargs) -> bool:
@@ -1077,6 +1085,18 @@ class ReqModel(QAbstractItemModel):
 
         self.endInsertRows()
         self.end_edit()
+
+    def column_titles(self) -> List[str]:
+        # TODO: Optimise - Just update when MetaData updated
+        # Why +2 : Reserve the 1st column for tree structure and the 2nd column for Req ID
+        # Why -1 : Ignore STATIC_META_ID_PREFIX column
+        meta_data = self.__req_data_agent.get_req_meta()
+        meta_title = list(meta_data.keys())
+        if STATIC_META_ID_PREFIX in meta_title:
+            meta_title.remove(STATIC_META_ID_PREFIX)
+        meta_title.insert(0, 'Req ID')
+        meta_title.insert(0, 'Tree')
+        return meta_title
 
 
 # https://gist.github.com/xiaolai/aa190255b7dde302d10208ae247fc9f2

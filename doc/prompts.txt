@@ -229,9 +229,44 @@ self.__tree_meta.setContextMenuPolicy(Qt.CustomContextMenu)
 
 
 
+这是一个pyqt5，TreeView的QAbstractItemModel的一部分代码。
+```
+def data(self, index: QModelIndex, role=None):
+    if index is None or not index.isValid():
+        return None
+
+    req_node: ReqNode = index.internalPointer()
+
+    meta_data = req_node.data()
+    for k, v in meta_data:
+        pass
+
+    if role == Qt.DisplayRole:
+        return req_node.get_title()
+
+    return None
+
+def columnCount(self, parent: QModelIndex = None, *args, **kwargs):
+    meta_data = self.__req_data_agent.get_req_meta()
+    return 1 if not self.__show_meta else len(meta_data)
+
+def headerData(self, section, orientation, role=0):
+    if self.__req_data_agent is None:
+        return None
 
 
+    for meta_name, _ in meta_data.items():
+        pass
 
+    role = Qt.ItemDataRole(role)
+    if role != Qt.DisplayRole:
+        return None
+
+    if orientation == Qt.Horizontal:
+        return self.__req_data_agent.get_req_name()
+    return None
+```
+我希望当self.__show_meta为True时，TreeView显示多列。其中表头为meta_name，单元格为req_node.data()这个dict对应列名的value。
 
 
 
