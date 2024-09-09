@@ -2622,8 +2622,18 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def on_requirement_tree_menu(self, pos: QPoint):
         menu = QMenu()
+
         sel_index: QModelIndex = self.__tree_requirements.indexAt(pos)
+
+        menu.addAction('Expand All', partial(self.on_requirement_tree_menu_expand_all, sel_index))
+        menu.addAction('Collapse All', partial(self.on_requirement_tree_menu_collapse_all, sel_index))
+        menu.addSeparator()
+
         if sel_index is not None and sel_index.isValid():
+            # When all item expanded. You may not able to R-Click on an empty place.
+            menu.addAction('Collapse Whole Tree', partial(self.on_requirement_tree_menu_collapse_all, None))
+            menu.addSeparator()
+
             menu.addAction('Append Child', self.on_requirement_tree_menu_append_child)
 
             # Add submenu
@@ -2720,6 +2730,18 @@ class RequirementUI(QMainWindow, IReqObserver):
                 else:
                     msg_box.setText('All Req ID has been assigned. No update.')
                 msg_box.exec_()
+
+    def on_requirement_tree_menu_expand_all(self, sel_index):
+        if sel_index is not None and sel_index.isValid():
+            self.__tree_requirements.expand(sel_index)
+        else:
+            self.__tree_requirements.expandAll()
+
+    def on_requirement_tree_menu_collapse_all(self, sel_index):
+        if sel_index is not None and sel_index.isValid():
+            self.__tree_requirements.collapse(sel_index)
+        else:
+            self.__tree_requirements.collapseAll()
 
     def on_requirement_tree_menu_add_sibling_up(self):
         if self.__tree_item_selected():
