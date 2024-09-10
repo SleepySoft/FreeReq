@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 # ----------------------------------------------------------------------------------------------------------------------
 from plugin.TestcaseIndexer.TestcaseFileNameScanner import TestcaseFileNameScanner
 from plugin.TestcaseIndexer.TestcaseScannerBase import TestcaseScannerBase
+from extra.MonkeyHook import MonkeyHook
 
 req_agent: IReqAgent = None
 
@@ -158,6 +159,10 @@ class TestcaseLinkObserver(IReqObserver):
         pass
 
 
+def on_hook_requirement_tree_selection_changed(self, selected, deselected):
+    pass
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 def plugin_prob() -> Dict[str, str]:
@@ -184,6 +189,10 @@ def after_ui_created(req_ui: RequirementUI):
     global test_case_selector
     test_case_selector = TestcaseSelector(req_ui, TestcaseFileNameScanner('', []))
     req_agent.add_observer(TestcaseLinkObserver())
+
+    req_ui.on_requirement_tree_selection_changed = \
+        MonkeyHook(req_ui.on_requirement_tree_selection_changed,
+                   hook_after=on_hook_requirement_tree_selection_changed)
 
     test_case_selector_button = QPushButton('Testcase Link')
     test_case_selector_button.clicked.connect(on_test_case_selector_button_click)

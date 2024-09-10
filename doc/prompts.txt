@@ -396,3 +396,12 @@ class TestcaseSelector(QWidget):
 ```
 
 
+
+
+
+
+
+使用替换__code__属性的方法HOOK函数时，如果hook函数是成员函数，被hook函数可能是全局函数也可能是成员函数，那么self怎么处理？
+
+
+
