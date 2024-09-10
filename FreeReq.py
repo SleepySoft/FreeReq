@@ -2363,6 +2363,7 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.__tree_requirements = QTreeView()
 
         self.layout_root = QHBoxLayout()
+
         self.sub_window_index = {'default': IndexListUI(self)}
 
         # self.__button_req_refresh = QPushButton('Refresh')

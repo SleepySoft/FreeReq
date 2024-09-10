@@ -350,12 +350,49 @@ def headerData(self, section, orientation, role=0):
 
 
 
+帮我完成这个函数，根据scan_patterns扫描scan_path中的文件，并将pattern部分作为key，文件绝对路径作为value，放入req_id_file_mapping中。
+```
+class TestcaseScannerBase:
+    def __init__(self, scan_path: str, patterns: List[str]):
+        self.scan_path = ''
+        self.scan_patterns = []
+        self.req_id_file_mapping = {}
+
+    def do_scan(self):
+        """
+        Scan files by specified ReqID pattern. You can scan file name or file content.
+        :return:
+        """
+        pass
+
+    def get_mapping(self) -> dict:
+        return {'WHATxxxxxx': ['test_case_file_1.robot', 'test_case_file_path_2.robot']}
+```
 
 
 
 
+根据要求帮我完成下面的代码：
 
+基于以上的get_mapping()结果，写一个子窗口，用以根据req id filter展示其相关联的文件。
+其主要内容为一个列表，第一列为文件名，第二列为文件的绝对路径。列表仅能单选，双击时调用系统程序打开对应行的文件。
+下方有一个扫描路径输入框和一个路径选择按钮，用户选择的路径通过qt的机制保存，下次创建窗口时载入。
+同时提供一个“Scan”按钮，用以给用户手动执行扫描。界面文字全部使用英文。
+当用户点击关闭时，窗口仅隐藏，当窗口显示时，执行一次扫描。
 
+```
+class TestcaseSelector(QWidget):
+    def __init__(self, main_ui: RequirementUI, scanner: TestcaseScannerBase):
+        super().__init__()
+        self.main_ui = main_ui
+        self.scanner = scanner
 
+    def update_testcase_index():
+        self.scanner.do_scan()
+
+    def set_req_id_filter(req_ids: List[str]):
+        # TODO: self.scanner.get_mapping()
+        pass
+```
 
 
