@@ -4,7 +4,7 @@ from typing import List, Dict
 
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWidgets import QComboBox, QFileDialog, QAbstractItemView
-from FreeReq import IReqAgent, RequirementUI, STATIC_META_ID_PREFIX, ReqNode, IReqObserver
+from FreeReq import IReqAgent, RequirementUI, STATIC_META_ID_PREFIX, ReqNode, IReqObserver, STATIC_FIELD_ID
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableView, QMessageBox
 
@@ -12,7 +12,6 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 # ----------------------------------------------------------------------------------------------------------------------
 from plugin.TestcaseIndexer.TestcaseFileNameScanner import TestcaseFileNameScanner
 from plugin.TestcaseIndexer.TestcaseScannerBase import TestcaseScannerBase
-from extra.MonkeyHook import MonkeyHook
 
 req_agent: IReqAgent = None
 
@@ -25,6 +24,7 @@ class TestcaseSelector(QWidget):
         self.main_ui = main_ui
         self.scanner = scanner
         self.patterns = []
+        self.filter = ''
         self.table_view = QTableView()
         self.scan_path = self.main_ui.get_scan_path() if hasattr(self.main_ui, 'get_scan_path') else ''
         self.init_ui()
@@ -73,6 +73,10 @@ class TestcaseSelector(QWidget):
         # Load the scan path
         self.load_scan_path()
 
+    def set_req_id_filter(self, req_filter: str):
+        self.filter = req_filter
+        self.update_testcase_index()
+
     def load_scan_path(self):
         # Load the scan path from the main UI or a config file
         self.path_input.setText(self.scan_path)
@@ -102,19 +106,19 @@ class TestcaseSelector(QWidget):
         self.table_model.clear()
         self.table_model.setRowCount(0)
         self.table_model.setHorizontalHeaderLabels(["File Name", "Path"])
-        for req_id, files in mapping.items():
-            for file_path in files:
-                file_name = os.path.basename(file_path)
-                row = self.table_model.rowCount()
-                self.table_model.insertRow(row)
-                self.table_model.setData(self.table_model.index(row, 0), file_name)
-                self.table_model.setData(self.table_model.index(row, 1), file_path)
+
+        files = mapping.get(self.filter, [])
+        for file_path in files:
+            file_name = os.path.basename(file_path)
+            row = self.table_model.rowCount()
+            self.table_model.insertRow(row)
+            self.table_model.setData(self.table_model.index(row, 0), file_name)
+            self.table_model.setData(self.table_model.index(row, 1), file_path)
 
     def open_file(self, index):
-        if index.column() == 0:
-            file_path = self.table_model.data(self.table_model.index(index.row(), 1))
-            if file_path:
-                QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+        file_path = self.table_model.data(self.table_model.index(index.row(), 1))
+        if file_path:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
 
     def closeEvent(self, event):
         # Hide the window instead of closing it
@@ -129,38 +133,48 @@ def on_test_case_selector_button_click():
     test_case_selector.show()
 
 
-class TestcaseLinkObserver(IReqObserver):
-    def __init__(self):
-        super(TestcaseLinkObserver, self).__init__()
+# class TestcaseLinkObserver(IReqObserver):
+#     def __init__(self):
+#         super(TestcaseLinkObserver, self).__init__()
+#
+#     def on_req_saved(self, req_uri: str):
+#         pass
+#
+#     def on_req_loaded(self, req_uri: str):
+#         meta_config = req_agent.get_req_meta()
+#         req_id_prefix = meta_config.get(STATIC_META_ID_PREFIX)
+#         req_id_pattern = [prefix + r'\d{5}' for prefix in req_id_prefix]
+#         test_case_selector.update_scan_pattern(req_id_pattern)
+#         test_case_selector.scan_files()
+#
+#     def on_req_closed(self, req_uri: str):
+#         pass
+#
+#     def on_req_exception(self, exception_name: str, **kwargs):
+#         pass
+#
+#     def on_meta_data_changed(self, req_name: str):
+#         pass
+#
+#     def on_node_data_changed(self, req_name: str, req_node: ReqNode):
+#         pass
+#
+#     def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: [ReqNode], operation: str):
+#         pass
 
-    def on_req_saved(self, req_uri: str):
-        pass
 
-    def on_req_loaded(self, req_uri: str):
-        meta_config = req_agent.get_req_meta()
-        req_id_prefix = meta_config.get(STATIC_META_ID_PREFIX)
-        req_id_pattern = [prefix + r'\d{5}' for prefix in req_id_prefix]
-        test_case_selector.update_scan_pattern(req_id_pattern)
-        test_case_selector.scan_files()
-
-    def on_req_closed(self, req_uri: str):
-        pass
-
-    def on_req_exception(self, exception_name: str, **kwargs):
-        pass
-
-    def on_meta_data_changed(self, req_name: str):
-        pass
-
-    def on_node_data_changed(self, req_name: str, req_node: ReqNode):
-        pass
-
-    def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: [ReqNode], operation: str):
-        pass
+def on_hook_req_loaded(_):
+    meta_config = req_agent.get_req_meta()
+    req_id_prefix = meta_config.get(STATIC_META_ID_PREFIX)
+    req_id_pattern = [prefix + r'\d{5}' for prefix in req_id_prefix]
+    test_case_selector.update_scan_pattern(req_id_pattern)
+    test_case_selector.scan_files()
 
 
-def on_hook_requirement_tree_selection_changed(self, selected, deselected):
-    pass
+def on_hook_requirement_tree_selection_changed(_, __):
+    _, req_node = test_case_selector.main_ui.get_selected()
+    if req_node is not None:
+        test_case_selector.set_req_id_filter(req_node.get(STATIC_FIELD_ID, ''))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -188,11 +202,9 @@ def req_agent_prepared(req: IReqAgent):
 def after_ui_created(req_ui: RequirementUI):
     global test_case_selector
     test_case_selector = TestcaseSelector(req_ui, TestcaseFileNameScanner('', []))
-    req_agent.add_observer(TestcaseLinkObserver())
 
-    req_ui.on_requirement_tree_selection_changed = \
-        MonkeyHook(req_ui.on_requirement_tree_selection_changed,
-                   hook_after=on_hook_requirement_tree_selection_changed)
+    req_ui.on_req_loaded.add_post_hook(on_hook_req_loaded)
+    req_ui.on_requirement_tree_selection_changed.add_post_hook(on_hook_requirement_tree_selection_changed)
 
     test_case_selector_button = QPushButton('Testcase Link')
     test_case_selector_button.clicked.connect(on_test_case_selector_button_click)

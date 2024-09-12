@@ -118,6 +118,91 @@ def has_web_engine_view() -> bool:
         return False
 
 
+class ObserverNotifier:
+    """
+    A class to simplify the observer notification.
+    You call notify_xxx on this class and all observer's on_xxx function will be invoked.
+    """
+    def __init__(self):
+        self.__observers = []
+
+    def add_observer(self, observer):
+        if observer not in self.__observers:
+            self.__observers.append(observer)
+
+    def remove_observer(self, observer):
+        if observer in self.__observers:
+            self.__observers.remove(observer)
+
+    def __getattr__(self, item):
+        if item.startswith('notify_'):
+            action = item[len('notify_'):]
+
+            def dynamic_notify(*args, **kwargs):
+                method_name = f"on_{action}"
+                for observer in self.__observers:
+                    try:
+                        getattr(observer, method_name)(*args, **kwargs)
+                    except AttributeError:
+                        print(f"Warning: Observer {observer} does not implement method {method_name}")
+                    except Exception as e:
+                        print(str(e))
+                print(f"=> {action.capitalize()} notified.")
+
+            return dynamic_notify
+        else:
+            return None
+
+
+class Hookable:
+    def __init__(self, func):
+        self._func = func
+        self._pre_hooks = []
+        self._post_hooks = []
+        self._replace_hook = None
+        self._hooked_instance = None
+
+    def __call__(self, *args, **kwargs):
+        for pre_hook in self._pre_hooks:
+            pre_hook(*args, **kwargs)
+
+        if self._hooked_instance:
+            result = self._func(self._hooked_instance, *args, **kwargs) \
+                if not self._replace_hook else self._replace_hook(self._hooked_instance, *args, **kwargs)
+        else:
+            result = self._func(*args, **kwargs) if not self._replace_hook else self._replace_hook(*args, **kwargs)
+
+        for post_hook in self._post_hooks:
+            post_hook(*args, **kwargs)
+
+        return result
+
+    def __get__(self, instance, owner):
+        self._hooked_instance = instance
+        return self
+
+    def __repr__(self):
+        return f"<Hooked Function {self._func.__name__}>"
+
+    def add_pre_hook(self, hook):
+        self._pre_hooks.append(hook)
+
+    def remove_pre_hook(self, hook):
+        self._pre_hooks.remove(hook)
+
+    def add_post_hook(self, hook):
+        self._post_hooks.append(hook)
+
+    def remove_post_hook(self, hook):
+        self._post_hooks.remove(hook)
+
+    def set_replacement_hook(self, hook, force=False) -> bool:
+        if self._replace_hook and not force:
+            return False
+        self._replace_hook = hook
+        return True
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Plugin:
 #   req_agent_prepared(req: IReqAgent)
@@ -402,7 +487,7 @@ class IReqObserver:
 
 class IReqAgent:
     def __init__(self):
-        self.__observer: List[IReqObserver] = []
+        self.ob_notifier = ObserverNotifier()
 
     def init(self, *args, **kwargs) -> bool:
         raise ValueError('Not implemented')
@@ -469,46 +554,10 @@ class IReqAgent:
     # -------------------------------- Observer -------------------------------
 
     def add_observer(self, ob: IReqObserver):
-        self.__observer.append(ob)
+        self.ob_notifier.add_observer(ob)
 
     def remove_observer(self, ob: IReqObserver):
-        if ob in self.__observer:
-            self.__observer.remove(ob)
-
-    def notify_req_saved(self, req_uri: str):
-        print('=> Req saved.')
-        for ob in self.__observer:
-            ob.on_req_saved(req_uri)
-
-    def notify_req_loaded(self, req_uri: str):
-        print('=> Req loaded.')
-        for ob in self.__observer:
-            ob.on_req_loaded(req_uri)
-
-    def notify_req_closed(self, req_uri: str):
-        print('=> Req closed.')
-        for ob in self.__observer:
-            ob.on_req_closed(req_uri)
-
-    def notify_req_exception(self, exception_name: str, **kwargs):
-        print('=> Req exception.')
-        for ob in self.__observer:
-            ob.on_req_exception(exception_name, **kwargs)
-
-    def notify_meta_data_changed(self):
-        print('=> Meta data changed.')
-        for ob in self.__observer:
-            ob.on_meta_data_changed(self.get_req_name())
-
-    def notify_node_data_changed(self, req_node: ReqNode):
-        print('=> Node data changed.')
-        for ob in self.__observer:
-            ob.on_node_data_changed(self.get_req_name(), req_node)
-
-    def notify_node_structure_changed(self, parent_node: ReqNode, child_node: List[ReqNode], operation: str):
-        print('=> Node structure changed: ' + operation)
-        for ob in self.__observer:
-            ob.on_node_structure_changed(self.get_req_name(), parent_node, child_node, operation)
+        self.ob_notifier.remove_observer(ob)
 
     # -------------------------------- Assistant -------------------------------
 
@@ -683,7 +732,8 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def set_req_meta(self, req_meta: dict) -> bool:
         self.__req_meta_dict = req_meta
-        self.notify_meta_data_changed()
+        self.ob_notifier.notify('meta_data_changed')
+        self.ob_notifier.notify_meta_data_changed()
         return self.__do_save()
 
     def get_req_root(self) -> ReqNode:
@@ -703,7 +753,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
             self.__do_save()
-            self.notify_node_structure_changed(parent_node[0], insert_nodes, 'add')
+            self.ob_notifier.notify_node_structure_changed(parent_node[0], insert_nodes, 'add')
 
     def remove_node(self, node_uuid: str):
         remove_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -715,7 +765,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node.remove_child(remove_node[0])
 
             self.__do_save()
-            self.notify_node_structure_changed(parent_node, remove_node, 'remove')
+            self.ob_notifier.notify_node_structure_changed(parent_node, remove_node, 'remove')
 
     def update_node(self, node: ReqNode):
         update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())
@@ -731,7 +781,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         else:
             print("Warning: You'd better using a node copy to update target node.")
         self.__do_save()
-        self.notify_node_data_changed(update_node[0])
+        self.ob_notifier.notify_node_data_changed(update_node[0])
 
     def shift_node(self, node_uuid: str, shift_offset: int):
         shift_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -789,7 +839,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
                 print(issue)
             print('------------------------------------------------------------')
 
-        self.notify_req_loaded(self.req_full_path())
+        self.ob_notifier.notify_req_loaded(self.req_full_path())
 
         return ret
 
@@ -811,19 +861,19 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
             self.req_hash = None
 
-            self.notify_req_closed(editing_file)
+            self.ob_notifier.notify_req_closed(editing_file)
 
     def __do_save(self) -> bool:
         if not self.check_req_consistency():
             timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S_%f')[:-3]
             backup_file_name = self.__req_file_name + f'.{timestamp}.conflict'
             print(f'Warning: Detect file changed outside. Save as a conflict file: {backup_file_name}')
-            self.notify_req_exception('conflict', oringle_file=self.__req_file_name, backup_file=backup_file_name)
+            self.ob_notifier.notify_req_exception('conflict', oringle_file=self.__req_file_name, backup_file=backup_file_name)
             self.__req_file_name = backup_file_name
         result = self.__save_req_json()
         if result:
             self.__update_req_hash()
-            self.notify_req_saved(self.req_full_path())
+            self.ob_notifier.notify_req_saved(self.req_full_path())
         return result
 
     def __do_touch(self, req_file) -> bool:
@@ -2464,23 +2514,10 @@ class RequirementUI(QMainWindow, IReqObserver):
         add_top_action = QAction('Add New Top Item', self)
         rename_req_action = QAction('Rename Requirement', self)
 
-        # undo_action = QAction('Undo', self)
-        # redo_action = QAction('Redo', self)
-        # cut_action = QAction('Cut', self)
-        # copy_action = QAction('Copy', self)
-        # paste_action = QAction('Paste', self)
-
         edit_menu.addAction(search_action)
         edit_menu.addSeparator()
         edit_menu.addAction(add_top_action)
         edit_menu.addAction(rename_req_action)
-
-        # edit_menu.addAction(undo_action)
-        # edit_menu.addAction(redo_action)
-        # edit_menu.addSeparator()
-        # edit_menu.addAction(cut_action)
-        # edit_menu.addAction(copy_action)
-        # edit_menu.addAction(paste_action)
 
         # View Menu
         view_menu = self.menu_bar.addMenu('View')
@@ -2506,12 +2543,6 @@ class RequirementUI(QMainWindow, IReqObserver):
         search_action.triggered.connect(self.handle_search)
         rename_req_action.triggered.connect(self.handle_rename_req)
         add_top_action.triggered.connect(self.handle_add_top)
-
-        # undo_action.triggered.connect(self.handle_undo)
-        # redo_action.triggered.connect(self.handle_redo)
-        # cut_action.triggered.connect(self.handle_cut)
-        # copy_action.triggered.connect(self.handle_copy)
-        # paste_action.triggered.connect(self.handle_paste)
         about_action.triggered.connect(self.handle_about)
 
     def toggle_tree_requirements(self):
@@ -2561,33 +2592,13 @@ class RequirementUI(QMainWindow, IReqObserver):
     def handle_rename_req(self):
         self.on_menu_rename_req()
 
-    # def handle_undo(self):
-    #     pass
-    #
-    # def handle_redo(self):
-    #     pass
-    #
-    # def handle_cut(self):
-    #     pass
-    #
-    # def handle_copy(self):
-    #     pass
-    #
-    # def handle_paste(self):
-    #     pass
-
     def handle_about(self):
         QMessageBox.information(self, 'About', ABOUT_MESSAGE)
 
     # ---------------------- Agent observer -----------------------
 
+    @Hookable
     def on_req_loaded(self, req_uri: str):
-        # # Change the current path to the requirement file path.
-        # # So the relative markdown file link will be correct.
-        # req_path = self.__req_data_agent.get_req_path()
-        # print('Change current path to: ' + req_path)
-        # os.chdir(req_path)
-
         self.watcher.addPath(req_uri)
         # self.meta_board.reload_meta_data()
         self.edit_board.re_layout_meta_area()
@@ -2675,6 +2686,7 @@ class RequirementUI(QMainWindow, IReqObserver):
             menu.addAction('Open Local Requirement File', self.on_menu_open_local_file)
         menu.exec(QCursor.pos())
 
+    @Hookable
     def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
         # print(f'Tree Selection Changed: {selected} -> {deselected}')
         if self.__selected_node is not None and self.edit_board.is_content_edited():
@@ -2918,6 +2930,9 @@ class RequirementUI(QMainWindow, IReqObserver):
     def get_plugin(self) -> PluginManager:
         # Workaround
         return plugin_manager
+
+    def get_selected(self) -> Tuple[QModelIndex, ReqNode]:
+        return self.__selected_index, self.__selected_node
 
     def toast_status(self, text: str, time_ms: int = 3000):
         self.status_bar.showMessage(text, time_ms)
