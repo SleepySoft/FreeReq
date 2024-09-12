@@ -2552,9 +2552,17 @@ class RequirementUI(QMainWindow, IReqObserver):
             self.dock_tree_requirements.show()
 
     def toggle_tree_meta_statistics(self):
+        # Keeping tree view visibility.
+        dock_tree_was_visible = self.dock_tree_requirements.isVisible()
+        # Hide for good looking.
+        self.dock_tree_requirements.hide()
+
         self.__req_model.show_meta(True)
         self.show_tree_in_dialog()
         self.__req_model.show_meta(False)
+
+        if dock_tree_was_visible:
+            self.dock_tree_requirements.show()
 
     def on_dock_visibility_changed(self, visible):
         self.toggle_tree_action.setChecked(visible)

@@ -15,3 +15,6 @@ class TestcaseScannerBase:
 
     def get_mapping(self) -> dict:
         return {'WHATxxxxxx': ['test_case_file_1.robot', 'test_case_file_path_2.robot']}
+
+    def testcase_count(self) -> int:
+        return 0

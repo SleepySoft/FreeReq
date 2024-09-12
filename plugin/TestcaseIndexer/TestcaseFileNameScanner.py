@@ -9,6 +9,7 @@ class TestcaseFileNameScanner(TestcaseScannerBase):
     def __init__(self, scan_path: str, patterns: List[str]):
         super(TestcaseFileNameScanner, self).__init__(scan_path, patterns)
         self.req_id_file_mapping = {}
+        self.testcase_files = []
 
     def do_scan(self):
         """
@@ -21,9 +22,10 @@ class TestcaseFileNameScanner(TestcaseScannerBase):
 
         for root, dirs, files in os.walk(self.scan_path):
             for file_name in files:
+                file_path = os.path.join(root, file_name)
+                self.testcase_files.append(file_path)
                 for regex_s, regex_e in zip(regex_search, regex_extract):
                     if regex_s.search(file_name):
-                        file_path = os.path.join(root, file_name)
                         # Extract the ReqID from the filename
                         req_id = self._extract_req_id_from_filename(file_name, regex_e)
                         if req_id:
@@ -52,3 +54,6 @@ class TestcaseFileNameScanner(TestcaseScannerBase):
 
     def get_mapping(self) -> dict:
         return self.req_id_file_mapping
+
+    def testcase_count(self) -> int:
+        return len(self.testcase_files)

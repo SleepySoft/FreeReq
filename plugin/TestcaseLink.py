@@ -3,7 +3,7 @@ from typing import List, Dict
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtGui import QStandardItemModel, QDesktopServices
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QTableView, \
-    QFileDialog, QAbstractItemView, QDockWidget, QHeaderView
+    QFileDialog, QAbstractItemView, QDockWidget, QHeaderView, QMessageBox
 
 from FreeReq import IReqAgent, RequirementUI, STATIC_META_ID_PREFIX, STATIC_FIELD_ID
 from plugin.TestcaseIndexer.TestcaseFileNameScanner import TestcaseFileNameScanner
@@ -63,7 +63,7 @@ class TestcaseSelector(QWidget):
         path_layout.addWidget(self.browse_button)
 
         self.scan_button = QPushButton("Scan")
-        self.scan_button.clicked.connect(self.scan_files)
+        self.scan_button.clicked.connect(self.on_button_scan_files)
         path_layout.addWidget(self.scan_button)
 
         layout.addLayout(path_layout)
@@ -87,6 +87,11 @@ class TestcaseSelector(QWidget):
             self.path_input.setText(path)
             if hasattr(self.main_ui, 'set_scan_path'):
                 self.main_ui.set_scan_path(path)
+
+    def on_button_scan_files(self):
+        self.scan_files()
+        QMessageBox.information(self, 'Scan Finished',
+                                f'Scan Finished. Total test case: {self.scanner.testcase_count()}')
 
     def scan_files(self):
         # Perform the scan and update the table
