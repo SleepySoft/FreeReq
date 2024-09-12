@@ -117,6 +117,19 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 这个插件需要faiss和text2vec库支持。
 
 
+## TestcaseLink
+
+选择一个文件夹，扫描其中的文件，建立从Req ID到测试用例文件的映射。
+
+当打开一个Req文件时，如果该目录下同时存在 ```Testcase``` 目录，该插件会自动扫描该目录。否则需要用户手动指定测试用例所在的文件夹。
+
+当用户选择需求条目后，会根据Req ID显示该需求对应的测试用例列表。双击列表中的条目可以打开对应的测试用例文件。
+
+索引器（扫描器）置于 ```plugin/TestcaseIndexer``` 默认实现了一个TestcaseFileNameScanner，适用于Req ID体现于测试用例文件名中的情况。
+
+如果需要通过扫描文件内容获取该测试用例引用的Req ID，请替换 ```_extract_req_id_from_filename```。
+
+
 ## ChatReq - 和AI聊需求，最酷炫的功能
 
 基于EmbeddingIndexing插件的搜索结果，使用LLM和用户进行对话。

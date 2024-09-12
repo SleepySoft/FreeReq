@@ -1,9 +1,16 @@
-Class,Usage
+Core Class,Usage
 ReqNode,The croe data structure for requirement data management.
-IReqAgent,The interface to manage requirement data storage and access.
 IReqObserver,The interface of IReqAgent observer.
+IReqAgent,The interface to manage requirement data storage and access.
 ReqSingleJsonFileAgent,The implementation of IReqAgent that supports json file local storage.
 ReqModel,The Model for QTreeView. Adapting IReqAgent to QAbstractItemModel.
 ReqEditorBoard,The UI for Reqirement data editing.
 ReqMetaBoard,The UI for Meta data config.
-RequirementUI,The main UI, includes the TreeView, ReqEditorBoard, ReqMetaBoard
+RequirementUI,The main UI. Includes the TreeView/ReqEditorBoard/ReqMetaBoard
+,
+Helper Class,Usage
+ObserverNotifier,The observer notification helper.
+Hookable,A decorator to make a function can be easily hooked.
+MarkdownEditor,A custom Markdown editor.
+WebViewPrinter,PDF printing class with QWebEngineView.
+IndexListUI,A widget that shows Req Index and jump to specified Req on clicking. For search feature.

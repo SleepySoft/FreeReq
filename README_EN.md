@@ -117,6 +117,18 @@ This plugin lists existing resource files and files referenced in the document a
 This plugin also provides a one-click cleanup function, 
 which will delete the files with the status of "No Reference" in the attachment directory.
 
+## TestcaseLink
+
+Select a folder, scan the files in it, and establish a mapping from Req ID to test case file.
+
+When opening a Req file, if there is a ```Testcase``` directory under the directory, the plugin will automatically scan the directory. Otherwise, the user needs to manually specify the folder where the test case is located.
+
+When the user selects a requirement item, a list of test cases corresponding to the requirement will be displayed according to the Req ID. Double-clicking an item in the list will open the corresponding test case file.
+
+The indexer (scanner) is placed in ```plugin/TestcaseIndexer```. By default, a TestcaseFileNameScanner is implemented, which is suitable for the case where the Req ID is reflected in the test case file name.
+
+If you need to obtain the Req ID referenced by the test case by scanning the file content, replace ```_extract_req_id_from_filename```.
+
 ## EmbeddingIndexing
 
 Based on KeyFaiss, use embedding to index the requirements. With the help of vector database, 
