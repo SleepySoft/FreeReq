@@ -3,13 +3,15 @@
         "ReqHistory",
         "ScratchPaper",
         "MarkdownStyle",
-        "ResourceManager"
+        "ResourceManager",
+        "TestcaseLink"
     ],
     "plugin can be one of these, move to 'plugin' above to enable it.": [
         "ReqHistory",
         "ScratchPaper",
         "MarkdownStyle",
         "ResourceManager",
+        "TestcaseLink",
         "ChatReq",
         "EmbeddingIndexing"
     ]

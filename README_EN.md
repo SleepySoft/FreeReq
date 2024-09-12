@@ -185,6 +185,11 @@ This plug-in provides web chat function based on gradio. Selecting different LLM
 + Add Meta Data statistics table function
 + Add expand/collapse tree node function
 
+## 20240912
+
++ Added TestLink function and added TestcaseIndexer based on file name. If you need to analyze the content to find the Req ID of a testcase, you can modify the Indexer according to the prompt.
++ In order to implement the TestLink function, Hookable is added and the observer notification mechanism is improved.
+
 # Usage
 
 ![](doc/ui_req_edit.png)
