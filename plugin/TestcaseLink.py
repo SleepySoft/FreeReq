@@ -2,7 +2,7 @@ import os
 import glob
 from typing import List, Dict
 
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtWidgets import QComboBox, QFileDialog, QAbstractItemView
 from FreeReq import IReqAgent, RequirementUI, STATIC_META_ID_PREFIX, ReqNode, IReqObserver, STATIC_FIELD_ID
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
@@ -31,6 +31,9 @@ class TestcaseSelector(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("Testcase Selector")
+        self.setGeometry(0, 0, 300, 600)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+
         layout = QVBoxLayout(self)
 
         # Path input and buttons
@@ -72,6 +75,11 @@ class TestcaseSelector(QWidget):
 
         # Load the scan path
         self.load_scan_path()
+
+    def show_right_upper(self):
+        main_ui_geometry = self.main_ui.frameGeometry()
+        self.move(main_ui_geometry.topRight() - self.rect().topRight())
+        self.show()
 
     def set_req_id_filter(self, req_filter: str):
         self.filter = req_filter
@@ -129,40 +137,6 @@ class TestcaseSelector(QWidget):
 test_case_selector: TestcaseSelector = None
 
 
-def on_test_case_selector_button_click():
-    test_case_selector.show()
-
-
-# class TestcaseLinkObserver(IReqObserver):
-#     def __init__(self):
-#         super(TestcaseLinkObserver, self).__init__()
-#
-#     def on_req_saved(self, req_uri: str):
-#         pass
-#
-#     def on_req_loaded(self, req_uri: str):
-#         meta_config = req_agent.get_req_meta()
-#         req_id_prefix = meta_config.get(STATIC_META_ID_PREFIX)
-#         req_id_pattern = [prefix + r'\d{5}' for prefix in req_id_prefix]
-#         test_case_selector.update_scan_pattern(req_id_pattern)
-#         test_case_selector.scan_files()
-#
-#     def on_req_closed(self, req_uri: str):
-#         pass
-#
-#     def on_req_exception(self, exception_name: str, **kwargs):
-#         pass
-#
-#     def on_meta_data_changed(self, req_name: str):
-#         pass
-#
-#     def on_node_data_changed(self, req_name: str, req_node: ReqNode):
-#         pass
-#
-#     def on_node_structure_changed(self, req_name: str, parent_node: ReqNode, child_node: [ReqNode], operation: str):
-#         pass
-
-
 def on_hook_req_loaded(_):
     meta_config = req_agent.get_req_meta()
     req_id_prefix = meta_config.get(STATIC_META_ID_PREFIX)
@@ -175,6 +149,10 @@ def on_hook_requirement_tree_selection_changed(_, __):
     _, req_node = test_case_selector.main_ui.get_selected()
     if req_node is not None:
         test_case_selector.set_req_id_filter(req_node.get(STATIC_FIELD_ID, ''))
+
+
+def on_test_case_selector_button_click():
+    test_case_selector.show_right_upper()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -175,6 +175,11 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 + 增加Meta Data统计表功能
 + 增加展开/折叠树节点功能
 
+## 20240912
+
++ 增加TestLink功能，并加入基于文件名的TestcaseIndexer。如果需要分析内容获取测试用例对应的Req ID，可以按提示修改Indexer。
++ 为了实现TestLink功能，增加了Hookable，并且改进了Observer的通知机制。
+
 
 # 使用方法
 
