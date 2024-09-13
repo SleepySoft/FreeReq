@@ -2698,7 +2698,7 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     @Hookable
     def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
-        print(f'Tree Selection Changed: {deselected} -> {selected}')
+        # print(f'Tree Selection Changed: {deselected} -> {selected}')
 
         if self.__selected_node is not None and self.edit_board.is_content_edited():
             ret = QMessageBox.question(self, 'Save or Not',

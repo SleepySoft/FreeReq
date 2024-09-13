@@ -17,6 +17,7 @@ _py_executable_path = os.path.abspath(os.path.dirname(py_executable))
 if platform.system() == 'Windows':
     _build_exe_args = (
         '--clean',
+        '--noconsole',
         '--i', os.path.join(self_path, 'doc', 'logo.ico'),
         '--paths', self_path,
         '-n', 'FreeReq',
