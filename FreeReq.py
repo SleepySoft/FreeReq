@@ -2756,13 +2756,13 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def on_requirement_tree_menu_expand_all(self, sel_index):
         if sel_index is not None and sel_index.isValid():
-            self.__tree_requirements.expand(sel_index)
+            self.do_expand_node_all(sel_index)
         else:
             self.__tree_requirements.expandAll()
 
     def on_requirement_tree_menu_collapse_all(self, sel_index):
         if sel_index is not None and sel_index.isValid():
-            self.__tree_requirements.collapse(sel_index)
+            self.do_collapse_node_all(sel_index)
         else:
             self.__tree_requirements.collapseAll()
 
@@ -2980,6 +2980,18 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         # 对话框关闭后，将QTreeView重新放回QDockWidget
         self.dock_tree_requirements.setWidget(self.__tree_requirements)
+
+    def do_expand_node_all(self, index):
+        if index.isValid():
+            self.__tree_requirements.expand(index)
+            for i in range(self.__tree_requirements.model().rowCount(index)):
+                self.do_expand_node_all(self.__tree_requirements.model().index(i, 0, index))
+
+    def do_collapse_node_all(self, index):
+        if index.isValid():
+            self.__tree_requirements.collapse(index)
+            for i in range(self.__tree_requirements.model().rowCount(index)):
+                self.do_collapse_node_all(self.__tree_requirements.model().index(i, 0, index))
 
     # --------------------------------------------------------
 
