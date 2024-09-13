@@ -72,7 +72,7 @@ try:
     from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
-        QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer
+    QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
@@ -2895,11 +2895,22 @@ class RequirementUI(QMainWindow, IReqObserver):
         return success
 
     def on_menu_open_local_file(self):
-        file_path, is_ok = QFileDialog.getOpenFileName(
-            self, 'Select File', '', 'Requirement File (*.req);;All files (*.*)')
-        req_name = file_path.strip()
+        settings = QSettings("SleepySoft", "FreeReq")
 
-        if is_ok and req_name:
+        # 获取上次打开文件的目录路径
+        last_open_dir = settings.value("last_open", "")
+
+        # 打开文件对话框，使用上次的目录路径作为默认路径
+        file_path, is_ok = QFileDialog.getOpenFileName(
+            self, 'Select File', last_open_dir, 'Requirement File (*.req);;All files (*.*)')
+
+        # 如果成功选择了文件，更新last_open的值为当前文件的目录路径
+        if is_ok and file_path:
+            # 获取文件的目录路径
+            last_open_dir = os.path.dirname(file_path)
+            # 保存到QSettings
+            settings.setValue("last_open", last_open_dir)
+
             self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
             self.__req_data_agent.open_req(file_path)
             self.__req_model.endRemoveRows()
