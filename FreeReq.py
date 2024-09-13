@@ -72,7 +72,7 @@ try:
     from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
-    QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings
+        QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
         QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
         QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
@@ -755,7 +755,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node[0].insert_children(insert_nodes, insert_pos)
 
             self.__do_save()
-            self.ob_notifier.notify_node_structure_changed(parent_node[0], insert_nodes, 'add')
+            self.ob_notifier.notify_node_structure_changed(self.get_req_name(), parent_node[0], insert_nodes, 'add')
 
     def remove_node(self, node_uuid: str):
         remove_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -767,7 +767,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
             parent_node.remove_child(remove_node[0])
 
             self.__do_save()
-            self.ob_notifier.notify_node_structure_changed(parent_node, remove_node, 'remove')
+            self.ob_notifier.notify_node_structure_changed(self.get_req_name(), parent_node, remove_node, 'remove')
 
     def update_node(self, node: ReqNode):
         update_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node.get_uuid())
@@ -2698,7 +2698,8 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     @Hookable
     def on_requirement_tree_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
-        # print(f'Tree Selection Changed: {selected} -> {deselected}')
+        print(f'Tree Selection Changed: {deselected} -> {selected}')
+
         if self.__selected_node is not None and self.edit_board.is_content_edited():
             ret = QMessageBox.question(self, 'Save or Not',
                                        'Requirement Content Changed.\r\nSave?',
@@ -2820,6 +2821,8 @@ class RequirementUI(QMainWindow, IReqObserver):
 
     def on_requirement_tree_menu_delete_item(self):
         if self.__tree_item_selected():
+            # print(f'Tree Selection attempt delete -> {self.__selected_index}')
+
             selected_node = self.__selected_node
             node_order = self.__selected_node.order()
             node_parent = self.__selected_node.parent()
@@ -2827,9 +2830,11 @@ class RequirementUI(QMainWindow, IReqObserver):
                 # Because beginRemoveRows() will change the selected node
 
                 self.__req_model.beginRemoveRows(
-                    self.__req_model.parent(self.__selected_index), node_order, node_order + 1)
+                    self.__req_model.parent(self.__selected_index), node_order, node_order)
                 self.__req_data_agent.remove_node(selected_node.get_uuid())
                 self.__req_model.endRemoveRows()
+
+                # print(f'Tree Selection deleted -> {self.__selected_index}')
 
     def on_requirement_tree_menu_print_tree(self, dense: bool):
         if self.__selected_node is not None:
