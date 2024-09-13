@@ -72,7 +72,9 @@ class ResourceManager(QMainWindow):
                 self.table_widget.setItem(row_position, 0, QTableWidgetItem(uuid))
                 self.table_widget.setItem(row_position, 1, QTableWidgetItem(resource))
 
-                if normalize_path_splitter(resource) in attachment_resource:
+                if resource.startswith('http://') or resource.startswith('https://'):
+                    self.table_widget.setItem(row_position, 2, QTableWidgetItem('Network Resource'))
+                elif normalize_path_splitter(resource) in attachment_resource:
                     self.table_widget.setItem(row_position, 2, QTableWidgetItem('OK'))
                 else:
                     self.table_widget.setItem(row_position, 2, QTableWidgetItem('Invalid'))
