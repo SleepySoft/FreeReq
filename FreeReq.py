@@ -45,6 +45,7 @@ The reason of putting all classes in one file:
 
 from __future__ import annotations
 
+import argparse
 import datetime
 import hashlib
 import os
@@ -53,6 +54,7 @@ import html
 import base64
 import sys
 import csv
+import time
 import uuid
 import json
 import shutil
@@ -3029,8 +3031,11 @@ class RequirementUI(QMainWindow, IReqObserver):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def main():
-    app = QApplication(sys.argv)
+req_agent: IReqAgent = None
+
+
+def init_req(req_file: str = 'FreeReq'):
+    global req_agent
 
     req_agent = ReqSingleJsonFileAgent()
     req_agent.init()
@@ -3043,14 +3048,36 @@ def main():
             print(f'Loaded plugin: {plugin}')
         plugin_manager.invoke_all('req_agent_prepared', req_agent)
 
-    w = RequirementUI(req_agent)
-
-    if not req_agent.open_req('FreeReq'):
+    if not req_agent.open_req(req_file):
         req_agent.new_req('FreeReq', True)
     print('Current path: ' + os.getcwd())
 
+
+def launch_ui():
+    app = QApplication(sys.argv)
+    w = RequirementUI(req_agent)
     w.show()
     sys.exit(app.exec_())
+
+
+def launch_bg():
+    while True:
+        time.sleep(1.0)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Specify parameters to launch FreeReq.')
+    parser.add_argument('-r', '--req_file', default='FreeReq', help='The requirements file to initialize with.')
+    parser.add_argument('-b', '--background', action='store_true', help='Launch the program in background mode.')
+
+    args = parser.parse_args()
+
+    init_req(args.req_file)
+
+    if args.background:
+        launch_bg()
+    else:
+        launch_ui()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

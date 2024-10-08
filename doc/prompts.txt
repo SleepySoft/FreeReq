@@ -429,9 +429,16 @@ class TestcaseSelector(QWidget):
 
 
 
-
-
-
+帮我实现下面的函数：
+```
+def main():
+    init_req(req_file)
+    launch_ui() or launch_bg()
+```
+要求req_file及选择launch_ui() or launch_bg()由命令行参数指定，命令行同时需要提供长参数和短参数，并提供帮助文档。
+req_file为程序启动时打开的需求文档，默认为'FreeReq'
+同时如果不提供对应选择，默认调用launch_ui()
+如果指定的参数非法在则打印帮助并退出。注意其中的文本需要使用英文。
 
 
 
