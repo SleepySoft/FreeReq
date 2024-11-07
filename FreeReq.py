@@ -69,7 +69,8 @@ from PyPDF2 import PdfMerger
 try:
     # Use try catch for running FreeReq without UI
 
-    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices, QPainter
+    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices, QPainter, \
+    QTextDocument, QColor
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
     QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings, QRect
@@ -1438,6 +1439,46 @@ class MarkdownEditor(QPlainTextEdit):
         self.attachment_folder = attachment_folder
         self.lineNumberArea = LineNumberArea(self)
         self.initlineNumberArea()
+
+    def search_and_select(self, search_string, forward=True):
+        """
+        Search for the next occurrence of the search_string from the current cursor position.
+        Select the found string and scroll the editor to center it.
+
+        Parameters:
+        search_string (str): The string to search for.
+        forward (bool): Direction of the search. True for forward, False for backward.
+
+        Returns:
+        bool: True if the string is found, False otherwise.
+        """
+        document = self.document()
+        cursor = self.textCursor()
+
+        # Set the search direction
+        if forward:
+            search_flags = QTextDocument.FindFlags()
+        else:
+            search_flags = QTextDocument.FindBackward
+
+        # Start searching from the current cursor position
+        found = document.find(search_string, cursor, search_flags)
+
+        # If not found, wrap around and search from the beginning/end
+        if not found.isNull():
+            cursor = found
+        else:
+            cursor.movePosition(QTextCursor.Start if forward else QTextCursor.End)
+            found = document.find(search_string, cursor, search_flags)
+            if found.isNull():
+                return False
+            cursor = found
+
+        # Select the found string
+        self.setTextCursor(cursor)
+        # Center the found string in the editor
+        self.centerCursor()
+        return True
 
     # --------------------------------------- Line Display Support ---------------------------------------
 
@@ -2995,7 +3036,8 @@ class RequirementUI(QMainWindow, IReqObserver):
     def pop_search(self):
         text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
         if ok:
-            self.search_tree(text)
+            # self.search_tree(text)
+            self.edit_board.text_md_editor.search_and_select(text)
 
     def search_tree(self, text: str):
         root_node = self.__req_data_agent.get_req_root()

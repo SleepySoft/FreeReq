@@ -426,14 +426,14 @@ class TestcaseSelector(QWidget):
 
 
 参考这篇文章：https://segmentfault.com/q/1010000042760276
-写一个支持行号显示的QTexteDIT,并给出启动代码。
+写一个支持行号显示的QTextEdit并给出启动代码。
 
 
 
 
-
-
-
+为这个类添加一个函数，从当前光标位置开始，向前或向后搜索下一个字符串，选中该字符串并滚动编辑页面将其显示在编辑器的中心。
+如果搜索到内容末尾，则回到内容开始开始搜索。如果文中搜索不到该字符串，返回False。
+class MarkdownEditor(QPlainTextEdit)
 
 
 
