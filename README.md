@@ -194,6 +194,11 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 + 为了实现TestLink功能，增加了Hookable，并且改进了Observer的通知机制。
 
 
+## 20241107
+
++ 增加行号显示
+
+
 # 使用方法
 
 ![](doc/ui_req_edit.png)

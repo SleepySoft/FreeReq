@@ -425,9 +425,8 @@ class TestcaseSelector(QWidget):
 
 
 
-
-
-
+参考这篇文章：https://segmentfault.com/q/1010000042760276
+写一个支持行号显示的QTexteDIT,并给出启动代码。
 
 
 

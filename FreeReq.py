@@ -69,14 +69,14 @@ from PyPDF2 import PdfMerger
 try:
     # Use try catch for running FreeReq without UI
 
-    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices
+    from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices, QPainter
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
-        QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings
+    QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings, QRect
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
-        QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
-        QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-        QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog
+    QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
+    QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
+    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1419,10 +1419,77 @@ def pick_table_from_html(html):
     return clean_html
 
 
-class MarkdownEditor(QTextEdit):
+class LineNumberArea(QWidget):
+    def __init__(self, editor):
+        super().__init__(editor)
+        self.editor = editor
+
+    def sizeHint(self):
+        return QSize(self.editor.lineNumberAreaWidth(), 0)
+
+    def paintEvent(self, event):
+        self.editor.lineNumberAreaPaintEvent(event)
+
+
+class MarkdownEditor(QPlainTextEdit):
+
     def __init__(self, attachment_folder='attachment', parent=None):
         super(MarkdownEditor, self).__init__(parent)
         self.attachment_folder = attachment_folder
+        self.lineNumberArea = LineNumberArea(self)
+        self.initlineNumberArea()
+
+    # --------------------------------------- Line Display Support ---------------------------------------
+
+    def initlineNumberArea(self):
+        self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
+        self.updateRequest.connect(self.updateLineNumberArea)
+        self.updateLineNumberAreaWidth(0)
+
+    def lineNumberAreaWidth(self):
+        digits = 1
+        max_block = max(1, self.blockCount())
+        while max_block >= 10:
+            max_block //= 10
+            digits += 1
+        space = self.fontMetrics().horizontalAdvance('9') * (digits + 2)    # Reserve 2 byte wide
+        return space
+
+    def updateLineNumberAreaWidth(self, _):
+        self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
+
+    def updateLineNumberArea(self, rect, dy):
+        if dy:
+            self.lineNumberArea.scroll(0, dy)
+        else:
+            self.lineNumberArea.update(0, rect.y(), self.lineNumberArea.width(), rect.height())
+        if rect.contains(self.viewport().rect()):
+            self.updateLineNumberAreaWidth(0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        cr = self.contentsRect()
+        self.lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
+
+    def lineNumberAreaPaintEvent(self, event):
+        painter = QPainter(self.lineNumberArea)
+        painter.fillRect(event.rect(), Qt.lightGray)
+        block = self.firstVisibleBlock()
+        blockNumber = block.blockNumber()
+        top = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
+        bottom = top + self.blockBoundingRect(block).height()
+        while block.isValid() and top <= event.rect().bottom():
+            if block.isVisible() and bottom >= event.rect().top():
+                number = f'{blockNumber + 1}  '
+                painter.setPen(Qt.black)
+                painter.drawText(0, int(top), self.lineNumberArea.width(), self.fontMetrics().height(),
+                                 Qt.AlignRight, number)
+            block = block.next()
+            top = bottom
+            bottom = top + self.blockBoundingRect(block).height()
+            blockNumber += 1
+
+    # -----------------------------------------------------------------------------------------------
 
     def insertFromMimeData(self, source):
         if source.hasFormat('application/x-qt-windows-mime;value="XML Spreadsheet"'):
@@ -1904,7 +1971,7 @@ class ReqEditorBoard(QWidget):
         editor_font.setPointSizeF(10)
         self.text_md_editor.setFont(editor_font)
 
-        self.text_md_editor.setAcceptRichText(False)
+        # self.text_md_editor.setAcceptRichText(False)
 
         self.__line_title.textChanged.connect(self.on_content_changed)
         self.text_md_editor.textChanged.connect(self.on_text_content_edit)
