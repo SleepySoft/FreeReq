@@ -77,7 +77,7 @@ try:
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit
+    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1432,13 +1432,97 @@ class LineNumberArea(QWidget):
         self.editor.lineNumberAreaPaintEvent(event)
 
 
+class SearchWindow(QWidget):
+    def __init__(self, search_handler, parent=None):
+        super().__init__(parent)
+
+        self.search_handler = search_handler
+
+        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+
+        # 设置布局
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        # 添加搜索输入框
+        self.search_input = QLineEdit(self)
+        self.search_input.setPlaceholderText("Search...")
+        self.search_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.search_input.returnPressed.connect(self.search_forward)
+        self.layout.addWidget(self.search_input)
+
+        # 添加向前搜索按钮
+        self.search_forward_button = QPushButton(">", self)
+        self.search_forward_button.setMaximumSize(30, 30)
+        self.search_forward_button.clicked.connect(self.search_forward)
+        self.search_forward_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.layout.addWidget(self.search_forward_button)
+
+        # 添加向后搜索按钮
+        self.search_backward_button = QPushButton("<", self)
+        self.search_backward_button.setMaximumSize(30, 30)
+        self.search_backward_button.clicked.connect(self.search_backward)
+        self.search_backward_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.layout.addWidget(self.search_backward_button)
+
+        # 添加关闭按钮
+        self.close_button = QPushButton("X", self)
+        self.close_button.setMaximumSize(30, 30)
+        self.close_button.clicked.connect(self.close)
+        self.close_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.layout.addWidget(self.close_button)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(event)
+        event.accept()
+
+    def set_search_text(self, text: str):
+        self.search_input.setText(text)
+
+    def search_forward(self):
+        if self.search_handler is not None:
+            self.search_handler(True)
+
+    def search_backward(self):
+        if self.search_handler is not None:
+            self.search_handler(False)
+
+
 class MarkdownEditor(QPlainTextEdit):
 
     def __init__(self, attachment_folder='attachment', parent=None):
         super(MarkdownEditor, self).__init__(parent)
         self.attachment_folder = attachment_folder
+        self.search_window = SearchWindow(self)
         self.lineNumberArea = LineNumberArea(self)
         self.initlineNumberArea()
+
+    # ----------------------------------- Inter-text search Support -----------------------------------
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
+            selected_text = self.textCursor().selectedText()
+            self.search_window.set_search_text(selected_text)
+            self.show_search_window()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def show_search_window(self):
+        self.update_search_window_position()
+        self.search_window.show()
+        self.search_window.search_input.setFocus()
+
+    def update_search_window_position(self):
+        parent_pos = self.mapToGlobal(self.rect().topLeft())
+        self.search_window.move(parent_pos.x() + self.lineNumberArea.width(), parent_pos.y())
+
+    def moveEvent(self, event):
+        super().moveEvent(event)
+        self.update_search_window_position()
 
     def search_and_select(self, search_string, forward=True):
         """
@@ -2745,7 +2829,8 @@ class RequirementUI(QMainWindow, IReqObserver):
     # -------------------------- UI Events --------------------------
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
+        if event.key() == Qt.Key_F and (event.modifiers() == Qt.ControlModifier or
+                                         event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier)):
             self.pop_search()
         elif event.key() == Qt.Key_S and event.modifiers() == Qt.ControlModifier:
             self.edit_board.on_button_save_content()
@@ -3036,8 +3121,7 @@ class RequirementUI(QMainWindow, IReqObserver):
     def pop_search(self):
         text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
         if ok:
-            # self.search_tree(text)
-            self.edit_board.text_md_editor.search_and_select(text)
+            self.search_tree(text)
 
     def search_tree(self, text: str):
         root_node = self.__req_data_agent.get_req_root()
