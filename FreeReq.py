@@ -77,7 +77,7 @@ try:
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy
+    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy, QToolTip
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1515,13 +1515,29 @@ class MarkdownEditor(QPlainTextEdit):
     # ----------------------------------- Inter-text search Support -----------------------------------
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
+        if event.key() == Qt.Key_Escape:
+            self.search_window.close()
+            event.accept()
+        elif event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
             selected_text = self.textCursor().selectedText()
             self.search_window.set_search_text(selected_text)
             self.show_search_window()
+
+            # Pop-up tool tip to inform user how to open global search.
+            search_window_rect = self.search_window.geometry()
+            tooltip_pos = self.search_window.mapToGlobal(search_window_rect.bottomLeft())
+            tooltip_width = search_window_rect.width()
+            QToolTip.showText(tooltip_pos,
+                              'Click the tree and press CTRL+F to search the whole file.',
+                              None, QRect(0, 0, tooltip_width, 50))
+
             event.accept()
         else:
             super().keyPressEvent(event)
+
+    def moveEvent(self, event):
+        super().moveEvent(event)
+        self.update_search_window_position()
 
     def show_search_window(self):
         self.update_search_window_position()
@@ -1533,10 +1549,6 @@ class MarkdownEditor(QPlainTextEdit):
         margin_rect = self.rect()
         margin_rect.setLeft(margin_rect.left() + x_offset)
         self.search_window.adjust_position(margin_rect)
-
-    def moveEvent(self, event):
-        super().moveEvent(event)
-        self.update_search_window_position()
 
     def search_and_select(self, search_string, forward=True):
         """
@@ -3140,7 +3152,7 @@ class RequirementUI(QMainWindow, IReqObserver):
     # -------------------------------- Public function --------------------------------
 
     def pop_search(self):
-        text, ok = QInputDialog.getText(self, 'Search', 'Enter search text:')
+        text, ok = QInputDialog.getText(self, 'Global Search', 'Input anything to search:')
         if ok:
             self.search_tree(text)
 
