@@ -70,7 +70,7 @@ try:
     # Use try catch for running FreeReq without UI
 
     from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices, QPainter, \
-    QTextDocument, QColor
+    QTextDocument, QColor, QPalette
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
     QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings, QRect
@@ -1511,6 +1511,15 @@ class MarkdownEditor(QPlainTextEdit):
         self.search_window = SearchWindow(self.search_and_select, self)
         self.lineNumberArea = LineNumberArea(self)
         self.initlineNumberArea()
+        self.init_palette()
+
+    def init_palette(self):
+        # Make text more visible when searching.
+        palette = self.palette()
+        palette.setColor(QPalette.Inactive, QPalette.Text, QColor("black"))
+        palette.setColor(QPalette.Inactive, QPalette.Highlight, QColor("lightblue"))
+        palette.setColor(QPalette.Inactive, QPalette.HighlightedText, QColor("black"))
+        self.setPalette(palette)
 
     # ----------------------------------- Inter-text search Support -----------------------------------
 
