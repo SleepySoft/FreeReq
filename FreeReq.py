@@ -1439,9 +1439,12 @@ class SearchWindow(QWidget):
         self.search_handler = search_handler
 
         self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+        self.setMinimumSize(100, 50)
 
         # 设置布局
         self.layout = QHBoxLayout()
+        self.layout.setSpacing(10)
+        self.layout.setContentsMargins(10, 5, 10, 5)
         self.setLayout(self.layout)
 
         # 添加搜索输入框
@@ -1453,21 +1456,21 @@ class SearchWindow(QWidget):
 
         # 添加向前搜索按钮
         self.search_forward_button = QPushButton(">", self)
-        self.search_forward_button.setMaximumSize(30, 30)
+        self.search_forward_button.setMaximumSize(35, 35)
         self.search_forward_button.clicked.connect(self.search_forward)
         self.search_forward_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.layout.addWidget(self.search_forward_button)
 
         # 添加向后搜索按钮
         self.search_backward_button = QPushButton("<", self)
-        self.search_backward_button.setMaximumSize(30, 30)
+        self.search_backward_button.setMaximumSize(35, 35)
         self.search_backward_button.clicked.connect(self.search_backward)
         self.search_backward_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.layout.addWidget(self.search_backward_button)
 
         # 添加关闭按钮
         self.close_button = QPushButton("X", self)
-        self.close_button.setMaximumSize(30, 30)
+        self.close_button.setMaximumSize(35, 35)
         self.close_button.clicked.connect(self.close)
         self.close_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.layout.addWidget(self.close_button)
@@ -1475,20 +1478,29 @@ class SearchWindow(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
+            event.accept()
         else:
             super().keyPressEvent(event)
-        event.accept()
 
     def set_search_text(self, text: str):
         self.search_input.setText(text)
 
+    def adjust_position(self, parent_rect: QRect):
+        parent = self.parent()
+        if parent is None:
+            print('Error - No parent window.')
+            return
+        parent_pos = parent.mapToGlobal(parent_rect.topLeft())
+        self.move(parent_pos.x(), parent_pos.y())
+        self.resize(parent_rect.width(), 30)
+
     def search_forward(self):
         if self.search_handler is not None:
-            self.search_handler(True)
+            self.search_handler(self.search_input.text(), True)
 
     def search_backward(self):
         if self.search_handler is not None:
-            self.search_handler(False)
+            self.search_handler(self.search_input.text(), False)
 
 
 class MarkdownEditor(QPlainTextEdit):
@@ -1496,7 +1508,7 @@ class MarkdownEditor(QPlainTextEdit):
     def __init__(self, attachment_folder='attachment', parent=None):
         super(MarkdownEditor, self).__init__(parent)
         self.attachment_folder = attachment_folder
-        self.search_window = SearchWindow(self)
+        self.search_window = SearchWindow(self.search_and_select, self)
         self.lineNumberArea = LineNumberArea(self)
         self.initlineNumberArea()
 
@@ -1517,8 +1529,10 @@ class MarkdownEditor(QPlainTextEdit):
         self.search_window.search_input.setFocus()
 
     def update_search_window_position(self):
-        parent_pos = self.mapToGlobal(self.rect().topLeft())
-        self.search_window.move(parent_pos.x() + self.lineNumberArea.width(), parent_pos.y())
+        x_offset = self.lineNumberArea.width()
+        margin_rect = self.rect()
+        margin_rect.setLeft(margin_rect.left() + x_offset)
+        self.search_window.adjust_position(margin_rect)
 
     def moveEvent(self, event):
         super().moveEvent(event)
@@ -2165,6 +2179,9 @@ class ReqEditorBoard(QWidget):
     def re_layout_meta_area(self):
         self.__layout_meta_area()
 
+    def on_window_move(self):
+        self.text_md_editor.update_search_window_position()
+
     def on_button_increase_font(self):
         editor_font = self.text_md_editor.font()
         font_size = editor_font.pointSizeF()
@@ -2738,6 +2755,10 @@ class RequirementUI(QMainWindow, IReqObserver):
         rename_req_action.triggered.connect(self.handle_rename_req)
         add_top_action.triggered.connect(self.handle_add_top)
         about_action.triggered.connect(self.handle_about)
+
+    def moveEvent(self, event):
+        super().moveEvent(event)
+        self.edit_board.on_window_move()
 
     def toggle_tree_requirements(self):
         if self.dock_tree_requirements.isVisible():
