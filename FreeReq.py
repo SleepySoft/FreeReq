@@ -1529,16 +1529,18 @@ class MarkdownEditor(QPlainTextEdit):
             event.accept()
         elif event.key() == Qt.Key_F and event.modifiers() == Qt.ControlModifier:
             selected_text = self.textCursor().selectedText()
-            self.search_window.set_search_text(selected_text)
+            if selected_text != '':
+                # If no selection, keep previous search text
+                self.search_window.set_search_text(selected_text)
             self.show_search_window()
 
-            # Pop-up tool tip to inform user how to open global search.
-            search_window_rect = self.search_window.geometry()
-            tooltip_pos = self.search_window.mapToGlobal(search_window_rect.bottomLeft())
-            tooltip_width = search_window_rect.width()
-            QToolTip.showText(tooltip_pos,
-                              'Click the tree and press CTRL+F to search the whole file.',
-                              None, QRect(0, 0, tooltip_width, 50))
+            # # Pop-up tool tip to inform user how to open global search.
+            # search_window_rect = self.search_window.geometry()
+            # tooltip_pos = self.search_window.mapToGlobal(search_window_rect.bottomLeft())
+            # tooltip_width = search_window_rect.width()
+            # QToolTip.showText(tooltip_pos,
+            #                   'Click the tree and press CTRL+F to search the whole file.',
+            #                   None, QRect(0, 0, tooltip_width, 50))
 
             event.accept()
         else:
@@ -1550,6 +1552,8 @@ class MarkdownEditor(QPlainTextEdit):
 
     def show_search_window(self):
         self.update_search_window_position()
+        # Hide and show to get the focus.
+        self.search_window.hide()
         self.search_window.show()
         self.search_window.search_input.setFocus()
 
