@@ -1659,13 +1659,15 @@ class MarkdownEditor(QPlainTextEdit):
         if source.hasFormat('application/x-qt-windows-mime;value="XML Spreadsheet"'):
             msgBox = QMessageBox()
             msgBox.setWindowTitle("FreeReq")
-            msgBox.setText("FreeReq发现你正在粘贴表格，请选择粘贴的方式。\n\n'"
-                           "'Markdown便于修改；\n但如果表格中有跨行或跨列的布局，建议粘贴为HTML或图片。")
-            msgBox.addButton("转换为Markdown", QMessageBox.AcceptRole)
-            msgBox.addButton("转换为HTML", QMessageBox.AcceptRole)
+            msgBox.setText("FreeReq has detected that you are pasting a form. Please select the method for pasting.\n\n"
+                           "Markdown is easy to modify;\n"
+                           "But if the table has a layout that spans rows or columns, "
+                           "it is recommended to paste it as HTML or an image.")
+            msgBox.addButton("Convert to Markdown", QMessageBox.AcceptRole)
+            msgBox.addButton("Convert to HTML", QMessageBox.AcceptRole)
             if source.hasImage():
-                msgBox.addButton("转换为图片", QMessageBox.AcceptRole)
-            msgBox.addButton("取消", QMessageBox.RejectRole)
+                msgBox.addButton("Convert to Image", QMessageBox.AcceptRole)
+            msgBox.addButton("Cancel", QMessageBox.RejectRole)
             ret = msgBox.exec_()
 
             if ret == 0:
