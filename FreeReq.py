@@ -1476,7 +1476,9 @@ class SearchWindow(QWidget):
         self.layout.addWidget(self.close_button)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Enter:
+            self.search_forward()
+        elif event.key() == Qt.Key_Escape:
             self.close()
             event.accept()
         else:
@@ -1484,6 +1486,9 @@ class SearchWindow(QWidget):
 
     def set_search_text(self, text: str):
         self.search_input.setText(text)
+
+    def select_all_text(self):
+        self.search_input.selectAll()
 
     def adjust_position(self, parent_rect: QRect):
         parent = self.parent()
@@ -1532,6 +1537,7 @@ class MarkdownEditor(QPlainTextEdit):
             if selected_text != '':
                 # If no selection, keep previous search text
                 self.search_window.set_search_text(selected_text)
+            self.search_window.select_all_text()
             self.show_search_window()
 
             # # Pop-up tool tip to inform user how to open global search.
