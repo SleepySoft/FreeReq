@@ -53,15 +53,18 @@ import html
 import base64
 import sys
 import csv
+import threading
 import uuid
 import json
 import shutil
 import platform
+import weakref
+
 import markdown2
 import traceback
 import subprocess
 from io import StringIO
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple, Union, Optional
 from functools import partial
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfMerger
@@ -122,39 +125,74 @@ def has_web_engine_view() -> bool:
 
 
 class ObserverNotifier:
-    """
-    A class to simplify the observer notification.
-    You call notify_xxx on this class and all observer's on_xxx function will be invoked.
-    """
-    def __init__(self):
+    def __init__(self, error_handler: Optional[Callable] = None):
+        self.__lock = threading.Lock()
+        # Use list of weak references instead of WeakSet for ordered storage
         self.__observers = []
+        self.__cached_methods = {}
+        self.error_handler = error_handler or self._default_error_handler
 
     def add_observer(self, observer):
-        if observer not in self.__observers:
-            self.__observers.append(observer)
+        """Register an observer instance. Observer should implement
+        handler methods prefixed with 'on_' corresponding to notification events.
+        """
+        with self.__lock:
+            self._cleanup_dead_refs()
+            # Check if observer already exists
+            if any(ref() is observer for ref in self.__observers):
+                return
+
+            # Create weak reference and add to list (preserves order)
+            ref = weakref.ref(observer)
+            self.__observers.append(ref)
 
     def remove_observer(self, observer):
-        if observer in self.__observers:
-            self.__observers.remove(observer)
+        """Unregister a previously added observer instance."""
+        with self.__lock:
+            self._cleanup_dead_refs()
+            # Remove all references pointing to this observer
+            self.__observers = [ref for ref in self.__observers
+                                if ref() is not None and ref() != observer]
 
-    def __getattr__(self, item):
-        if item.startswith('notify_'):
-            action = item[len('notify_'):]
+    def _cleanup_dead_refs(self):
+        """Remove references to garbage-collected observers"""
+        self.__observers = [ref for ref in self.__observers if ref() is not None]
 
-            def dynamic_notify(*args, **kwargs):
-                method_name = f"on_{action}"
-                for observer in self.__observers:
+    def __getattr__(self, name):
+        cached_method = self.__cached_methods.get(name, None)
+        if cached_method:
+            return cached_method
+
+        if name.startswith("notify_"):
+            event_name = name[7:]
+
+            def thread_safe_notify(*args, **kwargs):
+                method_name = f"on_{event_name}"
+
+                with self.__lock:
+                    # Clean up dead references before notification
+                    self._cleanup_dead_refs()
+                    # Get active observers in registration order
+                    observers = [ref() for ref in self.__observers]
+                    # Filter out any remaining None references
+                    observers = [obs for obs in observers if obs is not None]
+
+                # Notify outside lock to minimize contention
+                for observer in observers:
                     try:
-                        getattr(observer, method_name)(*args, **kwargs)
-                    except AttributeError:
-                        print(f"Warning: Observer {observer} does not implement method {method_name}")
+                        method = getattr(observer, method_name, None)
+                        if callable(method):
+                            method(*args, **kwargs)
                     except Exception as e:
-                        print(str(e))
-                print(f"=> {action.capitalize()} notified.")
+                        self.error_handler(e, observer, method_name)
 
-            return dynamic_notify
-        else:
-            return None
+            self.__cached_methods[name] = thread_safe_notify
+            return thread_safe_notify
+
+        raise AttributeError(f"Invalid method: {name}")
+
+    def _default_error_handler(self, e, observer, method_name):
+        print(f"Error in {observer}.{method_name}: {str(e)}")
 
 
 class Hookable:
@@ -735,8 +773,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
 
     def set_req_meta(self, req_meta: dict) -> bool:
         self.__req_meta_dict = req_meta
-        self.ob_notifier.notify('meta_data_changed')
-        self.ob_notifier.notify_meta_data_changed()
+        self.ob_notifier.notify_meta_data_changed(self.get_req_name())
         return self.__do_save()
 
     def get_req_root(self) -> ReqNode:
