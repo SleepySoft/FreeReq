@@ -199,6 +199,11 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 + 增加行号显示
 + 增加编辑框搜索功能，原全局搜索需要焦点在树控件上按```CTRL+F```，或使用```SHIFT + CTRL + F```打开。
 
+## 20250722
+
++ 为全局搜索增加搜索选项
++ 增加req内部跳转链接（req://<<req id or uuid>>）
+
 # 使用方法
 
 ![](doc/ui_req_edit.png)

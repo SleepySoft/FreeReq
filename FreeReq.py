@@ -96,9 +96,17 @@ try:
     # https://stackoverflow.com/questions/47736408/qwebengineview-how-to-open-links-in-system-browser
 
     class QCustomerWebEnginePage(QWebEnginePage):
+        def __init__(self, *args, action_handler):
+            super().__init__(*args)
+            self.action_handler = action_handler
+
         def acceptNavigationRequest(self, url, _type, isMainFrame):
             if _type == QWebEnginePage.NavigationTypeLinkClicked:
-                QDesktopServices.openUrl(url)
+                protocol = url.scheme()
+                if protocol == 'req':
+                    self.action_handler.on_url_jump(url.toString())
+                else:
+                    QDesktopServices.openUrl(url)
                 return False
             return True
 except Exception as e:
@@ -2169,11 +2177,12 @@ def print_req_nodes(req_nodes: ReqNode or List[ReqNode], filename: str,
 
 
 class ReqEditorBoard(QWidget):
-    def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel):
+    def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel, action_handler):
         super(ReqEditorBoard, self).__init__()
 
         self.__req_data_agent = req_data_agent
         self.__req_model = req_model
+        self.__action_handler = action_handler
         self.__editing_node: ReqNode = None
 
         self.__content_edited = False
@@ -2192,7 +2201,7 @@ class ReqEditorBoard(QWidget):
 
         try:
             self.text_md_viewer = QWebEngineView()
-            self.text_md_viewer.setPage(QCustomerWebEnginePage(self.text_md_viewer))
+            self.text_md_viewer.setPage(QCustomerWebEnginePage(self.text_md_viewer, action_handler=self))
         except Exception as e:
             print(e)
             print(traceback.format_exc())
@@ -2346,6 +2355,11 @@ class ReqEditorBoard(QWidget):
 
     def re_layout_meta_area(self):
         self.__layout_meta_area()
+
+    def on_url_jump(self, url: str):
+        """QCustomerWebEnginePage callback"""
+        uuid = url.removeprefix('req://')
+        self.__action_handler(jump_uuid=uuid)
 
     def on_window_move(self):
         self.text_md_editor.update_search_window_position()
@@ -2806,7 +2820,7 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         self.edit_tab = QTabWidget()
         self.meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
-        self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model)
+        self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model, self.on_edit_board_action)
 
         self.module = sys.modules[__name__]
 
@@ -2927,6 +2941,12 @@ class RequirementUI(QMainWindow, IReqObserver):
     def moveEvent(self, event):
         super().moveEvent(event)
         self.edit_board.on_window_move()
+
+    def on_edit_board_action(self, **kwargs):
+        """Action not defined yet. Just reserve parameters as dict."""
+        jump_uuid = kwargs.get('jump_uuid', None)
+        if jump_uuid:
+            self.jump_by_id(jump_uuid)
 
     def toggle_tree_requirements(self):
         if self.dock_tree_requirements.isVisible():
@@ -3339,8 +3359,16 @@ class RequirementUI(QMainWindow, IReqObserver):
         default_index_window.show_right_bottom()
 
     def jump_by_id(self, node_id: str):
+        """
+        Jump by uuid, or req id.
+        """
         root_node = self.__req_data_agent.get_req_root()
         find_node = root_node.filter(lambda x: x.get_uuid() == node_id)
+        if not find_node:
+            # Why get id from url is lower case?
+            # Whatever, ignore case for id matching is a good idea.
+            node_id = node_id.lower()
+            find_node = root_node.filter(lambda x: x.get(STATIC_FIELD_ID, '').lower() == node_id)
         if len(find_node) > 0:
             self.jump_to_node(find_node[0])
 

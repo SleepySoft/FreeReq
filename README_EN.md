@@ -202,6 +202,11 @@ This plug-in provides web chat function based on gradio. Selecting different LLM
 + Added TestLink function and added TestcaseIndexer based on file name. If you need to analyze the content to find the Req ID of a testcase, you can modify the Indexer according to the prompt.
 + In order to implement the TestLink function, Hookable is added and the observer notification mechanism is improved.
 
+## 20250722
+
++ Add search options for global search
++ Add req internal jump link (req://<<req id or uuid>>)
+
 # Usage
 
 ![](doc/ui_req_edit.png)
