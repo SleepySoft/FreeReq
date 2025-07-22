@@ -80,7 +80,8 @@ try:
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
-    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy, QToolTip
+    QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy, QToolTip, \
+    QRadioButton, QButtonGroup
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1467,6 +1468,103 @@ class LineNumberArea(QWidget):
 
     def paintEvent(self, event):
         self.editor.lineNumberAreaPaintEvent(event)
+
+
+class SearchInputDialog(QDialog):
+    @staticmethod
+    def getSearchInput(parent=None):
+        dialog = SearchInputDialog(parent)
+        result = dialog.exec_()
+        if result == QDialog.Accepted:
+            return True, {
+                'search_type': dialog.search_type_group.checkedButton().objectName(),
+                'search_text': dialog.search_input.text(),
+                'search_mode': dialog.search_mode_group.checkedButton().objectName()
+            }
+        return False, {}
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Search")
+        self.setMinimumWidth(400)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(15)
+
+        type_group = QGroupBox("Search Targe")
+        self.search_type_group = QButtonGroup(self)
+        layout_type = QHBoxLayout()
+
+        self.all_radio = QRadioButton("All")
+        self.all_radio.setObjectName("all")
+        self.all_radio.setChecked(True)
+        self.title_radio = QRadioButton("Title")
+        self.title_radio.setObjectName("title")
+        self.uuid_radio = QRadioButton("UUID")
+        self.uuid_radio.setObjectName("uuid")
+
+        self.search_type_group.addButton(self.all_radio)
+        self.search_type_group.addButton(self.title_radio)
+        self.search_type_group.addButton(self.uuid_radio)
+
+        layout_type.addWidget(self.all_radio)
+        layout_type.addWidget(self.title_radio)
+        layout_type.addWidget(self.uuid_radio)
+        type_group.setLayout(layout_type)
+
+        input_group = QGroupBox("Search Text")
+        layout_input = QHBoxLayout()
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Input search content...")
+        layout_input.addWidget(self.search_input)
+        input_group.setLayout(layout_input)
+
+        mode_group = QGroupBox("Search Mode")
+        self.search_mode_group = QButtonGroup(self)
+        layout_mode = QHBoxLayout()
+
+        self.normal_radio = QRadioButton("Normal")
+        self.normal_radio.setObjectName("normal")
+        self.normal_radio.setChecked(True)
+        self.regex_radio = QRadioButton("Regular Expression")
+        self.regex_radio.setObjectName("re")
+        self.regex_radio.setEnabled(False)
+        self.vector_radio = QRadioButton("Vector")
+        self.vector_radio.setObjectName("vector")
+        self.vector_radio.setEnabled(False)
+
+        self.search_mode_group.addButton(self.normal_radio)
+        self.search_mode_group.addButton(self.regex_radio)
+        self.search_mode_group.addButton(self.vector_radio)
+
+        layout_mode.addWidget(self.normal_radio)
+        layout_mode.addWidget(self.regex_radio)
+        layout_mode.addWidget(self.vector_radio)
+        mode_group.setLayout(layout_mode)
+
+        layout_buttons = QHBoxLayout()
+        layout_buttons.addStretch()
+
+        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.setObjectName("Cancel")
+        self.cancel_btn.setFixedWidth(80)
+        self.cancel_btn.clicked.connect(self.reject)
+
+        self.search_btn = QPushButton("Search")
+        self.search_btn.setObjectName("Search")
+        self.search_btn.setDefault(True)  # 设置为默认按钮
+        self.search_btn.setFixedWidth(240)
+        self.search_btn.clicked.connect(self.accept)
+
+        layout_buttons.addWidget(self.search_btn)
+        layout_buttons.addWidget(self.cancel_btn)
+
+        main_layout.addWidget(type_group)
+        main_layout.addWidget(input_group)
+        main_layout.addWidget(mode_group)
+        main_layout.addLayout(layout_buttons)
+
+        self.search_input.setFocus()
 
 
 class SearchWindow(QWidget):
@@ -3210,13 +3308,28 @@ class RequirementUI(QMainWindow, IReqObserver):
     # -------------------------------- Public function --------------------------------
 
     def pop_search(self):
-        text, ok = QInputDialog.getText(self, 'Global Search', 'Input anything to search:')
+        ok, result = SearchInputDialog.getSearchInput(self)
         if ok:
-            self.search_tree(text)
+            search_type = result['search_type']
+            search_text = result['search_text']
+            search_mode = result['search_mode']
 
-    def search_tree(self, text: str):
+            if not search_text:
+                return
+
+            if search_type == 'all':
+                self.search_tree(search_text)
+            else:
+                # The object is right the field name.
+                self.search_tree(search_text, [search_type])
+
+    def search_tree(self, text: str, serach_fields: Optional[List[str]] = None):
         root_node = self.__req_data_agent.get_req_root()
-        filter_nodes = root_node.filter(partial(RequirementUI.__find_node_any_data, text))
+
+        if not serach_fields:
+            filter_nodes = root_node.filter(partial(RequirementUI.__find_node_any_data, text))
+        else:
+            filter_nodes = root_node.filter(partial(RequirementUI.__find_node_by_fields, text, serach_fields))
 
         default_index_window = self.sub_window_index['default']
         default_index_window.clear_index()
@@ -3287,6 +3400,14 @@ class RequirementUI(QMainWindow, IReqObserver):
     @staticmethod
     def __find_node_any_data(text: str, node: ReqNode) -> bool:
         for v in node.data().values():
+            if isinstance(v, str) and text in v:
+                return True
+        return False
+
+    @staticmethod
+    def __find_node_by_fields(text: str, fields: List[str], node: ReqNode) -> bool:
+        for k in fields:
+            v = node.data().get(k, None)
             if isinstance(v, str) and text in v:
                 return True
         return False

@@ -441,6 +441,15 @@ class MarkdownEditor(QPlainTextEdit)
 
 
 
+使用pyqt5写一个搜索内容输入dialog。
+第一行为radio：All, Title, UUID
+第二行为lineedit用以输入搜索内容
+第三行为另一组radio：Normal, Regular Expression, Vector，其中第二第三项暂时不可选
+第四行为搜索和取消按钮，搜索按钮为默认按钮，回车可触发，而取消按钮占1/4空间，内部紧密布局。
+该窗口的调用风格要类似于QMessageBox，单一函数弹出窗口，等待并返回结果。结果为bool, dict。
+所有注释和文字皆为英文。
+
+
 
 
 
