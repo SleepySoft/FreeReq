@@ -73,15 +73,15 @@ try:
     # Use try catch for running FreeReq without UI
 
     from PyQt5.QtGui import QFont, QCursor, QPdfWriter, QPagedPaintDevice, QTextCursor, QDesktopServices, QPainter, \
-    QTextDocument, QColor, QPalette
+    QTextDocument, QColor, QPalette, QFontMetrics, QPen
     from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
     from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QFileSystemWatcher, \
-    QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings, QRect
+    QSize, QPoint, QItemSelection, QFile, QIODevice, QUrl, QTimer, QSettings, QRect, QRectF
     from PyQt5.QtWidgets import qApp, QApplication, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, \
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
     QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy, QToolTip, \
-    QRadioButton, QButtonGroup
+    QRadioButton, QButtonGroup, QGraphicsRectItem
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -1651,6 +1651,57 @@ class SearchWindow(QWidget):
             self.search_handler(self.search_input.text(), False)
 
 
+class InteractiveGroupBox(QGroupBox):
+    def __init__(self, title: str = '', parent=None):
+        super().__init__(title, parent)
+        self.setMouseTracking(True)
+        self.hovering = False
+        self.text_rect = QRect()
+        self.tip_text = ''
+        self.l_click_handler = None
+        self.r_click_handler = None
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+
+        if not self.title().strip():
+            self.text_rect = QRect()
+            return
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        fm = QFontMetrics(self.font())
+        title_width = fm.width(self.title())
+        title_height = fm.height()
+        text_rect = QRect(2, 0, title_width + 13, title_height + 2)
+
+        self.text_rect = text_rect
+
+        if self.hovering:
+            painter.setPen(QPen(QColor("#3498db" if self.hovering else "#95a5a6"), 2))
+            painter.drawRect(text_rect)
+
+    def mouseMoveEvent(self, event):
+        if self.text_rect.contains(event.pos()):
+            self.hovering = True
+            self.setCursor(Qt.PointingHandCursor)
+            if self.tip_text:
+                QToolTip.showText(self.mapToGlobal(event.pos()), self.tip_text)
+        else:
+            self.hovering = False
+            self.setCursor(Qt.ArrowCursor)
+            QToolTip.hideText()
+        self.update()
+
+    def mousePressEvent(self, event):
+        if self.text_rect.contains(event.pos()):
+            if event.button() == Qt.LeftButton and self.l_click_handler:
+                self.l_click_handler()
+            elif event.button() == Qt.RightButton and self.r_click_handler:
+                self.r_click_handler()
+
+
 class MarkdownEditor(QPlainTextEdit):
 
     def __init__(self, attachment_folder='attachment', parent=None):
@@ -2213,10 +2264,7 @@ class ReqEditorBoard(QWidget):
         finally:
             pass
 
-        self.__group_meta_data = QGroupBox()
-
-        # self.__check_editor = QCheckBox('Editor')
-        # self.__check_viewer = QCheckBox('Viewer')
+        self.__group_meta_data = InteractiveGroupBox()
 
         self.__button_increase_font = QPushButton('+')
         self.__button_decrease_font = QPushButton('-')
@@ -2507,11 +2555,18 @@ class ReqEditorBoard(QWidget):
             addition.append(last_update)
         addition_text = ', '.join(addition)
 
-        title = f"Req UUID: {_uuid}"
+        group_title = f"Req UUID: {_uuid}"
         if addition_text:
-            title += ' | ' + addition_text
+            group_title += ' | ' + addition_text
 
-        self.__group_meta_data.setTitle(title)
+        def copy(text: str):
+            clipboard = QApplication.clipboard()
+            clipboard.setText(text)
+
+        self.__group_meta_data.setTitle(group_title)
+        self.__group_meta_data.tip_text = 'Left click to copy UUID ; Right click to copy markdown link.'
+        self.__group_meta_data.l_click_handler = partial(copy, _uuid) if _uuid else None
+        self.__group_meta_data.r_click_handler = partial(copy, f'[{req_node.get_title()}](req://{_uuid})') if _uuid else None
 
     def __ui_to_req_node_data(self, req_node: ReqNode):
         self.__req_model.begin_edit()

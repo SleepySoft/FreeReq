@@ -453,3 +453,22 @@ class MarkdownEditor(QPlainTextEdit)
 
 
 
+
+
+
+我希望使用pyqt5实现一个自定义QGroupBox，实现以下功能：
+1. 初始化时传入提示文字和handling函数
+2. 当用户将鼠标移动到QGroupBox的标题区域时，高亮标题文字，并改变鼠标为手形，并显示提示文字
+3. 此时当用户点击时，触发handling函数的回调。
+4. 注意上面的操作都局限于鼠标在标题区域内。
+
+
+
+
+
+
+
+
+
+
+
