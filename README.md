@@ -203,6 +203,7 @@ FreeReq支持插件扩展。你可以将“doc/config_example.json”重命名�
 
 + 为全局搜索增加搜索选项
 + 增加req内部跳转链接（req://<<req id or uuid>>）
++ 增加复制需求项的UUID功能。
 
 # 使用方法
 

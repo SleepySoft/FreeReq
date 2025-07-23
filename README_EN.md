@@ -206,6 +206,7 @@ This plug-in provides web chat function based on gradio. Selecting different LLM
 
 + Add search options for global search
 + Add req internal jump link (req://<<req id or uuid>>)
++ Added the function of copying the UUID of requirement items.
 
 # Usage
 
