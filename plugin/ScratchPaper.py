@@ -16,6 +16,7 @@ req_agent: IReqAgent = None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+
 class ScratchPaper(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -43,6 +44,7 @@ class ScratchPaper(QWidget):
         font = QFont()
         font.setPointSize(12)
         self.textEdit.setFont(font)
+        self.textEdit.setAcceptRichText(False)
 
         # Load the file content when initializing
         try:
@@ -50,6 +52,8 @@ class ScratchPaper(QWidget):
                 self.textEdit.setPlainText(f.read())
         except Exception as e:
             print(e)
+
+        self.textEdit.textChanged.connect(self.on_text_changed)
 
         # Set up a timer to save the file every 2 seconds
         self.timer.timeout.connect(self.auto_save)
