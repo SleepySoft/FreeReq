@@ -253,6 +253,91 @@ class Hookable:
         return True
 
 
+class HistoryManager:
+    def __init__(self, max_size: int = 1000):
+        self.__max_size = max(max_size, 1)
+        self.__browse_trace = []
+        self.__current_index = -1
+
+    def set_capacity(self, max_size):
+        self.__max_size = max(max_size, 1)
+
+    def clear_trace(self):
+        self.__browse_trace = []
+        self.__current_index = -1
+
+    def back_trace(self) -> any or None:
+        if not self.__browse_trace:
+            return None
+        if self.__current_index > 0:
+            self.__current_index -= 1
+            return self.__browse_trace[self.__current_index]
+        return None
+
+    def forward_trace(self) -> any or None:
+        if not self.__browse_trace:
+            return None
+        if self.__current_index < len(self.__browse_trace) - 1:
+            self.__current_index += 1
+            return self.__browse_trace[self.__current_index]
+        return None
+
+    def record_trace(self, item: any):
+        while self.__current_index >= self.__max_size - 1:
+            self.__browse_trace.pop(0)
+            self.__current_index -= 1
+
+        if not item:
+            return
+
+        # Optimise:
+        #   If the adding item is right the current item. Ignore.
+        #   If the adding item is right the next item. Just forward.
+        if self.__current_index >= 0:
+            if self.__browse_trace[self.__current_index] == item:
+                return
+            elif self.__current_index + 1 < len(self.__browse_trace) and \
+                    self.__browse_trace[self.__current_index + 1] == item:
+                self.__current_index += 1
+
+        self.__browse_trace = self.__browse_trace[:self.__current_index + 1]
+        self.__browse_trace.append(item)
+        self.__current_index = len(self.__browse_trace) - 1
+
+    def remove_trace(self, item: any):
+        if not self.__browse_trace:
+            return
+
+        new_trace = []
+        removed_before = 0
+        current_item_removed = False
+        for i, n in enumerate(self.__browse_trace):
+            if n == item:
+                if i == self.__current_index:
+                    current_item_removed = True
+                if i <= self.__current_index:
+                    removed_before += 1
+            else:
+                new_trace.append(n)
+
+        if removed_before == 0:
+            return
+
+        if not new_trace:
+            self.__browse_trace = []
+            self.__current_index = -1
+            return
+
+        new_index = self.__current_index - removed_before
+        if current_item_removed:
+            new_index = max(0, min(new_index, len(new_trace) - 1))
+        else:
+            new_index = max(0, min(new_index, len(new_trace) - 1))
+
+        self.__browse_trace = new_trace
+        self.__current_index = new_index
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Plugin:
 #   req_agent_prepared(req: IReqAgent)
@@ -830,7 +915,7 @@ class ReqSingleJsonFileAgent(IReqAgent):
         else:
             print("Warning: You'd better using a node copy to update target node.")
         self.__do_save()
-        self.ob_notifier.notify_node_data_changed(update_node[0])
+        self.ob_notifier.notify_node_data_changed(self.get_req_name(), update_node[0])
 
     def shift_node(self, node_uuid: str, shift_offset: int):
         shift_node = self.__req_node_root.filter(lambda x: x.get_uuid() == node_uuid)
@@ -2228,12 +2313,13 @@ def print_req_nodes(req_nodes: ReqNode or List[ReqNode], filename: str,
 
 
 class ReqEditorBoard(QWidget):
-    def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel, action_handler):
+    def __init__(self, req_data_agent: IReqAgent, req_model: ReqModel, main_ui):
         super(ReqEditorBoard, self).__init__()
 
         self.__req_data_agent = req_data_agent
         self.__req_model = req_model
-        self.__action_handler = action_handler
+        self.__main_ui = main_ui
+
         self.__editing_node: ReqNode = None
 
         self.__content_edited = False
@@ -2265,6 +2351,9 @@ class ReqEditorBoard(QWidget):
             pass
 
         self.__group_meta_data = InteractiveGroupBox()
+
+        self.__button_trace_backward = QPushButton('←')
+        self.__button_trace_forward = QPushButton('→')
 
         self.__button_increase_font = QPushButton('+')
         self.__button_decrease_font = QPushButton('-')
@@ -2308,6 +2397,8 @@ class ReqEditorBoard(QWidget):
 
         # mid
 
+        self.layout_feature_area.addWidget(self.__button_trace_backward)
+        self.layout_feature_area.addWidget(self.__button_trace_forward)
         self.layout_feature_area.addWidget(self.__button_decrease_font)
         self.layout_feature_area.addWidget(self.__button_increase_font)
         self.layout_feature_area.addLayout(self.layout_plugin_area)
@@ -2328,6 +2419,9 @@ class ReqEditorBoard(QWidget):
     def __config_ui(self):
         self.__line_id.setReadOnly(True)
 
+        self.__button_trace_backward.setMaximumSize(60, 30)
+        self.__button_trace_forward.setMaximumSize(60, 30)
+
         self.__button_increase_font.setMaximumSize(30, 30)
         self.__button_decrease_font.setMaximumSize(30, 30)
 
@@ -2339,6 +2433,9 @@ class ReqEditorBoard(QWidget):
 
         self.__line_title.textChanged.connect(self.on_content_changed)
         self.text_md_editor.textChanged.connect(self.on_text_content_edit)
+
+        self.__button_trace_backward.clicked.connect(self.on_button_trace_backward)
+        self.__button_trace_forward.clicked.connect(self.on_button_trace_forward)
 
         self.__button_increase_font.clicked.connect(self.on_button_increase_font)
         self.__button_decrease_font.clicked.connect(self.on_button_decrease_font)
@@ -2406,11 +2503,18 @@ class ReqEditorBoard(QWidget):
 
     def on_url_jump(self, url: str):
         """QCustomerWebEnginePage callback"""
-        uuid = url.removeprefix('req://')
-        self.__action_handler(jump_uuid=uuid)
+        jump_uuid = url.removeprefix('req://')
+        if jump_uuid:
+            self.__main_ui.jump_by_id(jump_uuid)
 
     def on_window_move(self):
         self.text_md_editor.update_search_window_position()
+
+    def on_button_trace_backward(self):
+        self.__main_ui.navigate_backward()
+
+    def on_button_trace_forward(self):
+        self.__main_ui.navigate_forward()
 
     def on_button_increase_font(self):
         editor_font = self.text_md_editor.font()
@@ -2852,6 +2956,7 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.watcher.fileChanged.connect(self.on_editing_file_changed)
 
         self.__cut_items = []
+        self.trace_history = HistoryManager()
         # self.__filter_index = -1
         # self.__filter_nodes = []
         self.__selected_node: ReqNode = None
@@ -2875,7 +2980,7 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         self.edit_tab = QTabWidget()
         self.meta_board = ReqMetaBoard(self.__req_data_agent, self.__on_meta_data_updated)
-        self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model, self.on_edit_board_action)
+        self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model, self)
 
         self.module = sys.modules[__name__]
 
@@ -2996,12 +3101,6 @@ class RequirementUI(QMainWindow, IReqObserver):
     def moveEvent(self, event):
         super().moveEvent(event)
         self.edit_board.on_window_move()
-
-    def on_edit_board_action(self, **kwargs):
-        """Action not defined yet. Just reserve parameters as dict."""
-        jump_uuid = kwargs.get('jump_uuid', None)
-        if jump_uuid:
-            self.jump_by_id(jump_uuid)
 
     def toggle_tree_requirements(self):
         if self.dock_tree_requirements.isVisible():
@@ -3289,6 +3388,7 @@ class RequirementUI(QMainWindow, IReqObserver):
                 self.__req_model.beginRemoveRows(
                     self.__req_model.parent(self.__selected_index), node_order, node_order)
                 self.__req_data_agent.remove_node(selected_node.get_uuid())
+                self.trace_history.remove_trace(selected_node)
                 self.__req_model.endRemoveRows()
 
                 # print(f'Tree Selection deleted -> {self.__selected_index}')
@@ -3433,6 +3533,16 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.__tree_requirements.scrollTo(index)
         self.__tree_requirements.setCurrentIndex(index)
 
+    def navigate_forward(self):
+        nav_node = self.trace_history.forward_trace()
+        if nav_node:
+            self.jump_to_node(nav_node)
+
+    def navigate_backward(self):
+        nav_node = self.trace_history.back_trace()
+        if nav_node:
+            self.jump_to_node(nav_node)
+
     def get_plugin(self) -> PluginManager:
         # Workaround
         return plugin_manager
@@ -3505,6 +3615,7 @@ class RequirementUI(QMainWindow, IReqObserver):
             req_node: ReqNode = index.internalPointer()
             self.__selected_node = req_node
             self.__selected_index = index
+            self.trace_history.record_trace(req_node)
             self.edit_board.edit_req(req_node)
         else:
             self.__selected_node = None
