@@ -2501,6 +2501,17 @@ class ReqEditorBoard(QWidget):
     def re_layout_meta_area(self):
         self.__layout_meta_area()
 
+    def wheelEvent(self, event):
+        if event.modifiers() == Qt.ControlModifier:
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self.on_button_increase_font()
+            else:
+                self.on_button_decrease_font()
+            event.accept()
+        else:
+            return super().wheelEvent(event)
+
     def on_url_jump(self, url: str):
         """QCustomerWebEnginePage callback"""
         jump_uuid = url.removeprefix('req://')
