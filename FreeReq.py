@@ -81,7 +81,7 @@ try:
     QPushButton, QMessageBox, QLabel, QGroupBox, QTableWidget, QTabWidget, QTextEdit, QMenu, \
     QLineEdit, QCheckBox, QComboBox, QTreeView, QInputDialog, QFileDialog, QSplitter, QTableWidgetItem, \
     QAbstractItemView, QScrollArea, QAction, QDockWidget, QMainWindow, QDialog, QPlainTextEdit, QSizePolicy, QToolTip, \
-    QRadioButton, QButtonGroup, QGraphicsRectItem
+    QRadioButton, QButtonGroup, QGraphicsRectItem, QFontDialog
 except Exception as e:
     print('UI disabled.')
     print(str(e))
@@ -131,6 +131,10 @@ def has_web_engine_view() -> bool:
         return True
     except ImportError:
         return False
+
+
+def get_free_req_setting():
+    return QSettings("SleepySoft", "FreeReq")
 
 
 class ObserverNotifier:
@@ -2994,6 +2998,7 @@ class RequirementUI(QMainWindow, IReqObserver):
         self.edit_board = ReqEditorBoard(self.__req_data_agent, self.__req_model, self)
 
         self.module = sys.modules[__name__]
+        self.load_font_settings()
 
         self.__init_ui()
 
@@ -3085,10 +3090,13 @@ class RequirementUI(QMainWindow, IReqObserver):
 
         # View Menu
         view_menu = self.menu_bar.addMenu('View')
+        self.set_font_action = QAction('Set Font')
         self.toggle_tree_action = QAction('Toggle Requirements', self, checkable=True, checked=True)
         self.toggle_tree_meta_stat = QAction('Tree Meta Statistics View')
+        view_menu.addAction(self.set_font_action)
         view_menu.addAction(self.toggle_tree_action)
         view_menu.addAction(self.toggle_tree_meta_stat)
+        self.set_font_action.triggered.connect(self.select_application_font)
         self.toggle_tree_action.triggered.connect(self.toggle_tree_requirements)
         self.toggle_tree_meta_stat.triggered.connect(self.toggle_tree_meta_statistics)
 
@@ -3468,7 +3476,7 @@ class RequirementUI(QMainWindow, IReqObserver):
         return success
 
     def on_menu_open_local_file(self):
-        settings = QSettings("SleepySoft", "FreeReq")
+        settings = get_free_req_setting()
 
         # 获取上次打开文件的目录路径
         last_open_dir = settings.value("last_open", "")
@@ -3477,11 +3485,8 @@ class RequirementUI(QMainWindow, IReqObserver):
         file_path, is_ok = QFileDialog.getOpenFileName(
             self, 'Select File', last_open_dir, 'Requirement File (*.req);;All files (*.*)')
 
-        # 如果成功选择了文件，更新last_open的值为当前文件的目录路径
         if is_ok and file_path:
-            # 获取文件的目录路径
             last_open_dir = os.path.dirname(file_path)
-            # 保存到QSettings
             settings.setValue("last_open", last_open_dir)
 
             self.__req_model.beginRemoveRows(QModelIndex(), 0, 0)
@@ -3598,6 +3603,35 @@ class RequirementUI(QMainWindow, IReqObserver):
             self.__tree_requirements.collapse(index)
             for i in range(self.__tree_requirements.model().rowCount(index)):
                 self.do_collapse_node_all(self.__tree_requirements.model().index(i, 0, index))
+
+    def select_application_font(self):
+        current_font = QApplication.font()
+        font, ok = QFontDialog.getFont(current_font, self, "Select Font")
+        if ok:
+            self.apply_global_font(font)
+            self.save_font_settings(font)
+
+    def apply_global_font(self, font):
+        QApplication.setFont(font)
+        for widget in QApplication.allWidgets():
+            widget.setFont(font)
+            widget.update()
+
+    def save_font_settings(self, font):
+        settings = get_free_req_setting()
+        settings.setValue("family", font.family())
+        settings.setValue("size", font.pointSize())
+        settings.setValue("bold", font.bold())
+
+    def load_font_settings(self):
+        settings = get_free_req_setting()
+        family = settings.value("family", "Arial")
+        size = int(settings.value("size", 12))
+        bold = settings.value("bold", "false") == "true"
+
+        font = QFont(family, size)
+        font.setBold(bold)
+        return font
 
     # --------------------------------------------------------
 
