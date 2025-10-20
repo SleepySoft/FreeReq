@@ -2928,16 +2928,14 @@ class ReqMetaBoard(QWidget):
 
 class IndexListUI(QWidget):
     def __init__(self, main_ui: RequirementUI):
-        super().__init__()
+        super().__init__(parent=main_ui)
         self.main_ui = main_ui
 
         # 设置窗口初始大小和位置
         self.setGeometry(0, 0, 400, 600)
 
         # 设置窗口无最大最小化按钮
-        self.setWindowFlags(Qt.WindowCloseButtonHint)
-
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.Tool | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint)
 
         # 创建列表控件
         self.index_list = QTableWidget(self)
@@ -2972,6 +2970,8 @@ class IndexListUI(QWidget):
         main_ui_geometry = self.main_ui.frameGeometry()
         self.move(main_ui_geometry.bottomRight() - self.rect().bottomRight())
         self.show()
+        self.raise_()
+        self.activateWindow()
 
     def closeEvent(self, event):
         # 当用户点击关闭时，窗口隐藏
