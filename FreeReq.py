@@ -1568,11 +1568,17 @@ class LineNumberArea(QWidget):
 
 
 class SearchInputDialog(QDialog):
+    last_search_type = "all"
+    last_search_mode = "normal"
+
     @staticmethod
     def getSearchInput(parent=None):
         dialog = SearchInputDialog(parent)
         result = dialog.exec_()
         if result == QDialog.Accepted:
+            SearchInputDialog.last_search_type = dialog.search_type_group.checkedButton().objectName()
+            SearchInputDialog.last_search_mode = dialog.search_mode_group.checkedButton().objectName()
+
             return True, {
                 'search_type': dialog.search_type_group.checkedButton().objectName(),
                 'search_text': dialog.search_input.text(),
@@ -1594,11 +1600,19 @@ class SearchInputDialog(QDialog):
 
         self.all_radio = QRadioButton("All")
         self.all_radio.setObjectName("all")
-        self.all_radio.setChecked(True)
         self.title_radio = QRadioButton("Title")
         self.title_radio.setObjectName("title")
         self.uuid_radio = QRadioButton("UUID")
         self.uuid_radio.setObjectName("uuid")
+
+        if SearchInputDialog.last_search_type == "all":
+            self.all_radio.setChecked(True)
+        elif SearchInputDialog.last_search_type == "title":
+            self.title_radio.setChecked(True)
+        elif SearchInputDialog.last_search_type == "uuid":
+            self.uuid_radio.setChecked(True)
+        else:
+            self.all_radio.setChecked(True)
 
         self.search_type_group.addButton(self.all_radio)
         self.search_type_group.addButton(self.title_radio)
@@ -1622,13 +1636,21 @@ class SearchInputDialog(QDialog):
 
         self.normal_radio = QRadioButton("Normal")
         self.normal_radio.setObjectName("normal")
-        self.normal_radio.setChecked(True)
         self.regex_radio = QRadioButton("Regular Expression")
         self.regex_radio.setObjectName("re")
         self.regex_radio.setEnabled(False)
         self.vector_radio = QRadioButton("Vector")
         self.vector_radio.setObjectName("vector")
         self.vector_radio.setEnabled(False)
+
+        if SearchInputDialog.last_search_mode == "normal":
+            self.normal_radio.setChecked(True)
+        elif SearchInputDialog.last_search_mode == "re":
+            self.regex_radio.setChecked(True)
+        elif SearchInputDialog.last_search_mode == "vector":
+            self.vector_radio.setChecked(True)
+        else:
+            self.normal_radio.setChecked(True)  # 默认值
 
         self.search_mode_group.addButton(self.normal_radio)
         self.search_mode_group.addButton(self.regex_radio)
@@ -1649,7 +1671,7 @@ class SearchInputDialog(QDialog):
 
         self.search_btn = QPushButton("Search")
         self.search_btn.setObjectName("Search")
-        self.search_btn.setDefault(True)  # 设置为默认按钮
+        self.search_btn.setDefault(True)
         self.search_btn.setFixedWidth(240)
         self.search_btn.clicked.connect(self.accept)
 
